@@ -29,6 +29,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { 
+  formatTemperature, 
+  convertWindSpeed, 
+  getWindSpeedUnitLabel,
+  convertUserUnitToKm,
+  formatKmDistance,
+  type DistanceUnit 
+} from '@/lib/distance';
 
 // Types
 interface CourseHole {
@@ -1436,6 +1444,11 @@ export default function JazelApp() {
   const updateNearbyDistance = async (distance: number) => {
     setMaxNearbyDistance(distance);
     
+    // Format the distance for display based on user's unit preference
+    const displayDistance = distanceUnit === 'yards' 
+      ? `${Math.round(distance * 0.621371)} mi`
+      : `${distance} km`;
+    
     // Save to user profile if logged in
     if (user) {
       try {
@@ -1448,7 +1461,7 @@ export default function JazelApp() {
         
         if (response.ok) {
           setUser(data.user);
-          toast.success(`Nearby distance set to ${distance}km`);
+          toast.success(`Nearby distance set to ${displayDistance}`);
         }
       } catch (error) {
         console.error('Failed to save distance preference:', error);
@@ -2289,16 +2302,44 @@ export default function JazelApp() {
               style={{backgroundColor: '#d6e4ef'}}>
                 <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
                 <span>Showing courses within</span>
-                <Select value={maxNearbyDistance.toString()} onValueChange={(v) => updateNearbyDistance(parseInt(v))}>
+                <Select 
+                  value={(() => {
+                    // Convert km to user's unit for display value
+                    const userUnitValue = distanceUnit === 'yards' 
+                      ? Math.round(maxNearbyDistance * 0.621371) 
+                      : maxNearbyDistance;
+                    return userUnitValue.toString();
+                  })()} 
+                  onValueChange={(v) => {
+                    // Convert from user's unit back to km for storage
+                    const value = parseInt(v);
+                    const kmValue = distanceUnit === 'yards' 
+                      ? Math.round(value / 0.621371) 
+                      : value;
+                    updateNearbyDistance(kmValue);
+                  }}
+                >
                   <SelectTrigger className="w-20 h-8" style={{borderColor: '#a3c4e0'}}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">10km</SelectItem>
-                    <SelectItem value="20">20km</SelectItem>
-                    <SelectItem value="50">50km</SelectItem>
-                    <SelectItem value="100">100km</SelectItem>
-                    <SelectItem value="200">200km</SelectItem>
+                    {distanceUnit === 'yards' ? (
+                      <>
+                        <SelectItem value="6">6 mi</SelectItem>
+                        <SelectItem value="12">12 mi</SelectItem>
+                        <SelectItem value="31">31 mi</SelectItem>
+                        <SelectItem value="62">62 mi</SelectItem>
+                        <SelectItem value="124">124 mi</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="10">10 km</SelectItem>
+                        <SelectItem value="20">20 km</SelectItem>
+                        <SelectItem value="50">50 km</SelectItem>
+                        <SelectItem value="100">100 km</SelectItem>
+                        <SelectItem value="200">200 km</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <span>of your location</span>
@@ -3111,12 +3152,12 @@ export default function JazelApp() {
                           <p className="text-sm mb-1" style={{color: weatherData.time.isNight ? '#94a3b8' : 'hsl(var(--muted-foreground))'}}>Current Weather</p>
                           <div className="flex items-center gap-4">
                             <div className="text-5xl font-bold" style={{color: weatherData.time.isNight ? '#e2e8f0' : '#39638b'}}>
-                              {weatherData.current.temperature}°C
+                              {formatTemperature(weatherData.current.temperature, distanceUnit)}
                             </div>
                             <div>
                               <p className="text-lg font-medium" style={{color: weatherData.time.isNight ? '#f1f5f9' : 'inherit'}}>{weatherData.current.weatherDescription}</p>
                               <p className="text-sm" style={{color: weatherData.time.isNight ? '#94a3b8' : 'hsl(var(--muted-foreground))'}}>
-                                Feels like {weatherData.current.apparentTemperature}°C
+                                Feels like {formatTemperature(weatherData.current.apparentTemperature, distanceUnit)}
                               </p>
                             </div>
                           </div>
@@ -3157,9 +3198,7 @@ export default function JazelApp() {
                           <span className="text-sm text-muted-foreground">Wind</span>
                         </div>
                         <p className="text-xl font-bold">
-                          {distanceUnit === 'yards' 
-                            ? `${(weatherData.current.windSpeed * 0.621371).toFixed(1)} mph`
-                            : `${weatherData.current.windSpeed} km/h`}
+                          {Math.round(convertWindSpeed(weatherData.current.windSpeed, distanceUnit))} {getWindSpeedUnitLabel(distanceUnit)}
                         </p>
                         <p className="text-xs text-muted-foreground">Direction: {weatherData.current.windDirection}</p>
                       </div>
@@ -3169,9 +3208,7 @@ export default function JazelApp() {
                           <span className="text-sm text-muted-foreground">Gusts</span>
                         </div>
                         <p className="text-xl font-bold">
-                          {distanceUnit === 'yards' 
-                            ? `${(weatherData.current.windGusts * 0.621371).toFixed(1)} mph`
-                            : `${weatherData.current.windGusts} km/h`}
+                          {Math.round(convertWindSpeed(weatherData.current.windGusts, distanceUnit))} {getWindSpeedUnitLabel(distanceUnit)}
                         </p>
                         <p className="text-xs text-muted-foreground">Max gusts</p>
                       </div>
@@ -3188,7 +3225,7 @@ export default function JazelApp() {
                           <Thermometer className="w-5 h-5" style={{color: '#39638b'}} />
                           <span className="text-sm text-muted-foreground">Feels Like</span>
                         </div>
-                        <p className="text-xl font-bold">{weatherData.current.apparentTemperature}°C</p>
+                        <p className="text-xl font-bold">{formatTemperature(weatherData.current.apparentTemperature, distanceUnit)}</p>
                         <p className="text-xs text-muted-foreground">Apparent temp</p>
                       </div>
                     </div>
@@ -3219,10 +3256,10 @@ export default function JazelApp() {
                               {hour.weatherIcon === 'cloud-fog' && <CloudFog className="w-8 h-8 mx-auto text-gray-400" />}
                               {hour.weatherIcon === 'cloud-lightning' && <CloudLightning className="w-8 h-8 mx-auto text-purple-500" />}
                             </div>
-                            <p className={`text-lg font-bold ${hour.isNight ? 'text-slate-200' : ''}`}>{hour.temperature}°</p>
+                            <p className={`text-lg font-bold ${hour.isNight ? 'text-slate-200' : ''}`}>{formatTemperature(hour.temperature, distanceUnit)}</p>
                             <div className="flex items-center justify-center gap-1 mt-1">
                               <Wind className={`w-3 h-3 ${hour.isNight ? 'text-slate-500' : 'text-muted-foreground'}`} />
-                              <span className={`text-xs ${hour.isNight ? 'text-slate-500' : 'text-muted-foreground'}`}>{hour.windSpeed}</span>
+                              <span className={`text-xs ${hour.isNight ? 'text-slate-500' : 'text-muted-foreground'}`}>{Math.round(convertWindSpeed(hour.windSpeed, distanceUnit))}</span>
                             </div>
                           </div>
                         ))}

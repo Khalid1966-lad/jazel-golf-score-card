@@ -177,3 +177,71 @@ export function convertUserUnitToKm(distance: number, unit: DistanceUnit): numbe
   }
   return distance;
 }
+
+// Temperature conversion functions
+
+/**
+ * Convert Celsius to Fahrenheit
+ * @param celsius - Temperature in Celsius
+ * @returns Temperature in Fahrenheit
+ */
+export function celsiusToFahrenheit(celsius: number): number {
+  return (celsius * 9/5) + 32;
+}
+
+/**
+ * Convert Fahrenheit to Celsius
+ * @param fahrenheit - Temperature in Fahrenheit
+ * @returns Temperature in Celsius
+ */
+export function fahrenheitToCelsius(fahrenheit: number): number {
+  return (fahrenheit - 32) * 5/9;
+}
+
+/**
+ * Format temperature based on user's unit preference
+ * @param tempCelsius - Temperature in Celsius
+ * @param unit - The user's distance unit preference ('yards' for imperial, 'meters' for metric)
+ * @returns Formatted temperature string with unit
+ */
+export function formatTemperature(tempCelsius: number, unit: DistanceUnit): string {
+  if (unit === 'yards') {
+    // Imperial: Fahrenheit
+    const fahrenheit = celsiusToFahrenheit(tempCelsius);
+    return `${Math.round(fahrenheit)}°F`;
+  }
+  // Metric: Celsius
+  return `${Math.round(tempCelsius)}°C`;
+}
+
+/**
+ * Get temperature unit label
+ * @param unit - The user's distance unit preference
+ * @returns Temperature unit label (C or F)
+ */
+export function getTemperatureUnitLabel(unit: DistanceUnit): string {
+  return unit === 'yards' ? 'F' : 'C';
+}
+
+/**
+ * Get wind speed unit label
+ * @param unit - The user's distance unit preference
+ * @returns Wind speed unit label (mph or km/h)
+ */
+export function getWindSpeedUnitLabel(unit: DistanceUnit): string {
+  return unit === 'yards' ? 'mph' : 'km/h';
+}
+
+/**
+ * Convert wind speed from km/h to user's preferred unit
+ * @param speedKmh - Wind speed in km/h
+ * @param unit - The user's distance unit preference
+ * @returns Wind speed in user's preferred unit
+ */
+export function convertWindSpeed(speedKmh: number, unit: DistanceUnit): number {
+  if (unit === 'yards') {
+    // Convert km/h to mph
+    return speedKmh * 0.621371;
+  }
+  return speedKmh;
+}
