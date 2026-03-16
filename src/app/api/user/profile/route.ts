@@ -32,6 +32,7 @@ export async function GET() {
         city: session.user.city,
         country: session.user.country,
         nearbyDistance: session.user.nearbyDistance,
+        distanceUnit: session.user.distanceUnit,
       },
     });
   } catch (error) {
@@ -60,7 +61,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, handicap, city, country, currentPassword, newPassword, nearbyDistance } = body;
+    const { name, email, handicap, city, country, currentPassword, newPassword, nearbyDistance, distanceUnit } = body;
 
     const updateData: Record<string, unknown> = {};
     
@@ -69,6 +70,7 @@ export async function PUT(request: NextRequest) {
     if (city !== undefined) updateData.city = city || null;
     if (country !== undefined) updateData.country = country || 'Morocco';
     if (nearbyDistance !== undefined) updateData.nearbyDistance = parseInt(nearbyDistance) || 100;
+    if (distanceUnit !== undefined) updateData.distanceUnit = distanceUnit === 'meters' ? 'meters' : 'yards';
     
     // Handle email change
     if (email && email !== session.user.email) {
@@ -113,6 +115,7 @@ export async function PUT(request: NextRequest) {
         country: true,
         isAdmin: true,
         nearbyDistance: true,
+        distanceUnit: true,
       },
     });
 

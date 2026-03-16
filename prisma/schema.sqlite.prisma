@@ -20,6 +20,7 @@ model User {
   city                 String?
   country              String?
   nearbyDistance       Int        @default(100)
+  distanceUnit         String     @default("yards") // "yards" or "meters"
   isAdmin              Boolean    @default(false)
   blocked              Boolean    @default(false)
   hiddenFromGolfers    Boolean    @default(false)

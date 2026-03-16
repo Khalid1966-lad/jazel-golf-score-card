@@ -85,6 +85,7 @@ interface User {
   country: string | null;
   isAdmin?: boolean;
   nearbyDistance?: number;
+  distanceUnit?: 'yards' | 'meters';
 }
 
 interface UserStats {
@@ -513,13 +514,15 @@ function GPSRangeFinder({
   userLocation,
   onLocationUpdate,
   selectedHole,
-  onHoleChange
+  onHoleChange,
+  distanceUnit
 }: { 
   course: GolfCourse | null;
   userLocation: { lat: number; lon: number } | null;
   onLocationUpdate: (loc: { lat: number; lon: number }) => void;
   selectedHole: number;
   onHoleChange: (hole: number) => void;
+  distanceUnit: 'yards' | 'meters';
 }) {
   const [greenPosition, setGreenPosition] = useState<'front' | 'center' | 'back'>('center');
   const [watchId, setWatchId] = useState<number | null>(null);
@@ -742,9 +745,11 @@ function GPSRangeFinder({
             <div className="text-center p-6 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e0f4f5 100%)'}}>
               <p className="text-sm text-muted-foreground mb-2">Distance to Green</p>
               <p className="text-5xl font-bold" style={{color: '#39638b'}}>
-                {distanceToGreen !== null ? distanceToGreen : '---'}
+                {distanceToGreen !== null 
+                  ? Math.round(distanceUnit === 'yards' ? distanceToGreen * 1.09361 : distanceToGreen)
+                  : '---'}
               </p>
-              <p className="text-lg text-muted-foreground">meters</p>
+              <p className="text-lg text-muted-foreground">{distanceUnit}</p>
               {/* Show indicator if coordinates are estimated */}
               {course && (() => {
                 const holeData = course.holes.find(h => h.holeNumber === selectedHole);
@@ -775,6 +780,7 @@ function GPSRangeFinder({
 export default function JazelApp() {
   const [activeTab, setActiveTab] = useState('weather');
   const [user, setUser] = useState<User | null>(null);
+  const [distanceUnit, setDistanceUnit] = useState<'yards' | 'meters'>('yards');
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [courses, setCourses] = useState<GolfCourse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -811,6 +817,7 @@ export default function JazelApp() {
     city: '',
     country: 'Morocco',
     nearbyDistance: 100,
+    distanceUnit: 'yards' as 'yards' | 'meters',
     currentPassword: '', 
     newPassword: '' 
   });
@@ -855,6 +862,10 @@ export default function JazelApp() {
           // Set user's preferred nearby distance
           if (data.user.nearbyDistance) {
             setMaxNearbyDistance(data.user.nearbyDistance);
+          }
+          // Set user's preferred distance unit
+          if ((data.user as any).distanceUnit) {
+            setDistanceUnit((data.user as any).distanceUnit === 'meters' ? 'meters' : 'yards');
           }
         }
       } catch (error) {
@@ -1236,6 +1247,10 @@ export default function JazelApp() {
       
       if (response.ok) {
         setUser(data.user);
+        // Update distance unit preference
+        if (data.user.distanceUnit) {
+          setDistanceUnit(data.user.distanceUnit === 'meters' ? 'meters' : 'yards');
+        }
         setShowProfileEditDialog(false);
         toast.success('Profile updated successfully!');
       } else {
@@ -1258,6 +1273,7 @@ export default function JazelApp() {
         city: user.city || '',
         country: user.country || 'Morocco',
         nearbyDistance: user.nearbyDistance || 100,
+        distanceUnit: (user as any).distanceUnit || 'yards',
         currentPassword: '',
         newPassword: '',
       });
@@ -2182,6 +2198,7 @@ export default function JazelApp() {
                 onLocationUpdate={(loc) => setUserLocation(loc)}
                 selectedHole={selectedGPSHole}
                 onHoleChange={setSelectedGPSHole}
+                distanceUnit={distanceUnit}
               />
             </div>
           </motion.div>
@@ -4028,6 +4045,22 @@ export default function JazelApp() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Used when searching for nearby golf courses</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-distance-unit">Distance Unit Preference</Label>
+              <Select 
+                value={profileEditForm.distanceUnit || 'yards'} 
+                onValueChange={(v) => setProfileEditForm({ ...profileEditForm, distanceUnit: v as 'yards' | 'meters' })}
+              >
+                <SelectTrigger id="edit-distance-unit">
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yards">Yards / Miles</SelectItem>
+                  <SelectItem value="meters">Meters / Kilometers</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Used for all distance displays (GPS, shot tracking, etc.)</p>
             </div>
             <Separator className="my-4" />
             <p className="text-sm text-muted-foreground">Change Password (leave blank to keep current)</p>
