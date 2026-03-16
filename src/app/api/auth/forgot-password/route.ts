@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       where: { email: email.toLowerCase() },
     });
 
-    // Check if user exists
+    // Check if user exists - return error message instead of sending email
     if (!user) {
       console.log('📧 User not found:', email.toLowerCase());
       return NextResponse.json({ 
@@ -78,14 +78,16 @@ export async function POST(request: NextRequest) {
 
     console.log('📧 Email result:', emailResult);
 
+    const successMessage = `A password reset link has been sent to ${user.email}. Please check your inbox and follow the instructions to reset your password. The link will expire in 1 hour.`;
+
     if (!emailResult.success) {
       console.error('❌ Failed to send password reset email:', emailResult.error);
       console.log('🔑 Reset token (for admin debugging):', token);
       
-      // Don't reveal error details to user - just say email sent
+      // Still return success message to not reveal system issues
       return NextResponse.json({ 
         success: true, 
-        message: genericMessage,
+        message: successMessage,
       });
     }
 
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      message: genericMessage,
+      message: successMessage,
     });
   } catch (error) {
     console.error('Password reset request error:', error);

@@ -1208,6 +1208,14 @@ export default function JazelApp() {
       
       if (response.ok) {
         setUser(data.user);
+        // Set user's preferred nearby distance
+        if (data.user.nearbyDistance) {
+          setMaxNearbyDistance(data.user.nearbyDistance);
+        }
+        // Set user's preferred distance unit
+        if (data.user.distanceUnit) {
+          setDistanceUnit(data.user.distanceUnit === 'meters' ? 'meters' : 'yards');
+        }
         setShowLoginDialog(false);
         setLoginForm({ email: '', password: '' });
         toast.success('Welcome back!');
@@ -1287,7 +1295,12 @@ export default function JazelApp() {
       
       if (response.ok) {
         setForgotPasswordSent(true);
-        toast.success('Password reset link sent! Check your email.');
+        // Show success message from server if available
+        if (data.message) {
+          toast.success(data.message, { duration: 6000 });
+        } else {
+          toast.success('Password reset link sent! Check your email.');
+        }
       } else {
         toast.error(data.error || 'Failed to send reset link');
       }
@@ -3098,7 +3111,21 @@ export default function JazelApp() {
                       );
                       const coursePar = relevantHoles.reduce((sum: number, h: { par: number }) => sum + h.par, 0) || (holesPlayedCount === 9 ? 36 : 72);
                       const mainPlayerScores = round.scores?.filter(s => s.playerIndex === 0) || [];
-                      const vsPar = (round.totalStrokes || 0) - coursePar;
+                      
+                      // Calculate +/- from individual holes - only count filled holes (strokes > 0)
+                      let vsPar = 0;
+                      let totalStrokesFromScores = 0;
+                      mainPlayerScores.forEach(score => {
+                        if (score.strokes > 0) {
+                          const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
+                          const holePar = hole?.par || 4;
+                          vsPar += score.strokes - holePar;
+                          totalStrokesFromScores += score.strokes;
+                        }
+                      });
+                      
+                      // Use calculated totalStrokes if available, otherwise use stored value
+                      const displayTotalStrokes = totalStrokesFromScores > 0 ? totalStrokesFromScores : (round.totalStrokes || 0);
                       
                       // Format holes played info
                       const holesInfo = holesPlayedCount === 18 
@@ -3134,7 +3161,7 @@ export default function JazelApp() {
                               </div>
                               <div className="flex items-center gap-6">
                                 <div className="text-center">
-                                  <p className="text-2xl font-bold" style={{color: '#39638b'}}>{round.totalStrokes}</p>
+                                  <p className="text-2xl font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
                                   <p className="text-xs text-muted-foreground">strokes</p>
                                 </div>
                                 <div className="text-center">
@@ -3147,7 +3174,7 @@ export default function JazelApp() {
                                 </div>
                               </div>
                             </div>
-                            {/* Bottom row: Tee info and action buttons */}
+                            {/* Bottom row: Tee info */}
                             <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
                               <div className="flex items-center gap-2">
                                 {round.teeId && round.course?.tees && (
@@ -3156,38 +3183,39 @@ export default function JazelApp() {
                                   </p>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => downloadRoundAsXlsx(round)}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
-                                  title="Download as Excel"
-                                >
-                                  <Download className="w-3 h-3 mr-1" />
-                                  Excel
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => loadRoundForEditing(round)}
-                                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                                  title="Edit round"
-                                >
-                                  <Edit2 className="w-3 h-3 mr-1" />
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setRoundToDelete(round)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                  title="Delete round"
-                                >
-                                  <Trash2 className="w-3 h-3 mr-1" />
-                                  Delete
-                                </Button>
-                              </div>
+                            </div>
+                            {/* Action buttons row - separate line for better mobile display */}
+                            <div className="flex items-center gap-1 mt-2 flex-wrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadRoundAsXlsx(round)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                                title="Download as Excel"
+                              >
+                                <Download className="w-3 h-3 mr-1" />
+                                Excel
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => loadRoundForEditing(round)}
+                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                                title="Edit round"
+                              >
+                                <Edit2 className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRoundToDelete(round)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                title="Delete round"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Delete
+                              </Button>
                             </div>
                             {/* Show additional players if any */}
                             {playerNames.length > 0 && (

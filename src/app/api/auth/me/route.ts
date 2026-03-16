@@ -45,6 +45,7 @@ export async function GET() {
         city: session.user.city,
         country: session.user.country,
         nearbyDistance: session.user.nearbyDistance,
+        distanceUnit: session.user.distanceUnit,
       },
     });
   } catch (error) {
