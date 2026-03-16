@@ -329,14 +329,15 @@ function renderItalic(text: string): React.ReactNode {
 
 // AI Caddie Component
 function AICaddieDialog({ 
-  open, 
-  onOpenChange, 
-  holeInfo, 
-  onGetRecommendation 
+  open,  onOpenChange, 
+  holeInfo,
+  distanceUnit,
+  onGetRecommendation
 }: { 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
   holeInfo: { par: number; distance: number } | null;
+  distanceUnit: 'yards' | 'meters';
   onGetRecommendation: (data: { distance: number; wind: number; windDir: string; lie: string }) => void;
 }) {
   const [distance, setDistance] = useState(holeInfo?.distance || 150);
@@ -419,7 +420,7 @@ function AICaddieDialog({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Distance (meters)</Label>
+              <Label>Distance ({distanceUnit === 'yards' ? 'yards' : 'meters'})</Label>
               <Input
                 type="number"
                 value={distance}
@@ -428,7 +429,7 @@ function AICaddieDialog({
               />
             </div>
             <div>
-              <Label>Wind Speed (km/h)</Label>
+              <Label>Wind Speed ({distanceUnit === 'yards' ? 'mph' : 'km/h'})</Label>
               <Input
                 type="number"
                 value={wind}
@@ -2375,7 +2376,9 @@ export default function JazelApp() {
                             {course.distance !== undefined && (
                               <Badge variant="secondary" style={{backgroundColor: '#8ab0d1', color: '#2a4a6a'}}>
                                 <Navigation className="w-3 h-3 mr-1" />
-                                {course.distance.toFixed(1)} km away
+                                {distanceUnit === 'yards' 
+                                  ? `${(course.distance * 0.621371).toFixed(1)} mi away`
+                                  : `${course.distance.toFixed(1)} km away`}
                               </Badge>
                             )}
                           </div>
@@ -2444,7 +2447,11 @@ export default function JazelApp() {
                                   {course.distance !== undefined && (
                                     <div>
                                       <span className="text-muted-foreground">Distance:</span>
-                                      <span className="ml-2 font-medium" style={{color: '#39638b'}}>{course.distance.toFixed(1)} km</span>
+                                      <span className="ml-2 font-medium" style={{color: '#39638b'}}>
+                                        {distanceUnit === 'yards' 
+                                          ? `${(course.distance * 0.621371).toFixed(1)} mi`
+                                          : `${course.distance.toFixed(1)} km`}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
@@ -3149,7 +3156,11 @@ export default function JazelApp() {
                           <Wind className="w-5 h-5" style={{color: '#39638b'}} />
                           <span className="text-sm text-muted-foreground">Wind</span>
                         </div>
-                        <p className="text-xl font-bold">{weatherData.current.windSpeed} km/h</p>
+                        <p className="text-xl font-bold">
+                          {distanceUnit === 'yards' 
+                            ? `${(weatherData.current.windSpeed * 0.621371).toFixed(1)} mph`
+                            : `${weatherData.current.windSpeed} km/h`}
+                        </p>
                         <p className="text-xs text-muted-foreground">Direction: {weatherData.current.windDirection}</p>
                       </div>
                       <div className="p-4 rounded-lg bg-white border" style={{borderColor: '#8ab0d1'}}>
@@ -3157,7 +3168,11 @@ export default function JazelApp() {
                           <TrendingUp className="w-5 h-5" style={{color: '#39638b'}} />
                           <span className="text-sm text-muted-foreground">Gusts</span>
                         </div>
-                        <p className="text-xl font-bold">{weatherData.current.windGusts} km/h</p>
+                        <p className="text-xl font-bold">
+                          {distanceUnit === 'yards' 
+                            ? `${(weatherData.current.windGusts * 0.621371).toFixed(1)} mph`
+                            : `${weatherData.current.windGusts} km/h`}
+                        </p>
                         <p className="text-xs text-muted-foreground">Max gusts</p>
                       </div>
                       <div className="p-4 rounded-lg bg-white border" style={{borderColor: '#8ab0d1'}}>
@@ -3730,6 +3745,7 @@ export default function JazelApp() {
         open={showAICaddie} 
         onOpenChange={setShowAICaddie}
         holeInfo={currentHoleInfo}
+        distanceUnit={distanceUnit}
         onGetRecommendation={(data) => {
           console.log('Getting recommendation for:', data);
         }}
@@ -4028,7 +4044,7 @@ export default function JazelApp() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-nearby-distance">Default Nearby Search Distance (km)</Label>
+              <Label htmlFor="edit-nearby-distance">Default Nearby Search Distance</Label>
               <Select 
                 value={profileEditForm.nearbyDistance?.toString() || '100'} 
                 onValueChange={(v) => setProfileEditForm({ ...profileEditForm, nearbyDistance: parseInt(v) })}
@@ -4037,14 +4053,29 @@ export default function JazelApp() {
                   <SelectValue placeholder="Select distance" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="10">10 km</SelectItem>
-                  <SelectItem value="20">20 km</SelectItem>
-                  <SelectItem value="50">50 km</SelectItem>
-                  <SelectItem value="100">100 km</SelectItem>
-                  <SelectItem value="200">200 km</SelectItem>
+                  {distanceUnit === 'yards' ? (
+                    <>
+                      <SelectItem value="10">6 mi</SelectItem>
+                      <SelectItem value="20">12 mi</SelectItem>
+                      <SelectItem value="50">31 mi</SelectItem>
+                      <SelectItem value="100">62 mi</SelectItem>
+                      <SelectItem value="200">124 mi</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="10">10 km</SelectItem>
+                      <SelectItem value="20">20 km</SelectItem>
+                      <SelectItem value="50">50 km</SelectItem>
+                      <SelectItem value="100">100 km</SelectItem>
+                      <SelectItem value="200">200 km</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Used when searching for nearby golf courses</p>
+              <p className="text-xs text-muted-foreground">
+                Used when searching for nearby golf courses 
+                ({distanceUnit === 'yards' ? 'shown in miles' : 'shown in km'})
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-distance-unit">Distance Unit Preference</Label>
