@@ -857,6 +857,10 @@ export default function JazelApp() {
   const [pendingCourse, setPendingCourse] = useState<GolfCourse | null>(null);
   const [holesPlayed, setHolesPlayed] = useState<9 | 18>(18);
   const [holesType, setHolesType] = useState<'front' | 'back'>('front');
+  
+  // Unsaved work warning state
+  const [showUnsavedWarningDialog, setShowUnsavedWarningDialog] = useState(false);
+  const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
 
   // Weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -892,12 +896,51 @@ export default function JazelApp() {
     checkSession();
   }, []);
 
-  // Restore active round from localStorage on mount - but DON'T auto-open
-  // The round data is saved for later, but user chooses when to continue
+  // Restore active round from localStorage on mount
   useEffect(() => {
-    // We no longer auto-restore the active round
-    // The data stays in localStorage in case the user wants to continue later
-    // but we don't automatically switch to the scorecard tab
+    try {
+      const savedRound = localStorage.getItem('jazel_active_round');
+      if (savedRound) {
+        const parsed = JSON.parse(savedRound);
+        const savedAt = new Date(parsed.savedAt);
+        const now = new Date();
+        const hoursSinceSaved = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+        
+        // Only restore if saved within last 24 hours
+        if (hoursSinceSaved < 24 && parsed.selectedCourse && parsed.scores?.length > 0) {
+          setSelectedCourse(parsed.selectedCourse);
+          setSelectedTee(parsed.selectedTee || '');
+          setScores(parsed.scores);
+          setAdditionalPlayers(parsed.additionalPlayers || []);
+          setHolesPlayed(parsed.holesPlayed || 18);
+          setHolesType(parsed.holesType || 'front');
+          setSelectedGPSHole(parsed.holesPlayed === 9 && parsed.holesType === 'back' ? 10 : 1);
+          
+          // Restore player scores
+          if (parsed.playerScores) {
+            const playerScoresMap = new Map<number, RoundScore[]>();
+            Object.entries(parsed.playerScores).forEach(([key, value]) => {
+              playerScoresMap.set(parseInt(key), value as RoundScore[]);
+            });
+            setPlayerScores(playerScoresMap);
+          }
+          
+          setShowScorecard(true);
+          setActiveTab('scorecard');
+          setHasUnsavedWork(true);
+          setEditingRoundId(parsed.editingRoundId || null);
+          
+          toast.info('Restored your unsaved round. Continue playing or save when ready.', {
+            duration: 5000,
+          });
+        } else if (hoursSinceSaved >= 24) {
+          // Clear old data
+          localStorage.removeItem('jazel_active_round');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore active round:', error);
+    }
   }, []);
 
   // Save active round to localStorage when it changes
@@ -915,13 +958,17 @@ export default function JazelApp() {
           scores,
           additionalPlayers,
           playerScores: playerScoresObj,
+          holesPlayed,
+          holesType,
+          editingRoundId,
           savedAt: new Date().toISOString(),
         }));
+        setHasUnsavedWork(true);
       } catch (error) {
         console.error('Failed to save active round:', error);
       }
     }
-  }, [showScorecard, selectedCourse, selectedTee, scores, additionalPlayers, playerScores]);
+  }, [showScorecard, selectedCourse, selectedTee, scores, additionalPlayers, playerScores, holesPlayed, holesType, editingRoundId]);
 
   // Fetch settings and auto-get user location on load
   useEffect(() => {
@@ -1531,6 +1578,33 @@ export default function JazelApp() {
       setShowLoginDialog(true);
       toast.info('Please log in to start a round');
       return;
+    }
+    
+    // Check if there's already an active scorecard with unsaved work
+    if (showScorecard && hasUnsavedWork) {
+      setPendingCourse(course);
+      setShowUnsavedWarningDialog(true);
+      return;
+    }
+    
+    // Check if there's a saved round in localStorage
+    try {
+      const savedRound = localStorage.getItem('jazel_active_round');
+      if (savedRound) {
+        const parsed = JSON.parse(savedRound);
+        const savedAt = new Date(parsed.savedAt);
+        const now = new Date();
+        const hoursSinceSaved = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+        
+        // If there's unsaved work from less than 24 hours ago, show warning
+        if (hoursSinceSaved < 24 && parsed.selectedCourse && parsed.scores?.length > 0) {
+          setPendingCourse(course);
+          setShowUnsavedWarningDialog(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check saved round:', error);
     }
     
     // Set pending course and show hole selection dialog
@@ -4618,6 +4692,55 @@ export default function JazelApp() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unsaved Work Warning Dialog */}
+      <AlertDialog open={showUnsavedWarningDialog} onOpenChange={setShowUnsavedWarningDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              Unsaved Round in Progress
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have an active round with unsaved scores. Starting a new round will discard all unsaved progress.
+              <br /><br />
+              <span className="text-amber-600">⚠️ This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUnsavedWarningDialog(false);
+              setPendingCourse(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-500 hover:bg-amber-600"
+              onClick={async (e) => {
+                e.preventDefault();
+                // Clear the unsaved work
+                localStorage.removeItem('jazel_active_round');
+                setShowScorecard(false);
+                setScores([]);
+                setAdditionalPlayers([]);
+                setPlayerScores(new Map());
+                setHasUnsavedWork(false);
+                setEditingRoundId(null);
+                setShowUnsavedWarningDialog(false);
+                
+                // Now show the hole selection dialog for the new round
+                if (pendingCourse) {
+                  setHolesPlayed(18);
+                  setHolesType('front');
+                  setShowHoleSelectionDialog(true);
+                }
+              }}
+            >
+              Discard & Start New
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Footer */}
       <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
