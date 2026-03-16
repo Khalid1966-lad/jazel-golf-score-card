@@ -834,6 +834,7 @@ export default function JazelApp() {
   });
   const [authLoading, setAuthLoading] = useState(false);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   
   // Multi-player state
@@ -1285,6 +1286,7 @@ export default function JazelApp() {
   // Forgot Password
   const handleForgotPassword = async () => {
     setAuthLoading(true);
+    setForgotPasswordError(null); // Clear previous errors
     try {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
@@ -1302,10 +1304,15 @@ export default function JazelApp() {
           toast.success('Password reset link sent! Check your email.');
         }
       } else {
-        toast.error(data.error || 'Failed to send reset link');
+        // Show error inline and via toast
+        const errorMessage = data.error || 'Failed to send reset link';
+        setForgotPasswordError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
-      toast.error('Failed to send reset link');
+      const errorMessage = 'Failed to send reset link. Please try again.';
+      setForgotPasswordError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setAuthLoading(false);
     }
@@ -4000,6 +4007,11 @@ export default function JazelApp() {
                   setShowLoginDialog(false);
                   setShowForgotPasswordDialog(true);
                   setForgotPasswordSent(false);
+                  setForgotPasswordError(null);
+                  // Preserve email from login form if user already typed it
+                  if (loginForm.email) {
+                    setForgotPasswordForm({ email: loginForm.email });
+                  }
                 }}
               >
                 Forgot your password?
@@ -4024,7 +4036,12 @@ export default function JazelApp() {
       </Dialog>
 
       {/* Forgot Password Dialog */}
-      <Dialog open={showForgotPasswordDialog} onOpenChange={setShowForgotPasswordDialog}>
+      <Dialog open={showForgotPasswordDialog} onOpenChange={(open) => {
+        setShowForgotPasswordDialog(open);
+        if (open) {
+          setForgotPasswordError(null); // Clear error when dialog opens
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
@@ -4044,10 +4061,25 @@ export default function JazelApp() {
                   type="email"
                   placeholder="your@email.com"
                   value={forgotPasswordForm.email}
-                  onChange={(e) => setForgotPasswordForm({ email: e.target.value })}
+                  onChange={(e) => {
+                    setForgotPasswordForm({ email: e.target.value });
+                    setForgotPasswordError(null); // Clear error when user types
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && forgotPasswordForm.email && handleForgotPassword()}
+                  className={forgotPasswordError ? 'border-red-500 focus:border-red-500' : ''}
                 />
               </div>
+              
+              {/* Inline error message */}
+              {forgotPasswordError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{forgotPasswordError}</p>
+                  </div>
+                </div>
+              )}
+              
               <Button
                 className="w-full text-white"
               style={{backgroundColor: '#39638b'}}
@@ -4062,6 +4094,7 @@ export default function JazelApp() {
                 onClick={() => {
                   setShowForgotPasswordDialog(false);
                   setShowLoginDialog(true);
+                  setForgotPasswordError(null);
                 }}
               >
                 Back to Login
@@ -4083,6 +4116,7 @@ export default function JazelApp() {
                   setShowForgotPasswordDialog(false);
                   setShowLoginDialog(true);
                   setForgotPasswordSent(false);
+                  setForgotPasswordError(null);
                 }}
               >
                 Back to Login
