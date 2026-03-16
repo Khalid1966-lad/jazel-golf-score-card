@@ -118,6 +118,8 @@ interface SavedRound {
   courseId?: string;
   teeId?: string;
   playerNames?: string;
+  holesPlayed?: number; // 9 or 18
+  holesType?: string | null; // "front" or "back" for 9-hole rounds
   course: {
     id?: string;
     name: string;
@@ -850,6 +852,12 @@ export default function JazelApp() {
   const [roundToDelete, setRoundToDelete] = useState<SavedRound | null>(null);
   const [editingRoundId, setEditingRoundId] = useState<string | null>(null); // Track if we're editing an existing round
 
+  // Hole selection state
+  const [showHoleSelectionDialog, setShowHoleSelectionDialog] = useState(false);
+  const [pendingCourse, setPendingCourse] = useState<GolfCourse | null>(null);
+  const [holesPlayed, setHolesPlayed] = useState<9 | 18>(18);
+  const [holesType, setHolesType] = useState<'front' | 'back'>('front');
+
   // Weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
@@ -1516,7 +1524,7 @@ export default function JazelApp() {
     );
   };
 
-  // Start new round
+  // Start new round - show hole selection dialog first
   const startNewRound = (course: GolfCourse) => {
     // Require login to play
     if (!user) {
@@ -1525,13 +1533,29 @@ export default function JazelApp() {
       return;
     }
     
+    // Set pending course and show hole selection dialog
+    setPendingCourse(course);
+    // Reset to defaults
+    setHolesPlayed(18);
+    setHolesType('front');
+    setShowHoleSelectionDialog(true);
+  };
+  
+  // Actually initialize the round after hole selection
+  const initializeRound = (course: GolfCourse, numHoles: 9 | 18, holeType: 'front' | 'back') => {
     setSelectedCourse(course);
     setSelectedTee(course.tees[0]?.id || '');
-    setSelectedGPSHole(1);
+    setSelectedGPSHole(holeType === 'back' ? 10 : 1);
+    setHolesPlayed(numHoles);
+    setHolesType(holeType);
+    
+    // Determine which holes to show
+    const startHole = numHoles === 9 && holeType === 'back' ? 10 : 1;
+    const endHole = numHoles === 9 ? (holeType === 'back' ? 18 : 9) : Math.min(course.totalHoles, 18);
     
     // Initialize scores for main player
     const initialScores: RoundScore[] = [];
-    for (let i = 1; i <= Math.min(course.totalHoles, 18); i++) {
+    for (let i = startHole; i <= endHole; i++) {
       initialScores.push({
         holeNumber: i,
         strokes: 0,
@@ -1547,6 +1571,9 @@ export default function JazelApp() {
     setAdditionalPlayers([]);
     setPlayerScores(new Map());
     
+    // Close dialog and show scorecard
+    setShowHoleSelectionDialog(false);
+    setPendingCourse(null);
     setShowScorecard(true);
     setActiveTab('scorecard');
   };
@@ -1732,6 +1759,8 @@ export default function JazelApp() {
             playerNames: playerData,
             scores: scores,
             playerScores: playerScoresArray,
+            holesPlayed: holesPlayed,
+            holesType: holesType,
           }),
         });
         
@@ -1772,6 +1801,8 @@ export default function JazelApp() {
             scores: scoresWithStrokes,
             playerNames: playerData,
             playerScores: playerScoresArray,
+            holesPlayed: holesPlayed,
+            holesType: holesPlayed === 9 ? holesType : null,
           }),
         });
         
@@ -1890,17 +1921,33 @@ export default function JazelApp() {
       
       setSelectedCourse(course);
       
+      // Set holes played and type from the round
+      const roundHolesPlayed = round.holesPlayed || 18;
+      const roundHolesType = round.holesType || 'front';
+      setHolesPlayed(roundHolesPlayed as 9 | 18);
+      setHolesType(roundHolesType as 'front' | 'back');
+      
       // Validate and set tee - check if teeId exists in course tees
       const validTeeId = round.teeId && course.tees?.some((t: { id: string }) => t.id === round.teeId)
         ? round.teeId
         : (course.tees?.[0]?.id || '');
       setSelectedTee(validTeeId);
       
-      setSelectedGPSHole(1);
+      // Set GPS hole to first hole of the round
+      setSelectedGPSHole(roundHolesPlayed === 9 && roundHolesType === 'back' ? 10 : 1);
       
-      // Initialize scores for all holes, merging with existing scores
+      // Initialize scores for the holes that were played, merging with existing scores
       const allHoles = course?.holes || [];
       const existingScores = round.scores && round.scores.length > 0 ? round.scores : [];
+      
+      // Determine which holes to show based on round settings
+      const startHole = roundHolesPlayed === 9 && roundHolesType === 'back' ? 10 : 1;
+      const endHole = roundHolesPlayed === 9 ? (roundHolesType === 'back' ? 18 : 9) : 18;
+      
+      // Filter holes to only show the ones that were played
+      const holesToShow = allHoles.filter((h: { holeNumber: number }) => 
+        h.holeNumber >= startHole && h.holeNumber <= endHole
+      );
       
       // Separate scores by playerIndex
       const mainPlayerScores = existingScores.filter(s => s.playerIndex === 0);
@@ -1909,8 +1956,8 @@ export default function JazelApp() {
       // Create a map of existing scores by hole number for main player
       const scoreMap = new Map(mainPlayerScores.map(s => [s.holeNumber, s]));
       
-      // Create scores array with all holes for main player, using existing scores or defaults
-      const allScores: RoundScore[] = allHoles.map((hole: { holeNumber: number; par: number }) => {
+      // Create scores array with only the holes that were played
+      const allScores: RoundScore[] = holesToShow.map((hole: { holeNumber: number; par: number }) => {
         const existingScore = scoreMap.get(hole.holeNumber);
         return existingScore ? {
           holeNumber: existingScore.holeNumber,
@@ -2966,10 +3013,25 @@ export default function JazelApp() {
                         }
                       });
                       
-                      // Calculate course par from holes data
-                      const coursePar = round.course?.holes?.reduce((sum, h) => sum + h.par, 0) || 72;
+                      // Calculate course par from holes data - only for played holes
+                      const holesPlayedCount = round.holesPlayed || 18;
+                      const holesTypeValue = round.holesType || 'front';
+                      const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+                      const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+                      
+                      const relevantHoles = (round.course?.holes || []).filter((h: { holeNumber: number }) => 
+                        h.holeNumber >= startHole && h.holeNumber <= endHole
+                      );
+                      const coursePar = relevantHoles.reduce((sum: number, h: { par: number }) => sum + h.par, 0) || (holesPlayedCount === 9 ? 36 : 72);
                       const mainPlayerScores = round.scores?.filter(s => s.playerIndex === 0) || [];
                       const vsPar = (round.totalStrokes || 0) - coursePar;
+                      
+                      // Format holes played info
+                      const holesInfo = holesPlayedCount === 18 
+                        ? '18 holes' 
+                        : holesTypeValue === 'back' 
+                          ? 'Back 9 (10-18)' 
+                          : 'Front 9 (1-9)';
                       
                       return (
                       <motion.div
@@ -2992,6 +3054,8 @@ export default function JazelApp() {
                                     month: 'short',
                                     day: 'numeric'
                                   })}
+                                  <span className="mx-2">•</span>
+                                  <span className="text-xs" style={{color: '#39638b'}}>{holesInfo}</span>
                                 </p>
                               </div>
                               <div className="flex items-center gap-6">
@@ -4452,6 +4516,106 @@ export default function JazelApp() {
               </Button>
             </DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Hole Selection Dialog */}
+      <Dialog open={showHoleSelectionDialog} onOpenChange={setShowHoleSelectionDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" style={{color: '#39638b'}} />
+              Select Holes to Play
+            </DialogTitle>
+            <DialogDescription>
+              {pendingCourse?.name} - Choose how many holes you'll play
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Number of holes selection */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Number of Holes</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={holesPlayed === 9 ? 'default' : 'outline'}
+                  className={`h-16 flex-col ${holesPlayed === 9 ? 'text-white' : ''}`}
+                  style={holesPlayed === 9 ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                  onClick={() => setHolesPlayed(9)}
+                >
+                  <span className="text-2xl font-bold">9</span>
+                  <span className="text-xs">Holes</span>
+                </Button>
+                <Button
+                  variant={holesPlayed === 18 ? 'default' : 'outline'}
+                  className={`h-16 flex-col ${holesPlayed === 18 ? 'text-white' : ''}`}
+                  style={holesPlayed === 18 ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                  onClick={() => setHolesPlayed(18)}
+                >
+                  <span className="text-2xl font-bold">18</span>
+                  <span className="text-xs">Holes</span>
+                </Button>
+              </div>
+            </div>
+            
+            {/* Front/Back nine selection - only show if 9 holes selected */}
+            {holesPlayed === 9 && (
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Which Nine?</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant={holesType === 'front' ? 'default' : 'outline'}
+                    className={`h-14 flex-col ${holesType === 'front' ? 'text-white' : ''}`}
+                    style={holesType === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                    onClick={() => setHolesType('front')}
+                  >
+                    <span className="font-bold">Front 9</span>
+                    <span className="text-xs">Holes 1-9</span>
+                  </Button>
+                  <Button
+                    variant={holesType === 'back' ? 'default' : 'outline'}
+                    className={`h-14 flex-col ${holesType === 'back' ? 'text-white' : ''}`}
+                    style={holesType === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                    onClick={() => setHolesType('back')}
+                  >
+                    <span className="font-bold">Back 9</span>
+                    <span className="text-xs">Holes 10-18</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Summary */}
+            <div className="p-3 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+              <p className="text-sm text-center" style={{color: '#39638b'}}>
+                {holesPlayed === 18 
+                  ? 'Playing all 18 holes'
+                  : `Playing ${holesType === 'front' ? 'Front 9 (Holes 1-9)' : 'Back 9 (Holes 10-18)'}`
+                }
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowHoleSelectionDialog(false);
+              setPendingCourse(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              className="text-white"
+              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+              onClick={() => {
+                if (pendingCourse) {
+                  initializeRound(pendingCourse, holesPlayed, holesType);
+                }
+              }}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Start Round
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

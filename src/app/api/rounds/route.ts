@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
       scores,
       playerNames,
       playerScores,
+      holesPlayed = 18,
+      holesType = null,
     } = body;
 
     // Build all scores array including main player (index 0) and additional players
@@ -150,6 +152,8 @@ export async function POST(request: NextRequest) {
         weatherWind,
         weatherDesc,
         notes,
+        holesPlayed,
+        holesType,
         totalStrokes,
         totalPutts,
         fairwaysHit,
@@ -215,7 +219,7 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { roundId, scores, playerNames, playerScores, teeId } = body;
+    const { roundId, scores, playerNames, playerScores, teeId, holesPlayed, holesType } = body;
 
     if (!roundId) {
       return NextResponse.json(
@@ -335,6 +339,8 @@ export async function PUT(request: NextRequest) {
       data: {
         teeId,
         playerNames,
+        holesPlayed: holesPlayed || existingRound.holesPlayed,
+        holesType: holesType !== undefined ? holesType : existingRound.holesType,
         totalStrokes,
         totalPutts,
         fairwaysHit,

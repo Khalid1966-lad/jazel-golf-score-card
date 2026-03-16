@@ -191,6 +191,8 @@ model Round {
   penalties      Int?
   completed      Boolean  @default(false)
   playerNames    String?  // JSON array of additional player names (up to 3)
+  holesPlayed    Int      @default(18) // 9 or 18
+  holesType      String?  // "front" or "back" for 9-hole rounds, null for 18
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
