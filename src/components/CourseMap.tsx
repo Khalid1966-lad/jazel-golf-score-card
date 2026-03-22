@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Navigation, Loader2, ZoomIn, ZoomOut, Locate, Map, Satellite, ArrowUp, RotateCcw, Compass } from 'lucide-react';
+import { X, Navigation, Loader2, ZoomIn, ZoomOut, Locate, Map, Satellite, ArrowUp, RotateCcw, Compass, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Import Leaflet CSS
@@ -166,6 +166,14 @@ export default function CourseMap({
     }
     return null;
   }, [teeLocation, greenLocation]);
+
+  // Calculate bearing from user to green (flag) for compass
+  const userToFlagBearing = useMemo(() => {
+    if (userLocation && greenLocation) {
+      return calculateBearing(userLocation.lat, userLocation.lon, greenLocation.lat, greenLocation.lon);
+    }
+    return null;
+  }, [userLocation, greenLocation]);
 
   // Calculate distance to green
   const distanceToGreen = useMemo(() => {
@@ -1008,8 +1016,21 @@ export default function CourseMap({
                 
                 return (
                   <g transform={`rotate(${arrowRotation} 50 50)`}>
-                    <line x1="50" y1="50" x2="50" y2="22" stroke="#1e3a5f" strokeWidth="5" strokeLinecap="round" />
-                    <polygon points="50,12 40,32 60,32" fill="#1e3a5f" />
+                    <line x1="50" y1="50" x2="50" y2="28" stroke="#1e3a5f" strokeWidth="3.5" strokeLinecap="round" />
+                    <polygon points="50,22 43,34 57,34" fill="#1e3a5f" />
+                  </g>
+                );
+              })()}
+
+              {/* Flag direction arrow (red) - points to the green/flag - drawn on top */}
+              {userToFlagBearing !== null && (() => {
+                // Arrow rotation = bearing to flag minus device heading
+                const arrowRotation = userToFlagBearing - deviceHeading;
+
+                return (
+                  <g transform={`rotate(${arrowRotation} 50 50)`}>
+                    <line x1="50" y1="50" x2="50" y2="22" stroke="#dc2626" strokeWidth="5" strokeLinecap="round" />
+                    <polygon points="50,12 40,32 60,32" fill="#dc2626" />
                   </g>
                 );
               })()}
@@ -1017,18 +1038,50 @@ export default function CourseMap({
               {/* Center dot */}
               <circle cx="50" cy="50" r="6" fill="#1e3a5f" />
             </svg>
+
+            {/* Legend for compass arrows */}
+            <div className="mt-4 flex items-center justify-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-600" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                <span className="text-sm font-medium text-red-600">Flag</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4" style={{ backgroundColor: '#1e3a5f', clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                <span className="text-sm font-medium" style={{ color: '#1e3a5f' }}>Wind</span>
+              </div>
+            </div>
             
             {/* Wind info */}
             {weatherData?.current && (
-              <div className="mt-4 text-center">
-                <p className="text-xl font-bold" style={{ color: '#39638b' }}>
+              <div className="mt-2 text-center">
+                <p className="text-lg font-bold" style={{ color: '#39638b' }}>
                   {weatherData.current.windDirection} • {Math.round(weatherData.current.windSpeed)} km/h
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground">
                   Wind Direction
                 </p>
               </div>
             )}
+
+            {/* Last update time and refresh button */}
+            <div className="mt-3 flex items-center justify-center gap-3">
+              {weatherData?.updatedAt && (
+                <p className="text-sm font-bold text-black">
+                  Updated: {new Date(weatherData.updatedAt).toLocaleTimeString()}
+                </p>
+              )}
+              {onRefreshWeather && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onRefreshWeather}
+                  className="h-7 px-2 text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Refresh
+                </Button>
+              )}
+            </div>
             
             <p className="text-xs text-muted-foreground mt-4">
               Tap anywhere to close
