@@ -1,0 +1,33 @@
+#!/bin/bash
+
+echo "Running pre-push verification..."
+
+# Check that key features exist in CourseMap.tsx
+if ! grep -q "userToFlagBearing" src/components/CourseMap.tsx 2>/dev/null; then
+    echo "❌ ERROR: Flag arrow code (userToFlagBearing) is missing in CourseMap.tsx!"
+    echo "   Aborting push. Please restore the missing code."
+    exit 1
+fi
+
+if ! grep -q "Flag direction arrow" src/components/CourseMap.tsx 2>/dev/null; then
+    echo "❌ ERROR: Flag direction arrow comment is missing in CourseMap.tsx!"
+    echo "   Aborting push. Please restore the missing code."
+    exit 1
+fi
+
+# Check that weather optimization exists in page.tsx
+if ! grep -q "DEFAULT_LOCATION" src/app/page.tsx 2>/dev/null; then
+    echo "❌ ERROR: Weather DEFAULT_LOCATION is missing in page.tsx!"
+    echo "   Aborting push. Please restore the missing code."
+    exit 1
+fi
+
+# Check that the gradient fix is in place
+if grep -q "from-jazel-50" src/app/page.tsx 2>/dev/null; then
+    echo "❌ ERROR: Invalid gradient class 'from-jazel-50' found in page.tsx!"
+    echo "   Use 'from-emerald-50' instead."
+    exit 1
+fi
+
+echo "✅ All pre-push checks passed!"
+exit 0
