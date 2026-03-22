@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X, Share, PlusSquare } from 'lucide-react';
+import { Download, X, Share, PlusSquare, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -35,6 +35,8 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [wasInstalled, setWasInstalled] = useState(false);
+  const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   // Check if running as standalone PWA - use as initial value
   const isStandalone = useMemo(() => {
@@ -50,12 +52,39 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
-          console.log('Jazel PWA: Service Worker registered', registration.scope);
+        .then((reg) => {
+          console.log('Jazel PWA: Service Worker registered', reg.scope);
+          setRegistration(reg);
+          
+          // Check for updates
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New version is available!
+                  console.log('Jazel PWA: New version available!');
+                  setShowUpdatePrompt(true);
+                }
+              });
+            }
+          });
+          
+          // Check if there's already a waiting worker
+          if (reg.waiting) {
+            console.log('Jazel PWA: New version already waiting!');
+            setShowUpdatePrompt(true);
+          }
         })
         .catch((error) => {
           console.error('Jazel PWA: Service Worker registration failed', error);
         });
+        
+      // Listen for controller change (after update)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // The page should reload automatically, but just in case
+        window.location.reload();
+      });
     }
 
     // Listen for install prompt (Android/Chrome)
@@ -139,16 +168,75 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     // Remember dismissal for 7 days
     localStorage.setItem('jazel-install-dismissed', Date.now().toString());
   }, []);
-
-  // Don't show if already installed (either standalone or just installed)
-  const isInstalled = isStandalone || wasInstalled;
-  if (isInstalled) {
-    return <>{children}</>;
-  }
+  
+  const handleUpdate = useCallback(() => {
+    // Tell the waiting service worker to activate
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    setShowUpdatePrompt(false);
+  }, [registration]);
+  
+  const handleDismissUpdate = useCallback(() => {
+    setShowUpdatePrompt(false);
+    // Remember dismissal for this session
+    sessionStorage.setItem('jazel-update-dismissed', 'true');
+  }, []);
 
   return (
     <>
       {children}
+
+      {/* Update Available Banner */}
+      <AnimatePresence>
+        {showUpdatePrompt && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-[100] p-4"
+          >
+            <div className="max-w-md mx-auto bg-green-600 text-white rounded-xl shadow-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm">Update Available!</h3>
+                  <p className="text-xs text-white/80">
+                    A new version of Jazel Golf is ready to install.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDismissUpdate}
+                  className="flex-shrink-0 p-1 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex gap-2 mt-3">
+                <Button
+                  onClick={handleUpdate}
+                  className="flex-1 bg-white text-green-600 hover:bg-white/90"
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Update Now
+                </Button>
+                <Button
+                  onClick={handleDismissUpdate}
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                >
+                  Later
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Install Prompt Banner */}
       <AnimatePresence>

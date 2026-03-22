@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jazel-golf-v1';
+const CACHE_NAME = 'jazel-golf-v1.1';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -20,8 +20,16 @@ self.addEventListener('install', (event) => {
       return cache.addAll(PRECACHE_ASSETS);
     })
   );
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting();
+  // Don't skip waiting automatically - let user choose when to update
+  // self.skipWaiting();
+});
+
+// Listen for SKIP_WAITING message from the app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('Jazel: User requested update, skipping waiting...');
+    self.skipWaiting();
+  }
 });
 
 // Activate event - clean up old caches
