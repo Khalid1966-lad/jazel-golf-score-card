@@ -20,7 +20,10 @@
     "backup:push": "git push origin backup-$(git branch --list 'backup-*' --sort=-committerdate | head -1 | tr -d ' *')",
     "tag:list": "git tag -l",
     "safe:push": "git fetch origin && git status && echo 'Press Enter to continue or Ctrl+C to abort...' && read && git push origin master",
-    "hooks:install": "cp scripts/pre-push.hook .git/hooks/pre-push && chmod +x .git/hooks/pre-push && echo 'Pre-push hook installed!'"
+    "hooks:install": "cp scripts/pre-push.hook .git/hooks/pre-push && chmod +x .git/hooks/pre-push && echo 'Pre-push hook installed!'",
+    "version:patch": "npm version patch --no-git-tag-version && echo 'Run: git add -A && git commit -m \"Release vVERSION\" && git tag -a vVERSION'",
+    "version:minor": "npm version minor --no-git-tag-version && echo 'Run: git add -A && git commit -m \"Release vVERSION\" && git tag -a vVERSION'",
+    "version:major": "npm version major --no-git-tag-version && echo 'Run: git add -A && git commit -m \"Release vVERSION\" && git tag -a vVERSION'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

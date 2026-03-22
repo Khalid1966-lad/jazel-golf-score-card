@@ -2,6 +2,10 @@
 
 echo "Running pre-push verification..."
 
+# Get version from package.json
+PACKAGE_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+MAJOR_MINOR=$(echo $PACKAGE_VERSION | sed 's/\([0-9]*\.[0-9]*\).*/\1/')
+
 # Check that key features exist in CourseMap.tsx
 if ! grep -q "userToFlagBearing" src/components/CourseMap.tsx 2>/dev/null; then
     echo "❌ ERROR: Flag arrow code (userToFlagBearing) is missing in CourseMap.tsx!"
@@ -29,5 +33,14 @@ if grep -q "from-jazel-50" src/app/page.tsx 2>/dev/null; then
     exit 1
 fi
 
+# Check that footer version matches package.json version
+if ! grep -q "v$MAJOR_MINOR" src/app/page.tsx 2>/dev/null; then
+    echo "❌ ERROR: Footer version does not match package.json version!"
+    echo "   Package.json: v$MAJOR_MINOR"
+    echo "   Update the footer in page.tsx to show 'v$MAJOR_MINOR'"
+    exit 1
+fi
+
 echo "✅ All pre-push checks passed!"
+echo "   Version: v$PACKAGE_VERSION"
 exit 0
