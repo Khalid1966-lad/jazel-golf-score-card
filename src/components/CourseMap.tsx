@@ -52,6 +52,7 @@ interface CourseMapProps {
   onClose: () => void;
   userClubs?: UserClub[];
   weatherData?: WeatherData | null;
+  onRefreshWeather?: () => void;
 }
 
 // Calculate distance between two coordinates using Haversine formula
@@ -128,7 +129,8 @@ export default function CourseMap({
   distanceUnit,
   onClose,
   userClubs = [],
-  weatherData
+  weatherData,
+  onRefreshWeather
 }: CourseMapProps) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
