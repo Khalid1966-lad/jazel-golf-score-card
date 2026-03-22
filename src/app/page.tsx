@@ -1155,13 +1155,30 @@ export default function JazelApp() {
     }
   }, [user]);
 
-  // Fetch weather data
-  const fetchWeather = useCallback(async () => {
-    if (!userLocation) return;
+  // Default location (center of Morocco) for immediate weather fetch
+  const DEFAULT_LOCATION = { lat: 31.7917, lon: -7.0926 };
+
+  // Fetch weather data - uses provided location or falls back to default
+  // Set force=true to bypass cache (for manual refresh)
+  const fetchWeather = useCallback(async (location?: { lat: number; lon: number }, force: boolean = false) => {
+    // Use provided location, or userLocation, or default
+    const loc = location || userLocation || DEFAULT_LOCATION;
+    
+    // Check if we have recent data (cache for 10 minutes)
+    if (!force && weatherData?.updatedAt) {
+      const lastUpdate = new Date(weatherData.updatedAt).getTime();
+      const now = Date.now();
+      const minutesSinceUpdate = (now - lastUpdate) / (1000 * 60);
+      if (minutesSinceUpdate < 10 && !location) {
+        // Data is fresh, skip fetch unless forced with explicit location
+        return;
+      }
+    }
+    
     setWeatherLoading(true);
     setWeatherError(null);
     try {
-      const response = await fetch(`/api/weather?lat=${userLocation.lat}&lon=${userLocation.lon}`);
+      const response = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
       const data = await response.json();
       if (data.weather) {
         setWeatherData(data.weather);
@@ -1174,7 +1191,7 @@ export default function JazelApp() {
     } finally {
       setWeatherLoading(false);
     }
-  }, [userLocation]);
+  }, [userLocation, weatherData?.updatedAt]);
 
   // Fetch golfers list
   const fetchGolfers = useCallback(async (groupId?: string) => {
@@ -1283,6 +1300,8 @@ export default function JazelApp() {
     fetchGolfers();
     fetchGroups();
     fetchTournaments();
+    // Fetch weather immediately with default location for fast initial load
+    fetchWeather();
     if (user) {
       fetchFavorites();
       fetchRounds();
@@ -1291,12 +1310,12 @@ export default function JazelApp() {
     }
   }, [fetchCourses, fetchFavorites, fetchGolfers, fetchGroups, fetchRounds, fetchStats, fetchMessages, fetchTournaments, user]);
 
-  // Fetch weather when user location changes
+  // Update weather when user location is acquired (more accurate than default)
   useEffect(() => {
     if (userLocation) {
-      fetchWeather();
+      fetchWeather(userLocation);
     }
-  }, [userLocation, fetchWeather]);
+  }, [userLocation]);
 
   // Refetch golfers when group filter changes
   useEffect(() => {
@@ -2527,7 +2546,7 @@ export default function JazelApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-jazel-50 via-white to-jazel-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -3637,7 +3656,7 @@ export default function JazelApp() {
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                     <p className="text-muted-foreground">{weatherError}</p>
                     <Button
-                      onClick={fetchWeather}
+                      onClick={() => fetchWeather(undefined, true)}
                       variant="outline"
                       className="mt-4"
                       style={{borderColor: '#a3c4e0'}}
@@ -3862,7 +3881,7 @@ export default function JazelApp() {
                     {/* Refresh Button */}
                     <div className="flex justify-end">
                       <Button
-                        onClick={fetchWeather}
+                        onClick={() => fetchWeather(undefined, true)}
                         variant="outline"
                         size="sm"
                         style={{borderColor: '#a3c4e0'}}
@@ -5628,6 +5647,7 @@ export default function JazelApp() {
           onClose={() => setShowMapScreen(false)}
           userClubs={userClubs}
           weatherData={weatherData}
+          onRefreshWeather={() => fetchWeather(undefined, true)}
         />
       )}
     </div>

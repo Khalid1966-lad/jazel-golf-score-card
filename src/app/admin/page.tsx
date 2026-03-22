@@ -1809,7 +1809,7 @@ export default function AdminPage() {
 
   // Admin panel
   return (
-    <div className="min-h-screen bg-gradient-to-br from-jazel-50 via-white to-jazel-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
