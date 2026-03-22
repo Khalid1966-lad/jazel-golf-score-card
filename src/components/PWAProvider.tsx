@@ -6,7 +6,7 @@ import { Download, X, Share, PlusSquare, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Current app version - should match package.json
-const APP_VERSION = '1.2.2';
+const APP_VERSION = '1.2.3';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -41,141 +41,154 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const updateCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasCheckedForUpdateRef = useRef(false);
 
-  // Check if running as standalone PWA - use as initial value
+  // Check if running as standalone PWA
   const isStandalone = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(display-mode: standalone)').matches || isIOSStandalone();
   }, []);
 
-  // Check for iOS - use as initial value
+  // Check for iOS
   const isIOS = useMemo(() => isIOSSafari(), []);
 
   // Function to check for service worker updates
   const checkForUpdates = useCallback(async (reg: ServiceWorkerRegistration) => {
+    // Prevent multiple simultaneous checks
+    if (hasCheckedForUpdateRef.current) return;
+    hasCheckedForUpdateRef.current = true;
+    
     try {
+      console.log('Jazel PWA: Checking for updates...');
       await reg.update();
       
       // Check if there's a waiting worker after update check
       if (reg.waiting) {
         console.log('Jazel PWA: Update found (waiting worker)');
         setShowUpdatePrompt(true);
+        return;
+      }
+      
+      // Check if there's an installing worker
+      if (reg.installing) {
+        console.log('Jazel PWA: Update installing...');
       }
     } catch (error) {
       console.error('Jazel PWA: Error checking for updates', error);
+    } finally {
+      // Reset after 2 seconds to allow future checks
+      setTimeout(() => {
+        hasCheckedForUpdateRef.current = false;
+      }, 2000);
     }
   }, []);
 
-  // Function to check version from server
-  const checkVersionFromServer = useCallback(async () => {
-    try {
-      // Fetch the service worker file to check the cache version
-      const response = await fetch('/sw.js', { 
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
+  // Handle service worker update found
+  const handleUpdateFound = useCallback((reg: ServiceWorkerRegistration) => {
+    const newWorker = reg.installing;
+    if (newWorker) {
+      newWorker.addEventListener('statechange', () => {
+        console.log('Jazel PWA: Worker state:', newWorker.state);
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // New version is available!
+          console.log('Jazel PWA: New version installed and ready!');
+          setShowUpdatePrompt(true);
+        }
       });
-      const text = await response.text();
-      
-      // Extract version from CACHE_NAME
-      const match = text.match(/CACHE_NAME\s*=\s*['"]jazel-golf-v([\d.]+)['"]/);
-      if (match && match[1] !== APP_VERSION) {
-        console.log(`Jazel PWA: Server version ${match[1]} != local version ${APP_VERSION}`);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Jazel PWA: Error checking server version', error);
-      return false;
     }
   }, []);
 
   useEffect(() => {
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((reg) => {
-          console.log('Jazel PWA: Service Worker registered', reg.scope);
-          setRegistration(reg);
-          
-          // Check for updates
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New version is available!
-                  console.log('Jazel PWA: New version available!');
-                  setShowUpdatePrompt(true);
-                }
-              });
-            }
-          });
-          
-          // Check if there's already a waiting worker
-          if (reg.waiting) {
-            console.log('Jazel PWA: New version already waiting!');
-            setShowUpdatePrompt(true);
-          }
-          
-          // Check if there's an installing worker
-          if (reg.installing) {
-            reg.installing.addEventListener('statechange', () => {
-              if (reg.installing?.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('Jazel PWA: New version installed!');
-                setShowUpdatePrompt(true);
-              }
-            });
-          }
-          
-          // Initial update check
-          checkForUpdates(reg);
-        })
-        .catch((error) => {
-          console.error('Jazel PWA: Service Worker registration failed', error);
-        });
+    if (!('serviceWorker' in navigator)) return;
+
+    // Register service worker with no-cache options
+    navigator.serviceWorker
+      .register('/sw.js', { 
+        scope: '/',
+        updateViaCache: 'none' // Important: don't use cached sw.js
+      })
+      .then((reg) => {
+        console.log('Jazel PWA: Service Worker registered', reg.scope);
+        setRegistration(reg);
         
-      // Listen for controller change (after update)
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // The page should reload automatically, but just in case
-        window.location.reload();
+        // Check for updates on registration
+        reg.addEventListener('updatefound', () => handleUpdateFound(reg));
+        
+        // Check if there's already a waiting worker (update already downloaded)
+        if (reg.waiting) {
+          console.log('Jazel PWA: Waiting worker found - update available!');
+          setShowUpdatePrompt(true);
+        }
+        
+        // Check if there's an installing worker
+        if (reg.installing) {
+          console.log('Jazel PWA: Installing worker found');
+          handleUpdateFound(reg);
+        }
+        
+        // Initial update check after a short delay
+        setTimeout(() => checkForUpdates(reg), 1000);
+      })
+      .catch((error) => {
+        console.error('Jazel PWA: Service Worker registration failed', error);
       });
       
-      // Periodic update check every 5 minutes
-      updateCheckIntervalRef.current = setInterval(async () => {
+    // Listen for controller change (after update)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('Jazel PWA: Controller changed, reloading...');
+      window.location.reload();
+    });
+    
+    // Periodic update check every 2 minutes (more aggressive for desktop)
+    updateCheckIntervalRef.current = setInterval(() => {
+      if (registration && !hasCheckedForUpdateRef.current) {
+        checkForUpdates(registration);
+      }
+    }, 2 * 60 * 1000);
+    
+    // Check for updates when page becomes visible (user returns to app)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Jazel PWA: Page visible, checking for updates...');
         if (registration) {
-          await checkForUpdates(registration);
+          checkForUpdates(registration);
+        } else if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            setRegistration(reg);
+            checkForUpdates(reg);
+          });
         }
-      }, 5 * 60 * 1000);
-      
-      // Check for updates when page becomes visible (user returns to app)
-      const handleVisibilityChange = async () => {
-        if (document.visibilityState === 'visible' && registration) {
-          console.log('Jazel PWA: Page visible, checking for updates...');
-          await checkForUpdates(registration);
-        }
-      };
-      
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Check for updates when window gets focus
-      const handleFocus = async () => {
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Check for updates when window gets focus
+    const handleFocus = () => {
+      console.log('Jazel PWA: Window focused, checking for updates...');
+      if (registration) {
+        checkForUpdates(registration);
+      } else if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          setRegistration(reg);
+          checkForUpdates(reg);
+        });
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Check for updates on page show (back/forward navigation)
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.log('Jazel PWA: Page restored from bfcache, checking for updates...');
         if (registration) {
-          console.log('Jazel PWA: Window focused, checking for updates...');
-          await checkForUpdates(registration);
+          checkForUpdates(registration);
         }
-      };
-      
-      window.addEventListener('focus', handleFocus);
-      
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('focus', handleFocus);
-        if (updateCheckIntervalRef.current) {
-          clearInterval(updateCheckIntervalRef.current);
-        }
-      };
-    }
+      }
+    };
+    
+    window.addEventListener('pageshow', handlePageShow);
 
     // Listen for install prompt (Android/Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -183,16 +196,14 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
 
-      // Show install prompt after a delay (don't annoy users immediately)
+      // Show install prompt after a delay
       const timeoutId = setTimeout(() => {
-        // Check if user has dismissed before
         const dismissed = localStorage.getItem('jazel-install-dismissed');
         if (!dismissed) {
           setShowInstallPrompt(true);
         }
-      }, 10000); // Show after 10 seconds
+      }, 10000);
 
-      // Store timeout ID for cleanup
       (window as unknown as { __pwaTimeout?: ReturnType<typeof setTimeout> }).__pwaTimeout = timeoutId;
     };
 
@@ -215,7 +226,6 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         const dismissedTime = dismissed ? parseInt(dismissed, 10) : 0;
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
         
-        // Show if never dismissed or dismissed more than 7 days ago
         if (!dismissed || Date.now() - dismissedTime > sevenDays) {
           setShowInstallPrompt(true);
         }
@@ -223,8 +233,16 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      
+      if (updateCheckIntervalRef.current) {
+        clearInterval(updateCheckIntervalRef.current);
+      }
+      
       const timeoutId = (window as unknown as { __pwaTimeout?: ReturnType<typeof setTimeout> }).__pwaTimeout;
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -233,7 +251,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(iosTimeoutId);
       }
     };
-  }, [checkForUpdates, registration]);
+  }, [checkForUpdates, handleUpdateFound, isIOS, registration]);
 
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
@@ -255,27 +273,35 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
 
   const handleDismiss = useCallback(() => {
     setShowInstallPrompt(false);
-    // Remember dismissal for 7 days
     localStorage.setItem('jazel-install-dismissed', Date.now().toString());
   }, []);
   
   const handleUpdate = useCallback(() => {
+    console.log('Jazel PWA: User requested update...');
+    
     // Tell the waiting service worker to activate
     if (registration?.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      setShowUpdatePrompt(false);
+      // The controllerchange event will trigger a reload
+      return;
     }
+    
+    // If no waiting worker, force a page reload to get the latest
     setShowUpdatePrompt(false);
-    // Reload the page to get the new version
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    window.location.reload();
   }, [registration]);
   
   const handleDismissUpdate = useCallback(() => {
     setShowUpdatePrompt(false);
-    // Remember dismissal for this session
     sessionStorage.setItem('jazel-update-dismissed', 'true');
   }, []);
+
+  // Check sessionStorage for dismissed state
+  const shouldShowUpdate = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return showUpdatePrompt && !sessionStorage.getItem('jazel-update-dismissed');
+  }, [showUpdatePrompt]);
 
   return (
     <>
@@ -283,27 +309,28 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
 
       {/* Update Available Banner */}
       <AnimatePresence>
-        {showUpdatePrompt && !sessionStorage.getItem('jazel-update-dismissed') && (
+        {shouldShowUpdate && (
           <motion.div
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed top-0 left-0 right-0 z-[100] p-4"
           >
-            <div className="max-w-md mx-auto bg-green-600 text-white rounded-xl shadow-2xl p-4">
+            <div className="max-w-md mx-auto bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl shadow-2xl p-4">
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
                   <RefreshCw className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm">Update Available!</h3>
                   <p className="text-xs text-white/80">
-                    A new version of Jazel Golf (v{APP_VERSION}) is ready.
+                    Version {APP_VERSION} is ready. Update for new features and fixes.
                   </p>
                 </div>
                 <button
                   onClick={handleDismissUpdate}
-                  className="flex-shrink-0 p-1 hover:bg-white/20 rounded-full transition-colors"
+                  className="flex-shrink-0 p-1.5 hover:bg-white/20 rounded-full transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -312,7 +339,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
               <div className="flex gap-2 mt-3">
                 <Button
                   onClick={handleUpdate}
-                  className="flex-1 bg-white text-green-600 hover:bg-white/90"
+                  className="flex-1 bg-white text-green-600 hover:bg-white/90 font-semibold"
                   size="sm"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
@@ -465,7 +492,6 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstall, setCanInstall] = useState(false);
 
-  // Check for iOS - use as initial value
   const isIOS = useMemo(() => isIOSSafari(), []);
 
   useEffect(() => {
