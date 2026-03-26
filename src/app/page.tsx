@@ -3133,35 +3133,6 @@ export default function JazelApp() {
                   </CardContent>
                 </Card>
 
-                {/* Score Summary */}
-                <div className="grid grid-cols-5 gap-2">
-                  <Card className="bg-white/80 text-center p-3">
-                    <p className="text-xs text-muted-foreground">Strokes</p>
-                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().strokes}</p>
-                  </Card>
-                  <Card className="bg-white/80 text-center p-3">
-                    <p className="text-xs text-muted-foreground">Par</p>
-                    <p className="text-2xl font-bold text-gray-600 text-center">{getCoursePar()}</p>
-                  </Card>
-                  <Card className="bg-white/80 text-center p-3">
-                    <p className="text-xs text-muted-foreground">+/-</p>
-                    <p className={`text-2xl font-bold text-center ${
-                      calculateTotals().vsPar < 0 ? 'text-red-600' : 
-                      calculateTotals().vsPar > 0 ? 'text-amber-600' : 'text-jazel'
-                    }`}>
-                      {calculateTotals().vsPar > 0 ? '+' : ''}{calculateTotals().vsPar || 0}
-                    </p>
-                  </Card>
-                  <Card className="bg-white/80 text-center p-3">
-                    <p className="text-xs text-muted-foreground">Putts</p>
-                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().putts}</p>
-                  </Card>
-                  <Card className="bg-white/80 text-center p-3">
-                    <p className="text-xs text-muted-foreground">GIR</p>
-                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().gir}</p>
-                  </Card>
-                </div>
-
                 {/* Scorecard */}
                 <Card className="bg-white/80 backdrop-blur overflow-hidden">
                   <CardContent className="p-0">
@@ -3203,7 +3174,7 @@ export default function JazelApp() {
                     >
                       <div className="min-w-[500px]">
                         {/* Header Row - Sticky */}
-                        <div className="sticky top-0 z-30 grid gap-0.5 p-1.5 text-white text-xs font-medium"
+                        <div className="sticky top-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
                         style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Hole</div>
                           <div className="text-center">Par</div>
@@ -3272,7 +3243,7 @@ export default function JazelApp() {
                           return (
                             <div
                               key={score.holeNumber}
-                              className={`grid gap-0.5 p-1 text-xs ${index % 2 === 0 ? 'bg-white' : ''}`}
+                              className={`grid gap-1 p-1.5 text-sm ${index % 2 === 0 ? 'bg-white' : ''}`}
                               style={{
                                 ...(index % 2 !== 0 ? {backgroundColor: 'rgba(232, 245, 237, 0.5)'} : {}),
                                 gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`
@@ -3306,7 +3277,7 @@ export default function JazelApp() {
                                   max={15}
                                   value={score.strokes || ''}
                                   onChange={(e) => updateScore(score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                  className={`h-7 w-9 text-center text-xs font-medium border border-gray-400 ${getScoreColor(score.strokes, holePar)}`}
+                                  className={`h-8 w-10 text-center text-sm font-medium border border-gray-400 ${getScoreColor(score.strokes, holePar)}`}
                                   style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
                                   onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                   onBlur={(e) => e.target.style.borderColor = '#6b7280'}
@@ -3323,7 +3294,7 @@ export default function JazelApp() {
                                       max={15}
                                       value={playerScore?.strokes || ''}
                                       onChange={(e) => updatePlayerScore(playerIdx, score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                      className={`h-7 w-9 text-center text-xs font-medium border border-gray-400 ${getScoreColor(playerScore?.strokes || 0, holePar)}`}
+                                      className={`h-8 w-10 text-center text-sm font-medium border border-gray-400 ${getScoreColor(playerScore?.strokes || 0, holePar)}`}
                                       style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
                                       onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                       onBlur={(e) => e.target.style.borderColor = '#6b7280'}
@@ -3339,7 +3310,7 @@ export default function JazelApp() {
                                   max={10}
                                   value={score.putts || ''}
                                   onChange={(e) => updateScore(score.holeNumber, 'putts', parseInt(e.target.value) || 0)}
-                                  className="h-7 w-9 text-center text-xs border border-gray-400"
+                                  className="h-8 w-10 text-center text-sm border border-gray-400"
                                   onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                   onBlur={(e) => e.target.style.borderColor = '#9ca3af'}
                                 />
@@ -3349,13 +3320,13 @@ export default function JazelApp() {
                                 <Button
                                   size="sm"
                                   variant={score.fairwayHit === true ? 'default' : score.fairwayHit === false ? 'destructive' : 'outline'}
-                                  className={`h-7 w-7 p-0 ${score.fairwayHit === true ? '' : ''}`}
+                                  className={`h-8 w-8 p-0 ${score.fairwayHit === true ? '' : ''}`}
                                   style={score.fairwayHit === true ? {backgroundColor: '#39638b'} : {}}
                                   onClick={() => updateScore(score.holeNumber, 'fairwayHit', 
                                     score.fairwayHit === null ? true : score.fairwayHit === true ? false : null
                                   )}
                                 >
-                                  {score.fairwayHit === true ? <Check className="w-3 h-3" /> : score.fairwayHit === false ? <X className="w-3 h-3" /> : '-'}
+                                  {score.fairwayHit === true ? <Check className="w-4 h-4" /> : score.fairwayHit === false ? <X className="w-4 h-4" /> : '-'}
                                 </Button>
                               </div>
                               {/* GIR */}
@@ -3363,11 +3334,11 @@ export default function JazelApp() {
                                 <Button
                                   size="sm"
                                   variant={score.greenInReg ? 'default' : 'outline'}
-                                  className={`h-7 w-7 p-0`}
+                                  className={`h-8 w-8 p-0`}
                                   style={score.greenInReg ? {backgroundColor: '#39638b'} : {}}
                                   onClick={() => updateScore(score.holeNumber, 'greenInReg', !score.greenInReg)}
                                 >
-                                  {score.greenInReg ? <Check className="w-3 h-3" /> : '-'}
+                                  {score.greenInReg ? <Check className="w-4 h-4" /> : '-'}
                                 </Button>
                               </div>
                               {/* Penalties */}
@@ -3378,14 +3349,14 @@ export default function JazelApp() {
                                   max={5}
                                   value={score.penalties || ''}
                                   onChange={(e) => updateScore(score.holeNumber, 'penalties', parseInt(e.target.value) || 0)}
-                                  className="h-7 w-9 text-center text-xs border border-gray-400"
+                                  className="h-8 w-10 text-center text-sm border border-gray-400"
                                   onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                   onBlur={(e) => e.target.style.borderColor = '#9ca3af'}
                                 />
                               </div>
                               {/* +/- */}
                               <div className="flex items-center justify-center">
-                                <span className={`font-medium text-xs ${
+                                <span className={`font-medium text-sm ${
                                   scoreDiff < 0 ? 'text-red-600' : 
                                   scoreDiff > 0 ? 'text-amber-600' : 'text-gray-600'
                                 }`}>
@@ -3397,7 +3368,7 @@ export default function JazelApp() {
                         })}
 
                         {/* Total Row - Sticky */}
-                        <div className="sticky bottom-0 z-30 grid gap-0.5 p-1.5 text-white text-xs font-medium"
+                        <div className="sticky bottom-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
                           style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Total</div>
                           <div className="text-center">{
@@ -3493,6 +3464,35 @@ export default function JazelApp() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Score Summary - Below Scorecard */}
+                <div className="grid grid-cols-5 gap-2">
+                  <Card className="bg-white/80 text-center p-3">
+                    <p className="text-xs text-muted-foreground">Strokes</p>
+                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().strokes}</p>
+                  </Card>
+                  <Card className="bg-white/80 text-center p-3">
+                    <p className="text-xs text-muted-foreground">Par</p>
+                    <p className="text-2xl font-bold text-gray-600 text-center">{getCoursePar()}</p>
+                  </Card>
+                  <Card className="bg-white/80 text-center p-3">
+                    <p className="text-xs text-muted-foreground">+/-</p>
+                    <p className={`text-2xl font-bold text-center ${
+                      calculateTotals().vsPar < 0 ? 'text-red-600' : 
+                      calculateTotals().vsPar > 0 ? 'text-amber-600' : 'text-jazel'
+                    }`}>
+                      {calculateTotals().vsPar > 0 ? '+' : ''}{calculateTotals().vsPar || 0}
+                    </p>
+                  </Card>
+                  <Card className="bg-white/80 text-center p-3">
+                    <p className="text-xs text-muted-foreground">Putts</p>
+                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().putts}</p>
+                  </Card>
+                  <Card className="bg-white/80 text-center p-3">
+                    <p className="text-xs text-muted-foreground">GIR</p>
+                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().gir}</p>
+                  </Card>
+                </div>
               </div>
             )}
           </TabsContent>
@@ -5673,7 +5673,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.6</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.7</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
