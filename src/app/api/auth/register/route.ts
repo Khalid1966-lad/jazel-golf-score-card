@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
+import { isSuperAdminEmail } from '@/lib/super-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,9 +16,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase();
+
     // Check if user already exists
     const existingUser = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -38,15 +41,19 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 12);
 
+    // Check if this email should be a super admin
+    const shouldBeAdmin = isSuperAdminEmail(normalizedEmail);
+
     // Create user
     const user = await db.user.create({
       data: {
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         password: hashedPassword,
         name: name || null,
         handicap: handicap ? parseFloat(handicap) : null,
         city: city || null,
         country: country || 'Morocco',
+        isAdmin: shouldBeAdmin, // Auto-grant admin for super admin emails
       },
     });
 

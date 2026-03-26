@@ -21,22 +21,22 @@ export async function POST(request: NextRequest) {
       where: { email: email.toLowerCase() },
     });
 
-    // Don't reveal if user exists or not (security best practice)
-    const genericMessage = 'If the email exists in our system, a reset link will be sent';
-
+    // Check if user exists - return error message instead of sending email
     if (!user) {
-      console.log('📧 User not found (but not revealing this to user)');
-      // Still return success to not reveal if email exists
-      return NextResponse.json({ success: true, message: genericMessage });
+      console.log('📧 User not found:', email.toLowerCase());
+      return NextResponse.json({ 
+        error: 'No account found with this email address. Please check your email or create a new account.' 
+      }, { status: 400 });
     }
 
     console.log('📧 User found:', user.email);
 
     // Check if user is blocked
     if (user.blocked) {
-      console.log('📧 User is blocked (but not revealing this to user)');
-      // Don't reveal that account is blocked
-      return NextResponse.json({ success: true, message: genericMessage });
+      console.log('📧 User is blocked');
+      return NextResponse.json({ 
+        error: 'This account has been blocked. Please contact support.' 
+      }, { status: 400 });
     }
 
     // Delete any existing reset tokens for this user
@@ -78,14 +78,16 @@ export async function POST(request: NextRequest) {
 
     console.log('📧 Email result:', emailResult);
 
+    const successMessage = `A password reset link has been sent to ${user.email}. Please check your inbox and follow the instructions to reset your password. The link will expire in 1 hour.`;
+
     if (!emailResult.success) {
       console.error('❌ Failed to send password reset email:', emailResult.error);
       console.log('🔑 Reset token (for admin debugging):', token);
       
-      // Don't reveal error details to user - just say email sent
+      // Still return success message to not reveal system issues
       return NextResponse.json({ 
         success: true, 
-        message: genericMessage,
+        message: successMessage,
       });
     }
 
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      message: genericMessage,
+      message: successMessage,
     });
   } catch (error) {
     console.error('Password reset request error:', error);

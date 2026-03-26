@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// For SANDBOX: Use SQLite
-// For VERCEL: Change provider to "postgresql" and add directUrl
+// This is your Prisma schema file for SQLite (SANDBOX/LOCAL)
 
 generator client {
   provider = "prisma-client-js"
@@ -14,28 +10,37 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  email         String     @unique
-  password      String
-  name          String?
-  handicap      Float?
-  homeCourseId  String?
-  avatar        String?
-  city          String?
-  country       String?
-  nearbyDistance Int        @default(100)
-  isAdmin       Boolean    @default(false)
-  blocked       Boolean    @default(false)
-  hiddenFromGolfers Boolean @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                   String     @id @default(cuid())
+  email                String     @unique
+  password             String
+  name                 String?
+  handicap             Float?
+  homeCourseId         String?
+  avatar               String?
+  city                 String?
+  country              String?
+  nearbyDistance       Int        @default(100)
+  distanceUnit         String     @default("yards") // "yards" or "meters"
+  isAdmin              Boolean    @default(false)
+  isSuperAdmin         Boolean    @default(false)
+  blocked              Boolean    @default(false)
+  hiddenFromGolfers    Boolean    @default(false)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
   
-  rounds        Round[]
-  clubDistances ClubDistance[]
-  adminSessions AdminSession[]
-  favorites     Favorite[]
-  passwordResetTokens PasswordResetToken[]
-  
+  rounds               Round[]
+  clubDistances        ClubDistance[]
+  userClubs            UserClub[]
+  adminSessions        AdminSession[]
+  favorites            Favorite[]
+  passwordResetTokens  PasswordResetToken[]
+  sentMessages         Message[]          @relation("SentMessages")
+  readMessages         MessageRead[]
+  tournamentParticipations TournamentParticipant[]
+  groups               UserGroup[]
+  assignedCourses      GolfCourse[]       @relation("CourseAdmin")
+  adminPermission      AdminPermission?
+
   @@map("users")
 }
 
@@ -93,6 +98,22 @@ model ClubDistance {
   @@map("club_distances")
 }
 
+model UserClub {
+  id                String   @id @default(cuid())
+  userId            String
+  clubName          String
+  estimatedDistance Int?
+  sortOrder         Int      @default(0)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, clubName])
+  @@map("user_clubs")
+}
+
 model GolfCourse {
   id              String   @id @default(cuid())
   name            String
@@ -109,6 +130,8 @@ model GolfCourse {
   phone           String?
   website         String?
   address         String?
+  isActive        Boolean  @default(true)
+  adminId         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -116,6 +139,8 @@ model GolfCourse {
   tees            CourseTee[]
   rounds          Round[]
   favorites       Favorite[]
+  tournaments     Tournament[]
+  assignedAdmin   User?    @relation("CourseAdmin", fields: [adminId], references: [id], onDelete: SetNull)
   
   @@map("golf_courses")
 }
@@ -126,6 +151,8 @@ model CourseHole {
   holeNumber      Int
   par             Int
   handicap        Int?
+  teeLatitude     Float?
+  teeLongitude    Float?
   greenLatitude   Float?
   greenLongitude  Float?
   
@@ -191,7 +218,9 @@ model Round {
   greensInReg    Int?
   penalties      Int?
   completed      Boolean  @default(false)
-  playerNames    String?
+  playerNames    String?  // JSON array of additional player names (up to 3)
+  holesPlayed    Int      @default(18) // 9 or 18
+  holesType      String?  // "front" or "back" for 9-hole rounds, null for 18
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
@@ -203,23 +232,23 @@ model Round {
 }
 
 model RoundScore {
-  id           String   @id @default(cuid())
-  roundId      String
-  holeNumber   Int
-  playerIndex  Int      @default(0)
-  strokes      Int
-  putts        Int?
-  fairwayHit   Boolean?
-  greenInReg   Boolean?
-  penalties    Int      @default(0)
-  sandShots    Int      @default(0)
-  chipShots    Int      @default(0)
+  id            String   @id @default(cuid())
+  roundId       String
+  holeNumber    Int
+  playerIndex   Int      @default(0)
+  strokes       Int
+  putts         Int?
+  fairwayHit    Boolean?
+  greenInReg    Boolean?
+  penalties     Int      @default(0)
+  sandShots     Int      @default(0)
+  chipShots     Int      @default(0)
   driveDistance Float?
   
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
-  round        Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  round         Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
   
   @@unique([roundId, holeNumber, playerIndex])
   @@map("round_scores")
@@ -234,4 +263,110 @@ model Setting {
   updatedAt DateTime @updatedAt
   
   @@map("settings")
+}
+
+model AdminPermission {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  canViewUsers Boolean   @default(true)
+  canViewTournaments Boolean @default(true)
+  canViewGroups Boolean  @default(true)
+  canViewMessages Boolean @default(true)
+  canViewSettings Boolean @default(true)
+  canViewBackup Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_permissions")
+}
+
+model GolferGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  members     UserGroup[]
+  
+  @@map("golfer_groups")
+}
+
+model UserGroup {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  joinedAt  DateTime @default(now())
+  
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     GolferGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, groupId])
+  @@map("user_groups")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  authorId    String
+  title       String
+  content     String
+  targetType  String   @default("all") // "all", "group", "user"
+  targetId    String?  // groupId or userId when targetType is not "all"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  author      User     @relation("SentMessages", fields: [authorId], references: [id], onDelete: Cascade)
+  reads       MessageRead[]
+  
+  @@map("messages")
+}
+
+model MessageRead {
+  id          String   @id @default(cuid())
+  messageId   String
+  userId      String
+  readAt      DateTime @default(now())
+  
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@map("message_reads")
+}
+
+model Tournament {
+  id              String   @id @default(cuid())
+  name            String
+  courseId        String
+  date            DateTime
+  startTime       String
+  format          String
+  maxPlayers      Int      @default(144)
+  notes           String?
+  status          String   @default("upcoming")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  course          GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  participants    TournamentParticipant[]
+  
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id              String   @id @default(cuid())
+  tournamentId    String
+  userId          String
+  registeredAt    DateTime @default(now())
+  grossScore      Int?
+  netScore        Int?
+  
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([tournamentId, userId])
+  @@map("tournament_participants")
 }

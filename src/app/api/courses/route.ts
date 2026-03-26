@@ -41,8 +41,18 @@ export async function GET(request: NextRequest) {
           orderBy: { holeNumber: 'asc' },
         },
         tees: true,
+        assignedAdmin: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        },
       },
-      orderBy: { name: 'asc' },
+      orderBy: [
+        { isActive: 'desc' },
+        { name: 'asc' },
+      ],
     });
 
     // Filter by search term
@@ -115,6 +125,7 @@ export async function POST(request: NextRequest) {
         phone: courseData.phone,
         website: courseData.website,
         address: courseData.address,
+        isActive: courseData.isActive ?? true,
         holes: {
           create: holes?.map((h: { holeNumber: number; par: number; handicap: number }) => ({
             holeNumber: h.holeNumber,

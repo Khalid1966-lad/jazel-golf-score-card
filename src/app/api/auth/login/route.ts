@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
         avatar: user.avatar,
         city: user.city,
         country: user.country,
+        nearbyDistance: user.nearbyDistance,
+        distanceUnit: user.distanceUnit,
       },
     });
   } catch (error) {

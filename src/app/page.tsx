@@ -1,16 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Search, MapPin, Circle, Trophy, User, Menu, X, 
   ChevronRight, Star, Clock, TrendingUp, Target, 
   Plus, Check, Navigation, Wind, Thermometer, Sun,
   Bot, Ruler, Compass, Cloud, RefreshCw, Play, Pause,
   Save, Trash2, Edit2, AlertCircle, Heart, Settings, LogOut,
-  Camera, Loader2, Upload, Users, ChevronLeft, ChevronDown
+  Camera, Loader2, Upload, Users, ChevronLeft, ChevronDown,
+  BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
+  CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
+  Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
+  Map as MapIcon, Flag
 } from 'lucide-react';
 import Link from 'next/link';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +30,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { 
+  formatTemperature, 
+  convertWindSpeed, 
+  getWindSpeedUnitLabel,
+  convertUserUnitToKm,
+  formatKmDistance,
+  formatShortDistance,
+  type DistanceUnit 
+} from '@/lib/distance';
+import CourseMap from '@/components/CourseMap';
 
 // Types
 interface CourseHole {
@@ -53,6 +68,7 @@ interface GolfCourse {
   phone: string | null;
   website: string | null;
   address: string | null;
+  isActive: boolean;
   distance?: number;
   holes: CourseHole[];
   tees: { id: string; name: string; color: string | null }[];
@@ -65,7 +81,10 @@ interface RoundScore {
   fairwayHit: boolean | null;
   greenInReg: boolean;
   penalties: number;
-  driveDistance?: number;
+  sandShots?: number;
+  chipShots?: number;
+  driveDistance?: number | null;
+  playerIndex?: number;
 }
 
 interface User {
@@ -78,6 +97,7 @@ interface User {
   country: string | null;
   isAdmin?: boolean;
   nearbyDistance?: number;
+  distanceUnit?: 'yards' | 'meters';
 }
 
 interface UserStats {
@@ -100,11 +120,17 @@ interface SavedRound {
   penalties: number;
   completed: boolean;
   courseId?: string;
+  teeId?: string;
+  playerNames?: string;
+  holesPlayed?: number; // 9 or 18
+  holesType?: string | null; // "front" or "back" for 9-hole rounds
   course: {
     id?: string;
     name: string;
     city: string;
     totalHoles: number;
+    tees?: { id: string; name: string; color?: string | null }[];
+    holes?: { holeNumber: number; par: number; handicap?: number | null }[];
   };
   scores: RoundScore[];
 }
@@ -122,17 +148,147 @@ interface Golfer {
   };
 }
 
+interface GolferGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  _count: {
+    members: number;
+  };
+}
+
 // Multi-player types
 interface AdditionalPlayer {
   id: string;
   name: string;
   avatar?: string | null;
   handicap?: number | null;
+  userId?: string | null; // For registered golfers, store their user ID to fetch fresh data
 }
 
 interface PlayerScore {
   playerIndex: number;
   scores: RoundScore[];
+}
+
+interface ScoringStats {
+  totalRounds: number;
+  totalHoles: number;
+  scoring: {
+    eagles: number;
+    birdies: number;
+    pars: number;
+    bogeys: number;
+    doubleBogeys: number;
+    tripleOrWorse: number;
+  };
+  averages: {
+    strokes: number;
+    putts: string;
+    fairwayPercentage: number;
+    girPercentage: number;
+    penaltiesPerRound: string;
+  };
+  percentages: {
+    eagles: number;
+    birdies: number;
+    pars: number;
+    bogeys: number;
+    doubleBogeys: number;
+    tripleOrWorse: number;
+  };
+}
+
+// Weather types
+interface WeatherData {
+  current: {
+    temperature: number;
+    apparentTemperature: number;
+    humidity: number;
+    weatherCode: number;
+    weatherDescription: string;
+    weatherIcon: string;
+    windSpeed: number;
+    windDirection: string;
+    windGusts: number;
+  };
+  location: {
+    latitude: number;
+    longitude: number;
+    city: string;
+    country: string;
+    timezone: string;
+  };
+  time: {
+    local: string;
+    localHour: number;
+    date: string;
+    isNight: boolean;
+    sunrise: string | null;
+    sunset: string | null;
+  };
+  hourly: Array<{
+    time: string;
+    hour: number;
+    temperature: number;
+    weatherCode: number;
+    weatherDescription: string;
+    weatherIcon: string;
+    windSpeed: number;
+    precipitationProbability: number;
+    precipitation: number;
+    isNight: boolean;
+  }>;
+  updatedAt: string;
+}
+
+// Message types
+interface Message {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  isRead: boolean;
+  readAt: string | null;
+}
+
+// Tournament types
+interface TournamentParticipant {
+  userId: string;
+  grossScore: number | null;
+  netScore: number | null;
+  user: {
+    id: string;
+    name: string | null;
+    handicap: number | null;
+  };
+}
+
+interface Tournament {
+  id: string;
+  name: string;
+  courseId: string;
+  date: string;
+  startTime: string;
+  format: string;
+  maxPlayers: number;
+  notes: string | null;
+  status: string;
+  course: {
+    id: string;
+    name: string;
+    city: string;
+  };
+  _count?: {
+    participants: number;
+  };
+  participants?: TournamentParticipant[];
 }
 
 // Markdown Renderer for AI Caddie
@@ -144,13 +300,13 @@ function renderMarkdown(text: string): React.ReactNode {
     
     // Handle headers
     if (line.startsWith('### ')) {
-      return <h4 key={lineIndex} className="text-base font-bold text-jazel-800 mt-3 mb-1" style={{color: '#032719'}}>{line.slice(4)}</h4>;
+      return <h4 key={lineIndex} className="text-base font-bold text-jazel-800 mt-3 mb-1" style={{color: '#2a4a6a'}}>{line.slice(4)}</h4>;
     }
     if (line.startsWith('## ')) {
-      return <h3 key={lineIndex} className="text-lg font-bold text-jazel-800 mt-4 mb-2" style={{color: '#032719'}}>{line.slice(3)}</h3>;
+      return <h3 key={lineIndex} className="text-lg font-bold text-jazel-800 mt-4 mb-2" style={{color: '#2a4a6a'}}>{line.slice(3)}</h3>;
     }
     if (line.startsWith('# ')) {
-      return <h2 key={lineIndex} className="text-xl font-bold text-jazel-900 mt-4 mb-2" style={{color: '#021a11'}}>{line.slice(2)}</h2>;
+      return <h2 key={lineIndex} className="text-xl font-bold text-jazel-900 mt-4 mb-2" style={{color: '#1e3a5a'}}>{line.slice(2)}</h2>;
     }
     
     // Handle bold and italic
@@ -176,7 +332,7 @@ function renderMarkdown(text: string): React.ReactNode {
         // Process italic in beforeBold
         parts.push(<span key={`${lineIndex}-${key++}`}>{renderItalic(beforeBold)}</span>);
       }
-      parts.push(<strong key={`${lineIndex}-${key++}`} className="font-bold" style={{color: '#032719'}}>{renderItalic(boldText)}</strong>);
+      parts.push(<strong key={`${lineIndex}-${key++}`} className="font-bold" style={{color: '#2a4a6a'}}>{renderItalic(boldText)}</strong>);
       remaining = afterBold;
     }
     
@@ -229,14 +385,15 @@ function renderItalic(text: string): React.ReactNode {
 
 // AI Caddie Component
 function AICaddieDialog({ 
-  open, 
-  onOpenChange, 
-  holeInfo, 
-  onGetRecommendation 
+  open,  onOpenChange, 
+  holeInfo,
+  distanceUnit,
+  onGetRecommendation
 }: { 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
   holeInfo: { par: number; distance: number } | null;
+  distanceUnit: 'yards' | 'meters';
   onGetRecommendation: (data: { distance: number; wind: number; windDir: string; lie: string }) => void;
 }) {
   const [distance, setDistance] = useState(holeInfo?.distance || 150);
@@ -308,7 +465,7 @@ function AICaddieDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Bot className="w-5 h-5" style={{color: '#06402B'}} />
+            <Bot className="w-5 h-5" style={{color: '#39638b'}} />
             AI Caddie
           </DialogTitle>
           <DialogDescription>
@@ -319,7 +476,7 @@ function AICaddieDialog({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Distance (meters)</Label>
+              <Label>Distance ({distanceUnit === 'yards' ? 'yards' : 'meters'})</Label>
               <Input
                 type="number"
                 value={distance}
@@ -328,7 +485,7 @@ function AICaddieDialog({
               />
             </div>
             <div>
-              <Label>Wind Speed (km/h)</Label>
+              <Label>Wind Speed ({distanceUnit === 'yards' ? 'mph' : 'km/h'})</Label>
               <Input
                 type="number"
                 value={wind}
@@ -375,7 +532,7 @@ function AICaddieDialog({
             onClick={handleGetRecommendation}
             disabled={loading}
             className="w-full text-white"
-            style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
+            style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -398,7 +555,7 @@ function AICaddieDialog({
           )}
           
           {recommendation && (
-            <div className="p-4 rounded-lg border" style={{backgroundColor: '#e8f5ed', borderColor: '#c5e6d1'}}>
+            <div className="p-4 rounded-lg border" style={{backgroundColor: '#d6e4ef', borderColor: '#8ab0d1'}}>
               <div className="text-sm">{renderMarkdown(recommendation)}</div>
             </div>
           )}
@@ -414,13 +571,17 @@ function GPSRangeFinder({
   userLocation,
   onLocationUpdate,
   selectedHole,
-  onHoleChange
+  onHoleChange,
+  distanceUnit,
+  userClubs
 }: { 
   course: GolfCourse | null;
   userLocation: { lat: number; lon: number } | null;
   onLocationUpdate: (loc: { lat: number; lon: number }) => void;
   selectedHole: number;
   onHoleChange: (hole: number) => void;
+  distanceUnit: 'yards' | 'meters';
+  userClubs: { id: string; clubName: string; estimatedDistance: number | null; sortOrder: number }[];
 }) {
   const [greenPosition, setGreenPosition] = useState<'front' | 'center' | 'back'>('center');
   const [watchId, setWatchId] = useState<number | null>(null);
@@ -442,47 +603,14 @@ function GPSRangeFinder({
     }
     
     // Otherwise, estimate green location based on hole number and course center
-    // This is a fallback when actual coordinates aren't stored
     const holeSpacing = 0.003; // Roughly 300m between holes
-    const angle = ((holeNum - 1) * 20) * Math.PI / 180; // Vary direction slightly
+    const angle = ((holeNum - 1) * 20) * Math.PI / 180;
     
     return {
       lat: courseData.latitude + Math.cos(angle) * holeSpacing * ((holeNum - 1) % 9),
       lon: courseData.longitude + Math.sin(angle) * holeSpacing * ((holeNum - 1) % 9)
     };
   }, []);
-
-  // Auto-detect current hole based on position
-  const autoDetectHole = useCallback((userLat: number, userLon: number, courseData: GolfCourse | null) => {
-    if (!courseData) return 1;
-    
-    let closestHole = 1;
-    let minDistance = Infinity;
-    
-    for (let i = 1; i <= courseData.totalHoles; i++) {
-      const greenLoc = getHoleGreenLocation(i, courseData);
-      if (!greenLoc) continue;
-      
-      const R = 6371000;
-      const φ1 = userLat * Math.PI / 180;
-      const φ2 = greenLoc.lat * Math.PI / 180;
-      const Δφ = (greenLoc.lat - userLat) * Math.PI / 180;
-      const Δλ = (greenLoc.lon - userLon) * Math.PI / 180;
-      
-      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ/2) * Math.sin(Δλ/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-      
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestHole = i;
-      }
-    }
-    
-    return closestHole;
-  }, [getHoleGreenLocation]);
 
   // Calculate distance to green
   const distanceToGreen = useMemo(() => {
@@ -508,6 +636,29 @@ function GPSRangeFinder({
     return Math.round(distance + adjustment);
   }, [userLocation, course, greenPosition, selectedHole, getHoleGreenLocation]);
 
+  // Get recommended club based on distance
+  const getRecommendedClub = (distanceMeters: number): string | null => {
+    const targetDistance = distanceUnit === 'yards' 
+      ? distanceMeters * 1.09361
+      : distanceMeters;
+    
+    const clubsWithDistances = userClubs
+      .filter(c => c.estimatedDistance && c.estimatedDistance > 0)
+      .sort((a, b) => (b.estimatedDistance || 0) - (a.estimatedDistance || 0));
+    
+    if (clubsWithDistances.length === 0) return null;
+    
+    const clubsThatCanReach = clubsWithDistances
+      .filter(c => (c.estimatedDistance || 0) >= targetDistance)
+      .sort((a, b) => (a.estimatedDistance || 0) - (b.estimatedDistance || 0));
+    
+    if (clubsThatCanReach.length > 0) {
+      return clubsThatCanReach[0].clubName;
+    }
+    
+    return clubsWithDistances[0]?.clubName || null;
+  };
+
   const startTracking = () => {
     if (!navigator.geolocation) {
       toast.error('Geolocation not supported');
@@ -521,15 +672,6 @@ function GPSRangeFinder({
           lon: position.coords.longitude,
         };
         onLocationUpdate(newLoc);
-        
-        // Auto-detect hole
-        if (course) {
-          const detectedHole = autoDetectHole(newLoc.lat, newLoc.lon, course);
-          // Only update if significantly different
-          if (Math.abs(detectedHole - selectedHole) > 0) {
-            // Don't auto-change, but could show suggestion
-          }
-        }
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -555,11 +697,11 @@ function GPSRangeFinder({
   };
 
   return (
-    <Card className="bg-white/80 backdrop-blur" style={{borderColor: '#c5e6d1'}}>
+    <Card className="bg-white/80 backdrop-blur" style={{borderColor: '#8ab0d1'}}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Navigation className="w-5 h-5" style={{color: '#06402B'}} />
+            <Navigation className="w-5 h-5" style={{color: '#39638b'}} />
             GPS Range Finder
           </span>
           <Button
@@ -567,7 +709,7 @@ function GPSRangeFinder({
             variant={isTracking ? 'destructive' : 'default'}
             onClick={isTracking ? stopTracking : startTracking}
             className={isTracking ? '' : 'text-white'}
-            style={isTracking ? {} : {backgroundColor: '#06402B'}}
+            style={isTracking ? {} : {backgroundColor: '#39638b'}}
           >
             {isTracking ? (
               <>
@@ -613,12 +755,13 @@ function GPSRangeFinder({
               </span>
             </div>
 
+            {/* Front/Center/Back Green Position */}
             <div className="flex items-center justify-center gap-4 mb-4">
               <Button
                 size="sm"
                 variant={greenPosition === 'front' ? 'default' : 'outline'}
                 onClick={() => setGreenPosition('front')}
-                style={greenPosition === 'front' ? {backgroundColor: '#06402B'} : {borderColor: '#c5e6d1'}}
+                style={greenPosition === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
               >
                 Front
               </Button>
@@ -626,7 +769,7 @@ function GPSRangeFinder({
                 size="sm"
                 variant={greenPosition === 'center' ? 'default' : 'outline'}
                 onClick={() => setGreenPosition('center')}
-                style={greenPosition === 'center' ? {backgroundColor: '#06402B'} : {borderColor: '#c5e6d1'}}
+                style={greenPosition === 'center' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
               >
                 Center
               </Button>
@@ -634,18 +777,45 @@ function GPSRangeFinder({
                 size="sm"
                 variant={greenPosition === 'back' ? 'default' : 'outline'}
                 onClick={() => setGreenPosition('back')}
-                style={greenPosition === 'back' ? {backgroundColor: '#06402B'} : {borderColor: '#c5e6d1'}}
+                style={greenPosition === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
               >
                 Back
               </Button>
             </div>
 
-            <div className="text-center p-6 rounded-xl" style={{background: 'linear-gradient(135deg, #e8f5ed 0%, #e0f4f5 100%)'}}>
+            <div className="text-center p-6 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e0f4f5 100%)'}}>
               <p className="text-sm text-muted-foreground mb-2">Distance to Green</p>
-              <p className="text-5xl font-bold" style={{color: '#06402B'}}>
-                {distanceToGreen !== null ? distanceToGreen : '---'}
+              <p className="text-5xl font-bold" style={{color: '#39638b'}}>
+                {distanceToGreen !== null 
+                  ? Math.round(distanceUnit === 'yards' ? distanceToGreen * 1.09361 : distanceToGreen)
+                  : '---'}
               </p>
-              <p className="text-lg text-muted-foreground">meters</p>
+              <p className="text-lg text-muted-foreground">{distanceUnit}</p>
+              
+              {/* Recommended Club */}
+              {distanceToGreen !== null && (() => {
+                const recommendedClub = getRecommendedClub(distanceToGreen);
+                const clubData = userClubs.find(c => c.clubName === recommendedClub);
+                return recommendedClub ? (
+                  <div className="mt-3 pt-3 border-t border-slate-300">
+                    <p className="text-xs text-muted-foreground mb-1">Suggested Club</p>
+                    <p className="text-lg font-semibold" style={{color: '#39638b'}}>
+                      {recommendedClub}
+                      {clubData?.estimatedDistance && (
+                        <span className="text-sm font-normal text-muted-foreground ml-2">
+                          ({clubData.estimatedDistance} {distanceUnit})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                ) : userClubs.length > 0 ? (
+                  <div className="mt-3 pt-3 border-t border-slate-300">
+                    <p className="text-xs text-muted-foreground mb-1">Suggested Club</p>
+                    <p className="text-sm text-amber-600">Add distances to your clubs in My Bag</p>
+                  </div>
+                ) : null;
+              })()}
+              
               {/* Show indicator if coordinates are estimated */}
               {course && (() => {
                 const holeData = course.holes.find(h => h.holeNumber === selectedHole);
@@ -674,8 +844,9 @@ function GPSRangeFinder({
 
 // Main App Component
 export default function JazelApp() {
-  const [activeTab, setActiveTab] = useState('search');
+  const [activeTab, setActiveTab] = useState('weather');
   const [user, setUser] = useState<User | null>(null);
+  const [distanceUnit, setDistanceUnit] = useState<'yards' | 'meters'>('yards');
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [courses, setCourses] = useState<GolfCourse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -687,10 +858,15 @@ export default function JazelApp() {
   const [selectedTee, setSelectedTee] = useState<string>('');
   const [scores, setScores] = useState<RoundScore[]>([]);
   const [roundHistory, setRoundHistory] = useState<SavedRound[]>([]);
+  const [scoringStats, setScoringStats] = useState<ScoringStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [golfers, setGolfers] = useState<Golfer[]>([]);
   const [golferSearch, setGolferSearch] = useState('');
+  const [groups, setGroups] = useState<GolferGroup[]>([]);
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
   const [showAICaddie, setShowAICaddie] = useState(false);
   const [currentHoleInfo, setCurrentHoleInfo] = useState<{ par: number; distance: number } | null>(null);
+  const [showMapScreen, setShowMapScreen] = useState(false);
   const [showGPSPanel, setShowGPSPanel] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -701,6 +877,8 @@ export default function JazelApp() {
   const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
   const [showProfileEditDialog, setShowProfileEditDialog] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
   const [signupForm, setSignupForm] = useState({ name: '', email: '', password: '', handicap: '', city: '', country: 'Morocco' });
   const [forgotPasswordForm, setForgotPasswordForm] = useState({ email: '' });
   const [profileEditForm, setProfileEditForm] = useState({ 
@@ -710,11 +888,13 @@ export default function JazelApp() {
     city: '',
     country: 'Morocco',
     nearbyDistance: 100,
+    distanceUnit: 'yards' as 'yards' | 'meters',
     currentPassword: '', 
     newPassword: '' 
   });
   const [authLoading, setAuthLoading] = useState(false);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   
   // Multi-player state
@@ -733,6 +913,45 @@ export default function JazelApp() {
   const [roundToDelete, setRoundToDelete] = useState<SavedRound | null>(null);
   const [editingRoundId, setEditingRoundId] = useState<string | null>(null); // Track if we're editing an existing round
 
+  // Hole selection state
+  const [showHoleSelectionDialog, setShowHoleSelectionDialog] = useState(false);
+  const [pendingCourse, setPendingCourse] = useState<GolfCourse | null>(null);
+  const [holesPlayed, setHolesPlayed] = useState<9 | 18>(18);
+  const [holesType, setHolesType] = useState<'front' | 'back'>('front');
+  
+  // Scorecard view toggle (for displaying 9 holes at a time)
+  const [scorecardView, setScorecardView] = useState<'front' | 'back'>('front');
+  
+  // Unsaved work warning state
+  const [showUnsavedWarningDialog, setShowUnsavedWarningDialog] = useState(false);
+  const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
+
+  // Weather state
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+  
+  // Device orientation for compass
+  const [deviceHeading, setDeviceHeading] = useState<number>(0); // 0 = facing North
+
+  // Messages state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [showMessagesDialog, setShowMessagesDialog] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+
+  // User clubs state
+  const [showBagDialog, setShowBagDialog] = useState(false);
+  const [userClubs, setUserClubs] = useState<{ id: string; clubName: string; estimatedDistance: number | null; sortOrder: number }[]>([]);
+  const [loadingClubs, setLoadingClubs] = useState(false);
+  const [editingBag, setEditingBag] = useState(false);
+  const [bagFormData, setBagFormData] = useState<{ clubName: string; estimatedDistance: number | null; sortOrder: number }[]>([]);
+
+  // Tournaments state
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [tournamentsLoading, setTournamentsLoading] = useState(false);
+  const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('gross');
+
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -745,6 +964,10 @@ export default function JazelApp() {
           if (data.user.nearbyDistance) {
             setMaxNearbyDistance(data.user.nearbyDistance);
           }
+          // Set user's preferred distance unit
+          if ((data.user as any).distanceUnit) {
+            setDistanceUnit((data.user as any).distanceUnit === 'meters' ? 'meters' : 'yards');
+          }
         }
       } catch (error) {
         console.error('Session check failed:', error);
@@ -753,41 +976,57 @@ export default function JazelApp() {
     checkSession();
   }, []);
 
+  // Fetch user clubs when user logs in
+  useEffect(() => {
+    if (user) {
+      fetchUserClubs();
+    }
+  }, [user]);
+
   // Restore active round from localStorage on mount
   useEffect(() => {
     try {
       const savedRound = localStorage.getItem('jazel_active_round');
       if (savedRound) {
-        const roundData = JSON.parse(savedRound);
-        // Only restore if less than 24 hours old
-        const savedTime = new Date(roundData.savedAt).getTime();
-        const now = new Date().getTime();
-        const hoursDiff = (now - savedTime) / (1000 * 60 * 60);
+        const parsed = JSON.parse(savedRound);
+        const savedAt = new Date(parsed.savedAt);
+        const now = new Date();
+        const hoursSinceSaved = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
         
-        if (hoursDiff < 24 && roundData.selectedCourse) {
-          setSelectedCourse(roundData.selectedCourse);
-          setSelectedTee(roundData.selectedTee || '');
-          setScores(roundData.scores || []);
-          setAdditionalPlayers(roundData.additionalPlayers || []);
-          // Restore player scores map
-          if (roundData.playerScores) {
+        // Only restore if saved within last 24 hours
+        if (hoursSinceSaved < 24 && parsed.selectedCourse && parsed.scores?.length > 0) {
+          setSelectedCourse(parsed.selectedCourse);
+          setSelectedTee(parsed.selectedTee || '');
+          setScores(parsed.scores);
+          setAdditionalPlayers(parsed.additionalPlayers || []);
+          setHolesPlayed(parsed.holesPlayed || 18);
+          setHolesType(parsed.holesType || 'front');
+          setSelectedGPSHole(parsed.holesPlayed === 9 && parsed.holesType === 'back' ? 10 : 1);
+          
+          // Restore player scores
+          if (parsed.playerScores) {
             const playerScoresMap = new Map<number, RoundScore[]>();
-            Object.entries(roundData.playerScores).forEach(([key, value]) => {
+            Object.entries(parsed.playerScores).forEach(([key, value]) => {
               playerScoresMap.set(parseInt(key), value as RoundScore[]);
             });
             setPlayerScores(playerScoresMap);
           }
+          
           setShowScorecard(true);
           setActiveTab('scorecard');
-          toast.info('Restored your active round');
-        } else {
+          setHasUnsavedWork(true);
+          setEditingRoundId(parsed.editingRoundId || null);
+          
+          toast.info('Restored your unsaved round. Continue playing or save when ready.', {
+            duration: 5000,
+          });
+        } else if (hoursSinceSaved >= 24) {
           // Clear old data
           localStorage.removeItem('jazel_active_round');
         }
       }
     } catch (error) {
       console.error('Failed to restore active round:', error);
-      localStorage.removeItem('jazel_active_round');
     }
   }, []);
 
@@ -806,13 +1045,17 @@ export default function JazelApp() {
           scores,
           additionalPlayers,
           playerScores: playerScoresObj,
+          holesPlayed,
+          holesType,
+          editingRoundId,
           savedAt: new Date().toISOString(),
         }));
+        setHasUnsavedWork(true);
       } catch (error) {
         console.error('Failed to save active round:', error);
       }
     }
-  }, [showScorecard, selectedCourse, selectedTee, scores, additionalPlayers, playerScores]);
+  }, [showScorecard, selectedCourse, selectedTee, scores, additionalPlayers, playerScores, holesPlayed, holesType, editingRoundId]);
 
   // Fetch settings and auto-get user location on load
   useEffect(() => {
@@ -891,7 +1134,8 @@ export default function JazelApp() {
   const fetchRounds = useCallback(async () => {
     if (!user) return;
     try {
-      const response = await fetch(`/api/rounds?userId=${user.id}`);
+      // Add timestamp to prevent caching
+      const response = await fetch(`/api/rounds?userId=${user.id}&_t=${Date.now()}`);
       const data = await response.json();
       setRoundHistory(data.rounds || []);
     } catch (error) {
@@ -899,10 +1143,66 @@ export default function JazelApp() {
     }
   }, [user]);
 
-  // Fetch golfers list
-  const fetchGolfers = useCallback(async () => {
+  // Fetch scoring statistics
+  const fetchStats = useCallback(async () => {
+    if (!user) return;
+    setStatsLoading(true);
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch(`/api/stats?userId=${user.id}`);
+      const data = await response.json();
+      setScoringStats(data.stats || null);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [user]);
+
+  // Default location (center of Morocco) for immediate weather fetch
+  const DEFAULT_LOCATION = { lat: 31.7917, lon: -7.0926 };
+
+  // Fetch weather data - uses provided location or falls back to default
+  // Set force=true to bypass cache (for manual refresh)
+  const fetchWeather = useCallback(async (location?: { lat: number; lon: number }, force: boolean = false) => {
+    // Use provided location, or userLocation, or default
+    const loc = location || userLocation || DEFAULT_LOCATION;
+    
+    // Check if we have recent data (cache for 10 minutes)
+    if (!force && weatherData?.updatedAt) {
+      const lastUpdate = new Date(weatherData.updatedAt).getTime();
+      const now = Date.now();
+      const minutesSinceUpdate = (now - lastUpdate) / (1000 * 60);
+      if (minutesSinceUpdate < 10 && !location) {
+        // Data is fresh, skip fetch unless forced with explicit location
+        return;
+      }
+    }
+    
+    setWeatherLoading(true);
+    setWeatherError(null);
+    try {
+      const response = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
+      const data = await response.json();
+      if (data.weather) {
+        setWeatherData(data.weather);
+      } else {
+        setWeatherError('Failed to load weather data');
+      }
+    } catch (error) {
+      console.error('Failed to fetch weather:', error);
+      setWeatherError('Failed to load weather data');
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, [userLocation, weatherData?.updatedAt]);
+
+  // Fetch golfers list
+  const fetchGolfers = useCallback(async (groupId?: string) => {
+    try {
+      const url = groupId && groupId !== 'all'
+        ? `/api/users?groupId=${groupId}`
+        : '/api/users';
+      const response = await fetch(url);
       const data = await response.json();
       setGolfers(data.users || []);
     } catch (error) {
@@ -910,14 +1210,180 @@ export default function JazelApp() {
     }
   }, []);
 
+  // Fetch groups list
+  const fetchGroups = useCallback(async () => {
+    try {
+      const response = await fetch('/api/groups');
+      const data = await response.json();
+      setGroups(data.groups || []);
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
+    }
+  }, []);
+
+  // Fetch messages
+  const fetchMessages = useCallback(async () => {
+    if (!user) return;
+    try {
+      const response = await fetch(`/api/messages?userId=${user.id}`);
+      const data = await response.json();
+      setMessages(data.messages || []);
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+  }, [user]);
+
+  // Fetch tournaments
+  const fetchTournaments = useCallback(async () => {
+    setTournamentsLoading(true);
+    try {
+      const response = await fetch('/api/tournaments');
+      if (response.ok) {
+        const data = await response.json();
+        setTournaments(data.tournaments || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tournaments:', error);
+    } finally {
+      setTournamentsLoading(false);
+    }
+  }, []);
+
+  // Fetch tournament with participants
+  const fetchTournamentWithParticipants = useCallback(async (tournamentId: string) => {
+    try {
+      const response = await fetch(`/api/tournaments?id=${tournamentId}&includeParticipants=true`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.tournament) {
+          setSelectedTournament(data.tournament);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch tournament participants:', error);
+    }
+  }, []);
+
+  // Mark message as read
+  const markMessageAsRead = async (messageId: string) => {
+    if (!user) return;
+    try {
+      await fetch('/api/messages/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, userId: user.id }),
+      });
+      // Update local state
+      setMessages(prev => prev.map(m => 
+        m.id === messageId ? { ...m, isRead: true, readAt: new Date().toISOString() } : m
+      ));
+    } catch (error) {
+      console.error('Failed to mark message as read:', error);
+    }
+  };
+
+  // Mark all messages as read
+  const markAllMessagesAsRead = async () => {
+    if (!user) return;
+    try {
+      await fetch('/api/messages/read', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      // Update local state
+      setMessages(prev => prev.map(m => ({ ...m, isRead: true, readAt: new Date().toISOString() })));
+    } catch (error) {
+      console.error('Failed to mark all messages as read:', error);
+    }
+  };
+
   useEffect(() => {
     fetchCourses();
     fetchGolfers();
+    fetchGroups();
+    fetchTournaments();
+    // Fetch weather immediately with default location for fast initial load
+    fetchWeather();
     if (user) {
       fetchFavorites();
       fetchRounds();
+      fetchStats();
+      fetchMessages();
     }
-  }, [fetchCourses, fetchFavorites, fetchGolfers, fetchRounds, user]);
+  }, [fetchCourses, fetchFavorites, fetchGolfers, fetchGroups, fetchRounds, fetchStats, fetchMessages, fetchTournaments, user]);
+
+  // Update weather when user location is acquired (more accurate than default)
+  useEffect(() => {
+    if (userLocation) {
+      fetchWeather(userLocation);
+    }
+  }, [userLocation]);
+
+  // Refetch golfers when group filter changes
+  useEffect(() => {
+    fetchGolfers(selectedGroupFilter);
+  }, [selectedGroupFilter, fetchGolfers]);
+
+  // Device orientation for compass - track which way device is facing
+  useEffect(() => {
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const webkitEvent = event as any;
+      
+      // iOS: webkitCompassHeading gives true north directly
+      if (webkitEvent.webkitCompassHeading !== undefined) {
+        setDeviceHeading(webkitEvent.webkitCompassHeading);
+      } 
+      // Android: use alpha (compass direction)
+      else if (event.alpha !== null) {
+        // On Android, alpha is the compass heading in degrees (0-360)
+        // It's measured counter-clockwise from North, so we need to convert
+        let heading = 360 - event.alpha;
+        
+        // Adjust for screen orientation (portrait/landscape)
+        if (typeof screen !== 'undefined' && screen.orientation) {
+          const screenAngle = screen.orientation.angle || 0;
+          heading = (heading + screenAngle) % 360;
+        }
+        
+        setDeviceHeading(heading);
+      }
+    };
+
+    // Check if DeviceOrientationEvent is available
+    if (typeof DeviceOrientationEvent !== 'undefined') {
+      // iOS 13+ requires permission
+      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+        const requestPermission = async () => {
+          try {
+            const permission = await (DeviceOrientationEvent as any).requestPermission();
+            if (permission === 'granted') {
+              window.addEventListener('deviceorientation', handleOrientation);
+            }
+          } catch (e) {
+            console.log('Compass permission denied');
+          }
+        };
+        const clickHandler = () => {
+          requestPermission();
+          document.removeEventListener('click', clickHandler);
+        };
+        document.addEventListener('click', clickHandler);
+      } else {
+        // Android: Try deviceorientationabsolute first (more reliable for compass)
+        if ('ondeviceorientationabsolute' in window) {
+          window.addEventListener('deviceorientationabsolute', handleOrientation as any);
+        } else {
+          window.addEventListener('deviceorientation', handleOrientation);
+        }
+      }
+    }
+
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation);
+      window.removeEventListener('deviceorientationabsolute', handleOrientation as any);
+    };
+  }, []);
 
   // Toggle favorite
   const toggleFavorite = async (courseId: string, e: React.MouseEvent) => {
@@ -951,6 +1417,7 @@ export default function JazelApp() {
   // Login
   const handleLogin = async () => {
     setAuthLoading(true);
+    setLoginError(null);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -961,13 +1428,23 @@ export default function JazelApp() {
       
       if (response.ok) {
         setUser(data.user);
+        // Set user's preferred nearby distance
+        if (data.user.nearbyDistance) {
+          setMaxNearbyDistance(data.user.nearbyDistance);
+        }
+        // Set user's preferred distance unit
+        if (data.user.distanceUnit) {
+          setDistanceUnit(data.user.distanceUnit === 'meters' ? 'meters' : 'yards');
+        }
         setShowLoginDialog(false);
         setLoginForm({ email: '', password: '' });
         toast.success('Welcome back!');
       } else {
+        setLoginError(data.error || 'Login failed');
         toast.error(data.error || 'Login failed');
       }
     } catch (error) {
+      setLoginError('An error occurred. Please try again.');
       toast.error('Login failed');
     } finally {
       setAuthLoading(false);
@@ -977,6 +1454,7 @@ export default function JazelApp() {
   // Signup
   const handleSignup = async () => {
     setAuthLoading(true);
+    setSignupError(null);
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -984,7 +1462,7 @@ export default function JazelApp() {
         body: JSON.stringify(signupForm),
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         // Auto login after signup
         const loginResponse = await fetch('/api/auth/login', {
@@ -993,17 +1471,19 @@ export default function JazelApp() {
           body: JSON.stringify({ email: signupForm.email, password: signupForm.password }),
         });
         const loginData = await loginResponse.json();
-        
+
         if (loginResponse.ok) {
           setUser(loginData.user);
           setShowSignupDialog(false);
-          setSignupForm({ name: '', email: '', password: '', handicap: '' });
+          setSignupForm({ name: '', email: '', password: '', handicap: '', city: '', country: 'Morocco' });
           toast.success('Account created! Welcome to Jazel!');
         }
       } else {
+        setSignupError(data.error || 'Signup failed');
         toast.error(data.error || 'Signup failed');
       }
     } catch (error) {
+      setSignupError('An error occurred. Please try again.');
       toast.error('Signup failed');
     } finally {
       setAuthLoading(false);
@@ -1016,7 +1496,7 @@ export default function JazelApp() {
       await fetch('/api/auth/login', { method: 'DELETE' });
       setUser(null);
       setFavoriteIds([]);
-      setActiveTab('search');
+      setActiveTab('weather');
       setShowScorecard(false);
       setSelectedCourse(null);
       setScores([]);
@@ -1030,6 +1510,7 @@ export default function JazelApp() {
   // Forgot Password
   const handleForgotPassword = async () => {
     setAuthLoading(true);
+    setForgotPasswordError(null); // Clear previous errors
     try {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
@@ -1040,12 +1521,22 @@ export default function JazelApp() {
       
       if (response.ok) {
         setForgotPasswordSent(true);
-        toast.success('Password reset link sent! Check your email.');
+        // Show success message from server if available
+        if (data.message) {
+          toast.success(data.message, { duration: 6000 });
+        } else {
+          toast.success('Password reset link sent! Check your email.');
+        }
       } else {
-        toast.error(data.error || 'Failed to send reset link');
+        // Show error inline and via toast
+        const errorMessage = data.error || 'Failed to send reset link';
+        setForgotPasswordError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
-      toast.error('Failed to send reset link');
+      const errorMessage = 'Failed to send reset link. Please try again.';
+      setForgotPasswordError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setAuthLoading(false);
     }
@@ -1064,8 +1555,19 @@ export default function JazelApp() {
       
       if (response.ok) {
         setUser(data.user);
+        // Update distance unit preference
+        if (data.user.distanceUnit) {
+          setDistanceUnit(data.user.distanceUnit === 'meters' ? 'meters' : 'yards');
+        }
         setShowProfileEditDialog(false);
-        toast.success('Profile updated successfully!');
+        // Show specific message if password was changed
+        if (profileEditForm.newPassword) {
+          toast.success('Profile and password updated successfully!');
+        } else {
+          toast.success('Profile updated successfully!');
+        }
+        // Clear password fields after successful update
+        setProfileEditForm(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
       } else {
         toast.error(data.error || 'Failed to update profile');
       }
@@ -1086,11 +1588,88 @@ export default function JazelApp() {
         city: user.city || '',
         country: user.country || 'Morocco',
         nearbyDistance: user.nearbyDistance || 100,
+        distanceUnit: (user as any).distanceUnit || 'yards',
         currentPassword: '',
         newPassword: '',
       });
       setShowProfileEditDialog(true);
     }
+  };
+
+  // Fetch user clubs
+  const fetchUserClubs = async () => {
+    if (!user) return;
+    setLoadingClubs(true);
+    try {
+      const response = await fetch(`/api/user/clubs?userId=${user.id}`);
+      const data = await response.json();
+      if (data.clubs) {
+        setUserClubs(data.clubs);
+        // Initialize form data for editing
+        const formData = Array.from({ length: 14 }, (_, i) => {
+          const club = data.clubs.find((c: any) => (c.sortOrder ?? 0) === i);
+          return club ? { clubName: club.clubName, estimatedDistance: club.estimatedDistance, sortOrder: i } : { clubName: '', estimatedDistance: null, sortOrder: i };
+        });
+        setBagFormData(formData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch clubs:', error);
+    } finally {
+      setLoadingClubs(false);
+    }
+  };
+
+  // Save all clubs from form data
+  const handleSaveBag = async () => {
+    if (!user) return;
+    setAuthLoading(true);
+    try {
+      // First, remove all existing clubs
+      for (const club of userClubs) {
+        await fetch(`/api/user/clubs?userId=${user.id}&clubName=${encodeURIComponent(club.clubName)}`, {
+          method: 'DELETE',
+        });
+      }
+      
+      // Then add all clubs from form data
+      for (const club of bagFormData) {
+        if (club.clubName && club.clubName !== '') {
+          await fetch('/api/user/clubs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              clubName: club.clubName,
+              estimatedDistance: club.estimatedDistance,
+              sortOrder: club.sortOrder,
+            }),
+          });
+        }
+      }
+      
+      // Refresh the clubs list
+      await fetchUserClubs();
+      setEditingBag(false);
+      toast.success('Bag saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save bag');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Update form data for a slot
+  const updateBagFormSlot = (slotIndex: number, field: 'clubName' | 'estimatedDistance', value: string | number | null) => {
+    setBagFormData(prev => prev.map((item, idx) => 
+      idx === slotIndex ? { ...item, [field]: value } : item
+    ));
+  };
+
+  // Open bag dialog
+  const openBagDialog = () => {
+    setShowBagDialog(true);
+    fetchUserClubs();
+    setEditingBag(false);
   };
 
   // Compress image function
@@ -1247,6 +1826,11 @@ export default function JazelApp() {
   const updateNearbyDistance = async (distance: number) => {
     setMaxNearbyDistance(distance);
     
+    // Format the distance for display based on user's unit preference
+    const displayDistance = distanceUnit === 'yards' 
+      ? `${Math.round(distance * 0.621371)} mi`
+      : `${distance} km`;
+    
     // Save to user profile if logged in
     if (user) {
       try {
@@ -1259,7 +1843,7 @@ export default function JazelApp() {
         
         if (response.ok) {
           setUser(data.user);
-          toast.success(`Nearby distance set to ${distance}km`);
+          toast.success(`Nearby distance set to ${displayDistance}`);
         }
       } catch (error) {
         console.error('Failed to save distance preference:', error);
@@ -1314,7 +1898,7 @@ export default function JazelApp() {
     );
   };
 
-  // Start new round
+  // Start new round - show hole selection dialog first
   const startNewRound = (course: GolfCourse) => {
     // Require login to play
     if (!user) {
@@ -1323,13 +1907,56 @@ export default function JazelApp() {
       return;
     }
     
+    // Check if there's already an active scorecard with unsaved work
+    if (showScorecard && hasUnsavedWork) {
+      setPendingCourse(course);
+      setShowUnsavedWarningDialog(true);
+      return;
+    }
+    
+    // Check if there's a saved round in localStorage
+    try {
+      const savedRound = localStorage.getItem('jazel_active_round');
+      if (savedRound) {
+        const parsed = JSON.parse(savedRound);
+        const savedAt = new Date(parsed.savedAt);
+        const now = new Date();
+        const hoursSinceSaved = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+        
+        // If there's unsaved work from less than 24 hours ago, show warning
+        if (hoursSinceSaved < 24 && parsed.selectedCourse && parsed.scores?.length > 0) {
+          setPendingCourse(course);
+          setShowUnsavedWarningDialog(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check saved round:', error);
+    }
+    
+    // Set pending course and show hole selection dialog
+    setPendingCourse(course);
+    // Reset to defaults
+    setHolesPlayed(18);
+    setHolesType('front');
+    setShowHoleSelectionDialog(true);
+  };
+  
+  // Actually initialize the round after hole selection
+  const initializeRound = (course: GolfCourse, numHoles: 9 | 18, holeType: 'front' | 'back') => {
     setSelectedCourse(course);
     setSelectedTee(course.tees[0]?.id || '');
-    setSelectedGPSHole(1);
+    setSelectedGPSHole(holeType === 'back' ? 10 : 1);
+    setHolesPlayed(numHoles);
+    setHolesType(holeType);
+    
+    // Determine which holes to show
+    const startHole = numHoles === 9 && holeType === 'back' ? 10 : 1;
+    const endHole = numHoles === 9 ? (holeType === 'back' ? 18 : 9) : Math.min(course.totalHoles, 18);
     
     // Initialize scores for main player
     const initialScores: RoundScore[] = [];
-    for (let i = 1; i <= Math.min(course.totalHoles, 18); i++) {
+    for (let i = startHole; i <= endHole; i++) {
       initialScores.push({
         holeNumber: i,
         strokes: 0,
@@ -1345,12 +1972,15 @@ export default function JazelApp() {
     setAdditionalPlayers([]);
     setPlayerScores(new Map());
     
+    // Close dialog and show scorecard
+    setShowHoleSelectionDialog(false);
+    setPendingCourse(null);
     setShowScorecard(true);
     setActiveTab('scorecard');
   };
   
   // Multi-player functions
-  const addPlayer = (name: string, avatar?: string | null, handicap?: number | null) => {
+  const addPlayer = (name: string, avatar?: string | null, handicap?: number | null, userId?: string | null) => {
     if (additionalPlayers.length >= 3) {
       toast.error('Maximum 3 additional players allowed');
       return;
@@ -1364,7 +1994,8 @@ export default function JazelApp() {
       id: `player-${Date.now()}`,
       name: name.trim(),
       avatar: avatar,
-      handicap: handicap
+      handicap: handicap,
+      userId: userId || null // Store user ID for registered golfers
     };
     
     setAdditionalPlayers(prev => [...prev, newPlayer]);
@@ -1456,6 +2087,24 @@ export default function JazelApp() {
     }
   }, [showScorecard, selectedCourse, additionalPlayers, checkScrollPosition]);
 
+  // Keyboard shortcut for saving scorecard (Ctrl+S / Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        if (showScorecard && selectedCourse && user) {
+          e.preventDefault();
+          const scoresWithStrokes = scores.filter(s => s.strokes > 0);
+          if (scoresWithStrokes.length > 0) {
+            saveRound();
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showScorecard, selectedCourse, user, scores]);
+
   // Update score
   const updateScore = (holeNumber: number, field: keyof RoundScore, value: any) => {
     setScores(prev => prev.map(s => 
@@ -1467,57 +2116,83 @@ export default function JazelApp() {
   const saveRound = async () => {
     if (!user || !selectedCourse) return;
 
+    // Get scores with entered strokes (at least one score must have strokes)
+    const scoresWithStrokes = scores.filter(s => s.strokes > 0);
+    if (scoresWithStrokes.length === 0) {
+      toast.error('Please enter at least one score');
+      return;
+    }
+
     try {
-      // Prepare player names for additional players
-      const playerNames = additionalPlayers.length > 0 ? JSON.stringify(additionalPlayers.map(p => p.name)) : null;
+      // Prepare player data for additional players (including userId, avatar and handicap)
+      const playerData = additionalPlayers.length > 0 ? JSON.stringify(additionalPlayers.map(p => ({
+        name: p.name,
+        avatar: p.avatar || null,
+        handicap: p.handicap || null,
+        userId: p.userId || null // Store user ID for registered golfers to fetch fresh data
+      }))) : null;
+
+      // Prepare player scores array for saving
+      const playerScoresArray: Array<{
+        playerIndex: number;
+        scores: RoundScore[];
+      }> = [];
+      
+      playerScores.forEach((ps, idx) => {
+        const scoresWithStrokesForPlayer = ps.filter(s => s.strokes > 0);
+        if (scoresWithStrokesForPlayer.length > 0) {
+          playerScoresArray.push({
+            playerIndex: idx,
+            scores: scoresWithStrokesForPlayer,
+          });
+        }
+      });
 
       // Check if we're editing an existing round or creating new
       if (editingRoundId) {
-        // Update existing round
+        // Update existing round - send ALL holes with their current scores
         const response = await fetch('/api/rounds', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             roundId: editingRoundId,
-            scores: scores.filter(s => s.strokes > 0),
+            teeId: selectedTee,
+            playerNames: playerData,
+            scores: scores,
+            playerScores: playerScoresArray,
+            holesPlayed: holesPlayed,
+            holesType: holesType,
           }),
         });
+        
+        const data = await response.json();
         
         if (response.ok) {
           toast.success('Round updated successfully!');
           
-          // Update the round in the history
-          const totals = calculateTotals();
-          setRoundHistory(prev => prev.map(r => {
-            if (r.id === editingRoundId) {
-              return {
-                ...r,
-                totalStrokes: totals.strokes,
-                totalPutts: totals.putts,
-                greensInReg: totals.gir,
-                penalties: totals.penalties,
-                scores: scores,
-              };
-            }
-            return r;
-          }));
-          
           // Clear saved round from localStorage
           localStorage.removeItem('jazel_active_round');
-          setEditingRoundId(null); // Clear editing state
           
+          // Reset state
           setShowScorecard(false);
           setSelectedCourse(null);
           setScores([]);
           setAdditionalPlayers([]);
           setPlayerScores(new Map());
+          setEditingRoundId(null);
+          setSelectedTee('');
+          
+          // Fetch fresh rounds and stats from server
+          await fetchRounds();
+          await fetchStats();
+          
+          // Switch to history tab
           setActiveTab('history');
         } else {
-          const data = await response.json();
           toast.error(data.error || 'Failed to update round');
         }
       } else {
-        // Create new round
+        // Create new round - only send scores with strokes
         const response = await fetch('/api/rounds', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1525,46 +2200,39 @@ export default function JazelApp() {
             userId: user.id,
             courseId: selectedCourse.id,
             teeId: selectedTee,
-            scores: scores.filter(s => s.strokes > 0),
-            playerNames: playerNames,
+            scores: scoresWithStrokes,
+            playerNames: playerData,
+            playerScores: playerScoresArray,
+            holesPlayed: holesPlayed,
+            holesType: holesPlayed === 9 ? holesType : null,
           }),
         });
         
+        const data = await response.json();
+        
         if (response.ok) {
-          const data = await response.json();
           toast.success('Round saved successfully!');
-          
-          const totals = calculateTotals();
-          const newRound: SavedRound = {
-            id: data.round.id,
-            date: new Date().toISOString(),
-            totalStrokes: totals.strokes,
-            totalPutts: totals.putts,
-            fairwaysHit: totals.fairways,
-            fairwaysTotal: scores.filter(s => s.fairwayHit !== null).length,
-            greensInReg: totals.gir,
-            penalties: totals.penalties,
-            completed: true,
-            course: {
-              name: selectedCourse.name,
-              city: selectedCourse.city,
-              totalHoles: selectedCourse.totalHoles,
-            },
-            scores: scores,
-          };
-          setRoundHistory(prev => [newRound, ...prev]);
           
           // Clear saved round from localStorage
           localStorage.removeItem('jazel_active_round');
           
+          // Reset state
           setShowScorecard(false);
           setSelectedCourse(null);
           setScores([]);
           setAdditionalPlayers([]);
           setPlayerScores(new Map());
+          setEditingRoundId(null);
+          setSelectedTee('');
+          
+          // Fetch fresh rounds and stats from server
+          await fetchRounds();
+          await fetchStats();
+          
+          // Switch to history tab
           setActiveTab('history');
         } else {
-          toast.error('Failed to save round');
+          toast.error(data.error || 'Failed to save round');
         }
       }
     } catch (error) {
@@ -1588,10 +2256,11 @@ export default function JazelApp() {
   // Delete a round
   const deleteRound = async (roundId: string) => {
     try {
-      const response = await fetch(`/api/rounds?roundId=${roundId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/rounds/${roundId}`, { method: 'DELETE' });
       
       if (response.ok) {
         setRoundHistory(prev => prev.filter(r => r.id !== roundId));
+        await fetchStats(); // Refresh stats after deleting
         toast.success('Round deleted');
       } else {
         const data = await response.json();
@@ -1602,6 +2271,235 @@ export default function JazelApp() {
       toast.error('Failed to delete round');
     }
   };
+
+  // Download round as XLSX
+  const downloadRoundAsXlsx = async (round: SavedRound) => {
+    try {
+      const response = await fetch(`/api/rounds/export?roundId=${round.id}`);
+      
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to export round');
+        return;
+      }
+      
+      // Get the blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${round.course?.name || 'round'}_${new Date(round.date).toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Round exported successfully');
+    } catch (error) {
+      console.error('Failed to export round:', error);
+      toast.error('Failed to export round');
+    }
+  };
+
+  // Load a round for editing - extracted to useCallback for better reactivity
+  const loadRoundForEditing = useCallback(async (round: SavedRound) => {
+    // Get the course ID - try both locations
+    const courseId = round.course?.id || round.courseId;
+    
+    if (!courseId) {
+      toast.error('Cannot edit round: course information missing');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/courses/${courseId}`);
+      if (!response.ok) {
+        toast.error('Could not load course data');
+        return;
+      }
+      
+      const data = await response.json();
+      const course = data.course;
+      
+      setSelectedCourse(course);
+      
+      // Set holes played and type from the round
+      const roundHolesPlayed = round.holesPlayed || 18;
+      const roundHolesType = round.holesType || 'front';
+      setHolesPlayed(roundHolesPlayed as 9 | 18);
+      setHolesType(roundHolesType as 'front' | 'back');
+      
+      // Validate and set tee - check if teeId exists in course tees
+      const validTeeId = round.teeId && course.tees?.some((t: { id: string }) => t.id === round.teeId)
+        ? round.teeId
+        : (course.tees?.[0]?.id || '');
+      setSelectedTee(validTeeId);
+      
+      // Set GPS hole to first hole of the round
+      setSelectedGPSHole(roundHolesPlayed === 9 && roundHolesType === 'back' ? 10 : 1);
+      
+      // Initialize scores for the holes that were played, merging with existing scores
+      const allHoles = course?.holes || [];
+      const existingScores = round.scores && round.scores.length > 0 ? round.scores : [];
+      
+      // Determine which holes to show based on round settings
+      const startHole = roundHolesPlayed === 9 && roundHolesType === 'back' ? 10 : 1;
+      const endHole = roundHolesPlayed === 9 ? (roundHolesType === 'back' ? 18 : 9) : 18;
+      
+      // Filter holes to only show the ones that were played
+      const holesToShow = allHoles.filter((h: { holeNumber: number }) => 
+        h.holeNumber >= startHole && h.holeNumber <= endHole
+      );
+      
+      // Separate scores by playerIndex
+      const mainPlayerScores = existingScores.filter(s => s.playerIndex === 0);
+      const additionalPlayerScores = existingScores.filter(s => s.playerIndex > 0);
+      
+      // Create a map of existing scores by hole number for main player
+      const scoreMap = new Map(mainPlayerScores.map(s => [s.holeNumber, s]));
+      
+      // Create scores array with only the holes that were played
+      const allScores: RoundScore[] = holesToShow.map((hole: { holeNumber: number; par: number }) => {
+        const existingScore = scoreMap.get(hole.holeNumber);
+        return existingScore ? {
+          holeNumber: existingScore.holeNumber,
+          strokes: existingScore.strokes,
+          putts: existingScore.putts || 0,
+          fairwayHit: existingScore.fairwayHit ?? null,
+          greenInReg: existingScore.greenInReg || false,
+          penalties: existingScore.penalties || 0,
+          sandShots: existingScore.sandShots || 0,
+          chipShots: existingScore.chipShots || 0,
+          driveDistance: existingScore.driveDistance || null,
+        } : {
+          holeNumber: hole.holeNumber,
+          strokes: 0,
+          putts: 0,
+          fairwayHit: null,
+          greenInReg: false,
+          penalties: 0,
+          sandShots: 0,
+          chipShots: 0,
+          driveDistance: null,
+        };
+      });
+      
+      setScores(allScores);
+      
+      // Parse player data and restore additional players (including avatars)
+      // Fetch fresh data for registered golfers via userId
+      let players: AdditionalPlayer[] = [];
+      if (round.playerNames) {
+        try {
+          const playerData = JSON.parse(round.playerNames);
+          
+          // Fetch fresh data for players with userIds
+          const fetchPromises = playerData.map(async (item: string | { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null }, idx: number) => {
+            // Check if it's the new format with userId
+            if (typeof item !== 'string' && item.userId) {
+              // Fetch fresh user data from API
+              try {
+                const response = await fetch(`/api/users/${item.userId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  return {
+                    id: `player-${idx}`,
+                    name: data.user?.name || item.name,
+                    avatar: data.user?.avatar || item.avatar || null,
+                    handicap: data.user?.handicap ?? item.handicap ?? null,
+                    userId: item.userId,
+                  };
+                }
+              } catch (e) {
+                console.error('Failed to fetch user data:', e);
+              }
+            }
+            
+            // Fallback to stored data
+            if (typeof item === 'string') {
+              // Old format: just a name string
+              return {
+                id: `player-${idx}`,
+                name: item,
+                avatar: null,
+                handicap: null,
+              };
+            } else {
+              // New format: player object with name, avatar, handicap
+              return {
+                id: `player-${idx}`,
+                name: item.name,
+                avatar: item.avatar || null,
+                handicap: item.handicap || null,
+                userId: item.userId || null,
+              };
+            }
+          });
+          
+          // Wait for all fetches to complete
+          players = await Promise.all(fetchPromises);
+        } catch (e) {
+          console.error('Failed to parse player data:', e);
+        }
+      }
+      setAdditionalPlayers(players);
+      
+      // Restore player scores for additional players
+      const playerScoresMap = new Map<number, RoundScore[]>();
+      
+      // Group scores by playerIndex
+      const scoresByPlayer = new Map<number, RoundScore[]>();
+      additionalPlayerScores.forEach(s => {
+        const idx = s.playerIndex;
+        if (!scoresByPlayer.has(idx)) {
+          scoresByPlayer.set(idx, []);
+        }
+        scoresByPlayer.get(idx)!.push(s);
+      });
+      
+      // Create player scores for each additional player (playerIndex 1, 2, 3 maps to index 0, 1, 2)
+      players.forEach((player, idx) => {
+        const playerIndex = idx + 1; // playerIndex in database is 1, 2, 3 for additional players
+        const existingPlayerScores = scoresByPlayer.get(playerIndex) || [];
+        
+        // Create a map for quick lookup
+        const playerScoreMap = new Map(existingPlayerScores.map(s => [s.holeNumber, s]));
+        
+        // Create scores for all holes
+        const fullScores: RoundScore[] = allHoles.map((hole: { holeNumber: number }) => {
+          const existing = playerScoreMap.get(hole.holeNumber);
+          return existing ? {
+            holeNumber: existing.holeNumber,
+            strokes: existing.strokes,
+            putts: existing.putts || 0,
+            fairwayHit: existing.fairwayHit ?? null,
+            greenInReg: existing.greenInReg || false,
+            penalties: existing.penalties || 0,
+          } : {
+            holeNumber: hole.holeNumber,
+            strokes: 0,
+            putts: 0,
+            fairwayHit: null,
+            greenInReg: false,
+            penalties: 0,
+          };
+        });
+        
+        playerScoresMap.set(idx, fullScores);
+      });
+      
+      setPlayerScores(playerScoresMap);
+      setEditingRoundId(round.id);
+      setShowScorecard(true);
+      setActiveTab('scorecard');
+      toast.info('Round loaded for editing. Make changes and save to update.');
+    } catch (error) {
+      console.error('Failed to load round for editing:', error);
+      toast.error('Failed to load round');
+    }
+  }, []);
 
   // Calculate round totals
   const calculateTotals = () => {
@@ -1623,7 +2521,20 @@ export default function JazelApp() {
 
   // Get course total par
   const getCoursePar = () => {
-    if (!selectedCourse) return 72;
+    if (!selectedCourse) return holesPlayed === 9 ? 36 : 72;
+    
+    if (holesPlayed === 9) {
+      // For 9-hole rounds, get par for front or back nine
+      if (holesType === 'back') {
+        // Back nine: holes 10-18 (indices 9-17)
+        return selectedCourse.holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0);
+      } else {
+        // Front nine: holes 1-9 (indices 0-8)
+        return selectedCourse.holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0);
+      }
+    }
+    
+    // Full 18 holes
     return selectedCourse.holes.slice(0, 18).reduce((sum, h) => sum + h.par, 0);
   };
 
@@ -1638,47 +2549,50 @@ export default function JazelApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-jazel-50 via-white to-jazel-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#c5e6d1'}}>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #06402B 0%, #0d7377 100%)'}}>
-                <Circle className="w-6 h-6 text-white" />
-              </div>
+            <Link href="/guide" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+              <img src="/golf-ball-logo.png" alt="Jazel" className="w-16 h-16 object-contain" />
               <div>
-                <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #06402B, #0d7377)', WebkitBackgroundClip: 'text', backgroundClip: 'text'}}>
+                <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)', WebkitBackgroundClip: 'text', backgroundClip: 'text'}}>
                   Jazel
                 </h1>
                 <p className="text-xs text-muted-foreground">Golf Scorecard</p>
               </div>
-            </div>
+            </Link>
             
             <div className="flex items-center gap-3">
-              {showScorecard && selectedCourse && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowGPSPanel(!showGPSPanel)}
-                  className="gap-1"
-                  style={{color: '#06402B'}}
-                >
-                  <Navigation className="w-4 h-4" />
-                </Button>
-              )}
               {user?.isAdmin && (
                 <Link href="/admin">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="gap-1"
-                    style={{color: '#06402B'}}
+                    style={{color: '#39638b'}}
                   >
                     <Settings className="w-4 h-4" />
                     <span className="hidden sm:inline">Setup</span>
                   </Button>
                 </Link>
+              )}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative gap-1"
+                  style={{color: '#39638b'}}
+                  onClick={() => setShowMessagesDialog(true)}
+                >
+                  <Bell className="w-4 h-4" />
+                  {messages.filter(m => !m.isRead).length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      {messages.filter(m => !m.isRead).length}
+                    </span>
+                  )}
+                </Button>
               )}
               {user ? (
                 <div className="flex items-center gap-2">
@@ -1687,10 +2601,10 @@ export default function JazelApp() {
                       src={user.avatar} 
                       alt={user.name || 'User'} 
                       className="w-8 h-8 rounded-full object-cover border-2"
-                      style={{borderColor: '#9dd6b3'}}
+                      style={{borderColor: '#a3c4e0'}}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #06402B 0%, #0d7377 100%)'}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                       <span className="text-sm font-bold text-white">
                         {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                       </span>
@@ -1715,14 +2629,14 @@ export default function JazelApp() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowLoginDialog(true)}
-                    style={{color: '#06402B'}}
+                    style={{color: '#39638b'}}
                   >
                     Login
                   </Button>
                   <Button
                     size="sm"
                     className="text-white"
-                    style={{backgroundColor: '#06402B'}}
+                    style={{backgroundColor: '#39638b'}}
                     onClick={() => setShowSignupDialog(true)}
                   >
                     Sign Up
@@ -1734,36 +2648,19 @@ export default function JazelApp() {
         </div>
       </header>
 
-      {/* GPS Panel (Slide-down) */}
-      <AnimatePresence>
-        {showGPSPanel && showScorecard && selectedCourse && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-white border-b"
-            style={{borderColor: '#c5e6d1'}}
-          >
-            <div className="max-w-7xl mx-auto p-4">
-              <GPSRangeFinder 
-                course={selectedCourse} 
-                userLocation={userLocation}
-                onLocationUpdate={(loc) => setUserLocation(loc)}
-                selectedHole={selectedGPSHole}
-                onHoleChange={setSelectedGPSHole}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full mb-6 bg-white/80 backdrop-blur ${user ? 'grid-cols-5' : 'grid-cols-1'}`}>
-            <TabsTrigger value="search" className="gap-2">
-              <Search className="w-4 h-4" />
-              <span className="hidden sm:inline">Courses</span>
+          <TabsList className={`grid w-full mb-6 bg-white/80 backdrop-blur ${user ? 'grid-cols-7' : 'grid-cols-1'}`}>
+            {user && (
+              <TabsTrigger value="search" className="gap-2">
+                <Flag className="w-4 h-4" />
+                <span className="hidden sm:inline">Courses</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="weather" className="gap-2">
+              <Cloud className="w-4 h-4" />
+              <span className="hidden sm:inline">Weather</span>
             </TabsTrigger>
             {user && (
               <>
@@ -1771,12 +2668,16 @@ export default function JazelApp() {
                   <Users className="w-4 h-4" />
                   <span className="hidden sm:inline">Golfers</span>
                 </TabsTrigger>
+                <TabsTrigger value="tournaments" className="gap-2">
+                  <Trophy className="w-4 h-4" />
+                  <span className="hidden sm:inline">Tournaments</span>
+                </TabsTrigger>
                 <TabsTrigger value="scorecard" className="gap-2">
                   <Target className="w-4 h-4" />
                   <span className="hidden sm:inline">Scorecard</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="gap-2">
-                  <Trophy className="w-4 h-4" />
+                  <Clock className="w-4 h-4" />
                   <span className="hidden sm:inline">History</span>
                 </TabsTrigger>
                 <TabsTrigger value="profile" className="gap-2">
@@ -1799,9 +2700,9 @@ export default function JazelApp() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   className="pl-10 h-12 bg-white"
-                  style={{borderColor: '#9dd6b3'}}
-                  onFocus={(e) => e.target.style.borderColor = '#06402B'}
-                  onBlur={(e) => e.target.style.borderColor = '#9dd6b3'}
+                  style={{borderColor: '#a3c4e0'}}
+                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
+                  onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
                 />
               </div>
               <Button
@@ -1821,8 +2722,8 @@ export default function JazelApp() {
                 onClick={getUserLocation}
                 variant="outline"
                 className="h-12 px-4"
-                style={{borderColor: '#9dd6b3'}}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e8f5ed'}
+                style={{borderColor: '#a3c4e0'}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d6e4ef'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Navigation className="w-5 h-5 mr-2" />
@@ -1833,19 +2734,47 @@ export default function JazelApp() {
             {/* Results Info */}
             {isNearbyMode && userLocation && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg"
-              style={{backgroundColor: '#e8f5ed'}}>
-                <MapPin className="w-4 h-4" style={{color: '#06402B'}} />
+              style={{backgroundColor: '#d6e4ef'}}>
+                <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
                 <span>Showing courses within</span>
-                <Select value={maxNearbyDistance.toString()} onValueChange={(v) => updateNearbyDistance(parseInt(v))}>
-                  <SelectTrigger className="w-20 h-8" style={{borderColor: '#9dd6b3'}}>
+                <Select 
+                  value={(() => {
+                    // Convert km to user's unit for display value
+                    const userUnitValue = distanceUnit === 'yards' 
+                      ? Math.round(maxNearbyDistance * 0.621371) 
+                      : maxNearbyDistance;
+                    return userUnitValue.toString();
+                  })()} 
+                  onValueChange={(v) => {
+                    // Convert from user's unit back to km for storage
+                    const value = parseInt(v);
+                    const kmValue = distanceUnit === 'yards' 
+                      ? Math.round(value / 0.621371) 
+                      : value;
+                    updateNearbyDistance(kmValue);
+                  }}
+                >
+                  <SelectTrigger className="w-20 h-8" style={{borderColor: '#a3c4e0'}}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">10km</SelectItem>
-                    <SelectItem value="20">20km</SelectItem>
-                    <SelectItem value="50">50km</SelectItem>
-                    <SelectItem value="100">100km</SelectItem>
-                    <SelectItem value="200">200km</SelectItem>
+                    {distanceUnit === 'yards' ? (
+                      <>
+                        <SelectItem value="6">6 mi</SelectItem>
+                        <SelectItem value="12">12 mi</SelectItem>
+                        <SelectItem value="31">31 mi</SelectItem>
+                        <SelectItem value="62">62 mi</SelectItem>
+                        <SelectItem value="124">124 mi</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="10">10 km</SelectItem>
+                        <SelectItem value="20">20 km</SelectItem>
+                        <SelectItem value="50">50 km</SelectItem>
+                        <SelectItem value="100">100 km</SelectItem>
+                        <SelectItem value="200">200 km</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <span>of your location</span>
@@ -1857,7 +2786,7 @@ export default function JazelApp() {
                     fetchCourses();
                   }}
                   className="ml-auto"
-                  style={{color: '#06402B'}}
+                  style={{color: '#39638b'}}
                 >
                   Show All
                 </Button>
@@ -1883,12 +2812,12 @@ export default function JazelApp() {
                   >
                     <Card
                       className="group hover:shadow-lg transition-all duration-300 bg-white/80 backdrop-blur cursor-pointer overflow-hidden"
-                      style={{borderColor: '#c5e6d1'}}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#14b869'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#c5e6d1'}
+                      style={{borderColor: '#8ab0d1'}}
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#5d8cb8'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}
                     >
                       <div className="h-28 relative overflow-hidden"
-                        style={{background: 'linear-gradient(135deg, #14b869 0%, #0d7377 100%)'}}>
+                        style={{background: 'linear-gradient(135deg, #5d8cb8 0%, #4a7aa8 100%)'}}>
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                           <div className="flex-1">
@@ -1921,9 +2850,11 @@ export default function JazelApp() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             {course.distance !== undefined && (
-                              <Badge variant="secondary" style={{backgroundColor: '#c5e6d1', color: '#032719'}}>
+                              <Badge variant="secondary" style={{backgroundColor: '#8ab0d1', color: '#2a4a6a'}}>
                                 <Navigation className="w-3 h-3 mr-1" />
-                                {course.distance.toFixed(1)} km away
+                                {distanceUnit === 'yards' 
+                                  ? `${(course.distance * 0.621371).toFixed(1)} mi away`
+                                  : `${course.distance.toFixed(1)} km away`}
                               </Badge>
                             )}
                           </div>
@@ -1941,18 +2872,28 @@ export default function JazelApp() {
                         )}
                         
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            className="flex-1 text-white"
-                            style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
-                            onClick={() => startNewRound(course)}
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Play
-                          </Button>
+                          {course.isActive ? (
+                            <Button
+                              size="sm"
+                              className="flex-1 text-white"
+                              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                              onClick={() => startNewRound(course)}
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Play
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-red-500 hover:bg-red-600 text-white cursor-not-allowed"
+                              disabled
+                            >
+                              Coming Soon
+                            </Button>
+                          )}
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button size="sm" variant="outline" style={{borderColor: '#9dd6b3'}}>
+                              <Button size="sm" variant="outline" style={{borderColor: '#a3c4e0'}}>
                                 Details
                               </Button>
                             </DialogTrigger>
@@ -1992,7 +2933,11 @@ export default function JazelApp() {
                                   {course.distance !== undefined && (
                                     <div>
                                       <span className="text-muted-foreground">Distance:</span>
-                                      <span className="ml-2 font-medium" style={{color: '#06402B'}}>{course.distance.toFixed(1)} km</span>
+                                      <span className="ml-2 font-medium" style={{color: '#39638b'}}>
+                                        {distanceUnit === 'yards' 
+                                          ? `${(course.distance * 0.621371).toFixed(1)} mi`
+                                          : `${course.distance.toFixed(1)} km`}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
@@ -2026,14 +2971,23 @@ export default function JazelApp() {
                                   </div>
                                 )}
 
-                                <Button
-                                  className="w-full text-white"
-                                  style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
-                                  onClick={() => startNewRound(course)}
-                                >
-                                  <Plus className="w-4 h-4 mr-2" />
-                                  Start a Round
-                                </Button>
+                                {course.isActive ? (
+                                  <Button
+                                    className="w-full text-white"
+                                    style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                                    onClick={() => startNewRound(course)}
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Start a Round
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    className="w-full bg-red-500 hover:bg-red-600 text-white cursor-not-allowed"
+                                    disabled
+                                  >
+                                    Coming Soon
+                                  </Button>
+                                )}
                               </div>
                             </DialogContent>
                           </Dialog>
@@ -2058,7 +3012,7 @@ export default function JazelApp() {
             {!showScorecard || !selectedCourse ? (
               <Card className="bg-white/80 backdrop-blur">
                 <CardContent className="py-12 text-center">
-                  <Target className="w-16 h-16 mx-auto mb-4" style={{color: '#14b869'}} />
+                  <Target className="w-16 h-16 mx-auto mb-4" style={{color: '#5d8cb8'}} />
                   <h3 className="text-xl font-semibold mb-2">No Active Round</h3>
                   <p className="text-muted-foreground mb-4">
                     Select a course from the Courses tab to start a new round
@@ -2066,7 +3020,7 @@ export default function JazelApp() {
                   <Button
                     onClick={() => setActiveTab('search')}
                     className="text-white"
-                    style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
+                    style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                   >
                     Browse Courses
                   </Button>
@@ -2076,7 +3030,7 @@ export default function JazelApp() {
               <div className="space-y-4">
                 {/* Course Info Header */}
                 <Card className="text-white"
-                  style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}>
+                  style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div>
@@ -2086,7 +3040,7 @@ export default function JazelApp() {
                       <div className="flex items-center gap-3 flex-wrap">
                         {selectedCourse.tees.length > 0 && (
                           <Select value={selectedTee} onValueChange={setSelectedTee}>
-                            <SelectTrigger className="w-36 bg-white/20 border-white/30 text-white">
+                            <SelectTrigger className="w-36 bg-white border-gray-200 text-gray-900">
                               <SelectValue placeholder="Select Tee" />
                             </SelectTrigger>
                             <SelectContent>
@@ -2116,8 +3070,47 @@ export default function JazelApp() {
                           <Bot className="w-4 h-4 mr-1" />
                           AI Caddie
                         </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowMapScreen(true)}
+                          className="bg-white/20 hover:bg-white/30 text-white border-white/30 gap-2"
+                        >
+                          <MapIcon className="w-4 h-4" />
+                          <span className="hidden sm:inline">Map</span>
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowGPSPanel(!showGPSPanel)}
+                          className={`gap-2 ${showGPSPanel ? 'bg-white/40' : 'bg-white/20 hover:bg-white/30 text-white border-white/30'}`}
+                        >
+                          <Navigation className="w-4 h-4" />
+                          <span className="hidden sm:inline">GPS</span>
+                        </Button>
                       </div>
                     </div>
+                    {/* GPS Range Finder Panel */}
+                    {showGPSPanel && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="py-3">
+                          <GPSRangeFinder 
+                            course={selectedCourse} 
+                            userLocation={userLocation}
+                            onLocationUpdate={(loc) => setUserLocation(loc)}
+                            selectedHole={selectedGPSHole}
+                            onHoleChange={setSelectedGPSHole}
+                            distanceUnit={distanceUnit}
+                            userClubs={userClubs}
+                          />
+                        </div>
+                      </motion.div>
+                    )}
                     {/* Players List */}
                     {additionalPlayers.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20">
@@ -2144,7 +3137,7 @@ export default function JazelApp() {
                 <div className="grid grid-cols-5 gap-2">
                   <Card className="bg-white/80 text-center p-3">
                     <p className="text-xs text-muted-foreground">Strokes</p>
-                    <p className="text-2xl font-bold text-center" style={{color: '#06402B'}}>{calculateTotals().strokes}</p>
+                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().strokes}</p>
                   </Card>
                   <Card className="bg-white/80 text-center p-3">
                     <p className="text-xs text-muted-foreground">Par</p>
@@ -2161,51 +3154,48 @@ export default function JazelApp() {
                   </Card>
                   <Card className="bg-white/80 text-center p-3">
                     <p className="text-xs text-muted-foreground">Putts</p>
-                    <p className="text-2xl font-bold text-center" style={{color: '#06402B'}}>{calculateTotals().putts}</p>
+                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().putts}</p>
                   </Card>
                   <Card className="bg-white/80 text-center p-3">
                     <p className="text-xs text-muted-foreground">GIR</p>
-                    <p className="text-2xl font-bold text-center" style={{color: '#06402B'}}>{calculateTotals().gir}</p>
+                    <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().gir}</p>
                   </Card>
                 </div>
 
                 {/* Scorecard */}
                 <Card className="bg-white/80 backdrop-blur overflow-hidden">
                   <CardContent className="p-0">
-                    {/* Scroll Controls */}
-                    <div className="flex items-center justify-between px-2 py-1 border-b" style={{borderColor: '#c5e6d1'}}>
+                    {/* Front 9 / Back 9 Toggle */}
+                    <div className="flex items-center justify-center gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
                       <Button
-                        variant="ghost"
+                        variant={scorecardView === 'front' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => scrollScorecard('left')}
-                        disabled={!canScrollLeftState}
-                        className="h-8 w-8 p-0"
-                        style={{color: canScrollLeftState ? '#06402B' : '#9ca3af'}}
+                        onClick={() => setScorecardView('front')}
+                        style={scorecardView === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                        className="text-sm"
                       >
-                        <ChevronLeft className="w-5 h-5" />
+                        Front 9 (1-9)
                       </Button>
-                      <span className="text-xs text-muted-foreground">← Scroll to see more columns →</span>
                       <Button
-                        variant="ghost"
+                        variant={scorecardView === 'back' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => scrollScorecard('right')}
-                        disabled={!canScrollRightState}
-                        className="h-8 w-8 p-0"
-                        style={{color: canScrollRightState ? '#06402B' : '#9ca3af'}}
+                        onClick={() => setScorecardView('back')}
+                        style={scorecardView === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                        className="text-sm"
                       >
-                        <ChevronRight className="w-5 h-5" />
+                        Back 9 (10-18)
                       </Button>
                     </div>
                     <div 
                       ref={scorecardRef}
-                      className="overflow-x-auto h-[calc(100vh-490px)] min-h-[380px]"
+                      className="overflow-x-auto"
                       onScroll={checkScrollPosition}
                     >
-                      <div className="min-w-[700px]">
+                      <div className="min-w-[500px]">
                         {/* Header Row - Sticky */}
-                        <div className="sticky top-0 z-30 grid gap-1 p-2 text-white text-xs font-medium"
-                        style={{backgroundColor: '#06402B', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
-                          <div className="text-center">Hole</div>
+                        <div className="sticky top-0 z-30 grid gap-0.5 p-1.5 text-white text-xs font-medium"
+                        style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
+                          <div className="text-center sticky left-0 z-40 bg-[#39638b]">Hole</div>
                           <div className="text-center">Par</div>
                           <div className="text-center">HCP</div>
                           {/* Main player column with photo */}
@@ -2248,7 +3238,14 @@ export default function JazelApp() {
                         </div>
 
                         {/* Hole Rows */}
-                        {scores.map((score, index) => {
+                        {scores.filter((score) => {
+                          // Only show 9 holes at a time based on scorecardView
+                          if (scorecardView === 'front') {
+                            return score.holeNumber >= 1 && score.holeNumber <= 9;
+                          } else {
+                            return score.holeNumber >= 10 && score.holeNumber <= 18;
+                          }
+                        }).map((score, index) => {
                           const hole = selectedCourse.holes.find(h => h.holeNumber === score.holeNumber);
                           const holePar = hole?.par || 4;
                           const holeHcp = hole?.handicap || '-';
@@ -2257,14 +3254,14 @@ export default function JazelApp() {
                           return (
                             <div
                               key={score.holeNumber}
-                              className={`grid gap-1 p-2 text-sm ${index % 2 === 0 ? 'bg-white' : ''}`}
+                              className={`grid gap-0.5 p-1 text-xs ${index % 2 === 0 ? 'bg-white' : ''}`}
                               style={{
                                 ...(index % 2 !== 0 ? {backgroundColor: 'rgba(232, 245, 237, 0.5)'} : {}),
                                 gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`
                               }}
                             >
-                              {/* Hole number */}
-                              <div className="text-center font-medium flex items-center justify-center">
+                              {/* Hole number - sticky */}
+                              <div className={`text-center font-medium flex items-center justify-center sticky left-0 z-10 ${index % 2 === 0 ? 'bg-white' : 'bg-[rgba(232,245,237,0.9)]'}`}>
                                 {score.holeNumber}
                               </div>
                               {/* Par */}
@@ -2291,9 +3288,9 @@ export default function JazelApp() {
                                   max={15}
                                   value={score.strokes || ''}
                                   onChange={(e) => updateScore(score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                  className={`h-9 w-14 text-center text-sm font-medium border-2 border-gray-500 ${getScoreColor(score.strokes, holePar)}`}
-                                  style={{'--tw-ring-color': '#06402B'} as React.CSSProperties}
-                                  onFocus={(e) => e.target.style.borderColor = '#06402B'}
+                                  className={`h-7 w-9 text-center text-xs font-medium border border-gray-400 ${getScoreColor(score.strokes, holePar)}`}
+                                  style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
+                                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                   onBlur={(e) => e.target.style.borderColor = '#6b7280'}
                                 />
                               </div>
@@ -2308,9 +3305,9 @@ export default function JazelApp() {
                                       max={15}
                                       value={playerScore?.strokes || ''}
                                       onChange={(e) => updatePlayerScore(playerIdx, score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                      className={`h-9 w-14 text-center text-sm font-medium border-2 border-gray-500 ${getScoreColor(playerScore?.strokes || 0, holePar)}`}
-                                      style={{'--tw-ring-color': '#06402B'} as React.CSSProperties}
-                                      onFocus={(e) => e.target.style.borderColor = '#06402B'}
+                                      className={`h-7 w-9 text-center text-xs font-medium border border-gray-400 ${getScoreColor(playerScore?.strokes || 0, holePar)}`}
+                                      style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
+                                      onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                       onBlur={(e) => e.target.style.borderColor = '#6b7280'}
                                     />
                                   </div>
@@ -2324,9 +3321,9 @@ export default function JazelApp() {
                                   max={10}
                                   value={score.putts || ''}
                                   onChange={(e) => updateScore(score.holeNumber, 'putts', parseInt(e.target.value) || 0)}
-                                  className="h-9 w-14 text-center border-2 border-gray-500"
-                                  onFocus={(e) => e.target.style.borderColor = '#06402B'}
-                                  onBlur={(e) => e.target.style.borderColor = '#6b7280'}
+                                  className="h-7 w-9 text-center text-xs border border-gray-400"
+                                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
+                                  onBlur={(e) => e.target.style.borderColor = '#9ca3af'}
                                 />
                               </div>
                               {/* FWY */}
@@ -2335,7 +3332,7 @@ export default function JazelApp() {
                                   size="sm"
                                   variant={score.fairwayHit === true ? 'default' : score.fairwayHit === false ? 'destructive' : 'outline'}
                                   className={`h-7 w-7 p-0 ${score.fairwayHit === true ? '' : ''}`}
-                                  style={score.fairwayHit === true ? {backgroundColor: '#06402B'} : {}}
+                                  style={score.fairwayHit === true ? {backgroundColor: '#39638b'} : {}}
                                   onClick={() => updateScore(score.holeNumber, 'fairwayHit', 
                                     score.fairwayHit === null ? true : score.fairwayHit === true ? false : null
                                   )}
@@ -2349,7 +3346,7 @@ export default function JazelApp() {
                                   size="sm"
                                   variant={score.greenInReg ? 'default' : 'outline'}
                                   className={`h-7 w-7 p-0`}
-                                  style={score.greenInReg ? {backgroundColor: '#06402B'} : {}}
+                                  style={score.greenInReg ? {backgroundColor: '#39638b'} : {}}
                                   onClick={() => updateScore(score.holeNumber, 'greenInReg', !score.greenInReg)}
                                 >
                                   {score.greenInReg ? <Check className="w-3 h-3" /> : '-'}
@@ -2363,14 +3360,14 @@ export default function JazelApp() {
                                   max={5}
                                   value={score.penalties || ''}
                                   onChange={(e) => updateScore(score.holeNumber, 'penalties', parseInt(e.target.value) || 0)}
-                                  className="h-9 w-14 text-center border-2 border-gray-500"
-                                  onFocus={(e) => e.target.style.borderColor = '#06402B'}
-                                  onBlur={(e) => e.target.style.borderColor = '#6b7280'}
+                                  className="h-7 w-9 text-center text-xs border border-gray-400"
+                                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
+                                  onBlur={(e) => e.target.style.borderColor = '#9ca3af'}
                                 />
                               </div>
                               {/* +/- */}
                               <div className="flex items-center justify-center">
-                                <span className={`font-medium text-sm ${
+                                <span className={`font-medium text-xs ${
                                   scoreDiff < 0 ? 'text-red-600' : 
                                   scoreDiff > 0 ? 'text-amber-600' : 'text-gray-600'
                                 }`}>
@@ -2382,32 +3379,59 @@ export default function JazelApp() {
                         })}
 
                         {/* Total Row - Sticky */}
-                        <div className="sticky bottom-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
-                          style={{backgroundColor: '#06402B', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
-                          <div className="text-center">Tot</div>
-                          <div className="text-center">{getCoursePar()}</div>
+                        <div className="sticky bottom-0 z-30 grid gap-0.5 p-1.5 text-white text-xs font-medium"
+                          style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
+                          <div className="text-center sticky left-0 z-40 bg-[#39638b]">Total</div>
+                          <div className="text-center">{
+                            // Calculate par for all holes
+                            selectedCourse.holes
+                              .reduce((sum, h) => sum + h.par, 0)
+                          }</div>
                           <div className="text-center">-</div>
-                          <div className="text-center">{calculateTotals().strokes || '-'}</div>
+                          <div className="text-center">{
+                            // Calculate strokes for all holes
+                            scores
+                              .reduce((sum, s) => sum + (s.strokes || 0), 0) || '-'
+                          }</div>
                           {additionalPlayers.map((player, playerIdx) => {
-                            const playerTotal = playerScores.get(playerIdx)?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+                            // Calculate player total for all holes
+                            const playerTotal = playerScores.get(playerIdx)
+                              ?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
                             return <div key={player.id} className="text-center">{playerTotal || '-'}</div>;
                           })}
-                          <div className="text-center">{calculateTotals().putts || '-'}</div>
-                          <div className="text-center">{calculateTotals().fairways || '-'}</div>
-                          <div className="text-center">{calculateTotals().gir || '-'}</div>
-                          <div className="text-center">{calculateTotals().penalties || '-'}</div>
+                          <div className="text-center">{
+                            scores.reduce((sum, s) => sum + (s.putts || 0), 0) || '-'
+                          }</div>
+                          <div className="text-center">{
+                            scores.filter(s => s.fairwayHit === true).length || '-'
+                          }</div>
+                          <div className="text-center">{
+                            scores.filter(s => s.greenInReg).length || '-'
+                          }</div>
+                          <div className="text-center">{
+                            scores.reduce((sum, s) => sum + (s.penalties || 0), 0) || '-'
+                          }</div>
                           <div className="text-center">
-                            {(calculateTotals().vsPar > 0 ? '+' : '') + (calculateTotals().vsPar || 0)}
+                            {(() => {
+                              let vsPar = 0;
+                              scores.forEach(s => {
+                                if (s.strokes > 0) {
+                                  const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
+                                  vsPar += s.strokes - (hole?.par || 4);
+                                }
+                              });
+                              return (vsPar > 0 ? '+' : '') + vsPar;
+                            })()}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="p-4 border-t flex gap-3" style={{borderColor: '#c5e6d1'}}>
+                    <div className="p-4 border-t flex gap-3" style={{borderColor: '#8ab0d1'}}>
                       <Button
                         className="flex-1 text-white"
-                        style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
+                        style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                         onClick={saveRound}
                         disabled={scores.filter(s => s.strokes > 0).length === 0}
                       >
@@ -2448,16 +3472,68 @@ export default function JazelApp() {
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {roundHistory.map((round, index) => (
+                    {roundHistory.map((round, index) => {
+                      // Parse player names if available - handle both old string format and new object format
+                      let playerNames: (string | { name: string })[] = [];
+                      if (round.playerNames) {
+                        try {
+                          playerNames = JSON.parse(round.playerNames);
+                        } catch (e) {}
+                      }
+                      
+                      // Calculate additional player totals from scores
+                      const additionalPlayerTotals = new Map<number, number>();
+                      round.scores?.forEach(s => {
+                        if (s.playerIndex && s.playerIndex > 0) {
+                          const current = additionalPlayerTotals.get(s.playerIndex) || 0;
+                          additionalPlayerTotals.set(s.playerIndex, current + s.strokes);
+                        }
+                      });
+                      
+                      // Calculate course par from holes data - only for played holes
+                      const holesPlayedCount = round.holesPlayed || 18;
+                      const holesTypeValue = round.holesType || 'front';
+                      const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+                      const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+                      
+                      const relevantHoles = (round.course?.holes || []).filter((h: { holeNumber: number }) => 
+                        h.holeNumber >= startHole && h.holeNumber <= endHole
+                      );
+                      const coursePar = relevantHoles.reduce((sum: number, h: { par: number }) => sum + h.par, 0) || (holesPlayedCount === 9 ? 36 : 72);
+                      const mainPlayerScores = round.scores?.filter(s => s.playerIndex === 0) || [];
+                      
+                      // Calculate +/- from individual holes - only count filled holes (strokes > 0)
+                      let vsPar = 0;
+                      let totalStrokesFromScores = 0;
+                      mainPlayerScores.forEach(score => {
+                        if (score.strokes > 0) {
+                          const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
+                          const holePar = hole?.par || 4;
+                          vsPar += score.strokes - holePar;
+                          totalStrokesFromScores += score.strokes;
+                        }
+                      });
+                      
+                      // Use calculated totalStrokes if available, otherwise use stored value
+                      const displayTotalStrokes = totalStrokesFromScores > 0 ? totalStrokesFromScores : (round.totalStrokes || 0);
+                      
+                      // Format holes played info
+                      const holesInfo = holesPlayedCount === 18 
+                        ? '18 holes' 
+                        : holesTypeValue === 'back' 
+                          ? 'Back 9 (10-18)' 
+                          : 'Front 9 (1-9)';
+                      
+                      return (
                       <motion.div
                         key={round.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                       >
-                        <Card className="transition-colors" style={{borderColor: '#c5e6d1'}}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#14b869'}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#c5e6d1'}>
+                        <Card className="transition-colors" style={{borderColor: '#8ab0d1'}}
+                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#5d8cb8'}
+                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}>
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -2469,74 +3545,357 @@ export default function JazelApp() {
                                     month: 'short',
                                     day: 'numeric'
                                   })}
+                                  <span className="mx-2">•</span>
+                                  <span className="text-xs" style={{color: '#39638b'}}>{holesInfo}</span>
                                 </p>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-6">
-                                  <div className="text-center">
-                                    <p className="text-2xl font-bold" style={{color: '#06402B'}}>{round.totalStrokes}</p>
-                                    <p className="text-xs text-muted-foreground">strokes</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-lg font-semibold">{round.totalPutts}</p>
-                                    <p className="text-xs text-muted-foreground">putts</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-lg font-semibold">{round.greensInReg}</p>
-                                    <p className="text-xs text-muted-foreground">GIR</p>
-                                  </div>
+                              <div className="flex items-center gap-6">
+                                <div className="text-center">
+                                  <p className="text-2xl font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
+                                  <p className="text-xs text-muted-foreground">strokes</p>
                                 </div>
-                                <div className="flex items-center gap-1 ml-4">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={async () => {
-                                      // Load the round into the scorecard for editing
-                                      // Need to fetch the full course data first
-                                      try {
-                                        const response = await fetch(`/api/courses/${round.course?.id || round.courseId}`);
-                                        if (response.ok) {
-                                          const data = await response.json();
-                                          setSelectedCourse(data.course);
-                                          setSelectedTee('');
-                                          setScores(round.scores && round.scores.length > 0 ? round.scores : []);
-                                          setAdditionalPlayers([]);
-                                          setPlayerScores(new Map());
-                                          setEditingRoundId(round.id); // Track that we're editing this round
-                                          setShowScorecard(true);
-                                          setActiveTab('scorecard');
-                                          toast.info('Round loaded for editing. Make changes and save to update.');
-                                        } else {
-                                          toast.error('Could not load course data');
-                                        }
-                                      } catch (error) {
-                                        console.error('Failed to load round for editing:', error);
-                                        toast.error('Failed to load round');
-                                      }
-                                    }}
-                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                    title="Edit round"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setRoundToDelete(round)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    title="Delete round"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                <div className="text-center">
+                                  <p className={`text-xl font-bold ${
+                                    vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'
+                                  }`}>
+                                    {(vsPar > 0 ? '+' : '') + vsPar}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">+/-</p>
                                 </div>
                               </div>
                             </div>
+                            {/* Bottom row: Tee info */}
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
+                              <div className="flex items-center gap-2">
+                                {round.teeId && round.course?.tees && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Tee: {round.course.tees.find(t => t.id === round.teeId)?.name || round.teeId}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {/* Action buttons row - separate line for better mobile display */}
+                            <div className="flex items-center gap-1 mt-2 flex-wrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadRoundAsXlsx(round)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                                title="Download as Excel"
+                              >
+                                <Download className="w-3 h-3 mr-1" />
+                                Excel
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => loadRoundForEditing(round)}
+                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                                title="Edit round"
+                              >
+                                <Edit2 className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRoundToDelete(round)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                title="Delete round"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                            {/* Show additional players if any */}
+                            {playerNames.length > 0 && (
+                              <div className="mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
+                                <p className="text-xs text-muted-foreground mb-2">Other Players:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {playerNames.map((playerInfo, idx) => {
+                                    const playerName = typeof playerInfo === 'string' ? playerInfo : playerInfo.name;
+                                    const playerTotal = additionalPlayerTotals.get(idx + 1) || 0;
+                                    // Calculate player's +/- vs par
+                                    const playerVsPar = playerTotal - coursePar;
+                                    const vsParDisplay = playerTotal > 0 ? ` (${playerVsPar > 0 ? '+' : ''}${playerVsPar})` : '';
+                                    return (
+                                      <Badge key={idx} variant="secondary" className="text-xs">
+                                        {playerName}: {playerTotal}{vsParDisplay}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       </motion.div>
-                    ))}
+                    );})}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Weather Tab */}
+          <TabsContent value="weather" className="space-y-4">
+            <Card className="bg-white/80 backdrop-blur">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      {weatherData?.time?.isNight ? (
+                        <Moon className="w-5 h-5 text-blue-300" />
+                      ) : (
+                        <Sun className="w-5 h-5 text-yellow-500" />
+                      )}
+                      Weather
+                    </CardTitle>
+                    <CardDescription>
+                      {weatherData?.location?.city ? (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {weatherData.location.city}{weatherData.location.country ? `, ${weatherData.location.country}` : ''}
+                        </span>
+                      ) : (
+                        'Current weather conditions and forecast'
+                      )}
+                    </CardDescription>
+                  </div>
+                  {weatherData?.time && (
+                    <div className="text-right">
+                      <p className="text-2xl font-bold" style={{color: '#39638b'}}>{weatherData.time.local}</p>
+                      <p className="text-xs text-muted-foreground">{weatherData.time.date}</p>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!userLocation ? (
+                  <div className="text-center py-12">
+                    <Navigation className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">Location not available</p>
+                    <Button
+                      onClick={getUserLocation}
+                      className="text-white"
+                      style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Get My Location
+                    </Button>
+                  </div>
+                ) : weatherLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
+                  </div>
+                ) : weatherError ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <p className="text-muted-foreground">{weatherError}</p>
+                    <Button
+                      onClick={() => fetchWeather(undefined, true)}
+                      variant="outline"
+                      className="mt-4"
+                      style={{borderColor: '#a3c4e0'}}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Retry
+                    </Button>
+                  </div>
+                ) : weatherData ? (
+                  <div className="space-y-6">
+                    {/* Current Weather */}
+                    <div className="p-6 rounded-xl" style={{background: weatherData.time.isNight ? 'linear-gradient(135deg, #1e3a5f 0%, #0f2439 100%)' : 'linear-gradient(135deg, #d6e4ef 0%, #d1e8e0 100%)'}}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm mb-1" style={{color: weatherData.time.isNight ? '#94a3b8' : 'hsl(var(--muted-foreground))'}}>Current Weather</p>
+                          <div className="flex items-center gap-4">
+                            <div className="text-5xl font-bold" style={{color: weatherData.time.isNight ? '#e2e8f0' : '#39638b'}}>
+                              {formatTemperature(weatherData.current.temperature, distanceUnit)}
+                            </div>
+                            <div>
+                              <p className="text-lg font-medium" style={{color: weatherData.time.isNight ? '#f1f5f9' : 'inherit'}}>{weatherData.current.weatherDescription}</p>
+                              <p className="text-sm" style={{color: weatherData.time.isNight ? '#94a3b8' : 'hsl(var(--muted-foreground))'}}>
+                                Feels like {formatTemperature(weatherData.current.apparentTemperature, distanceUnit)}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Sunrise/Sunset */}
+                          {weatherData.time.sunrise && weatherData.time.sunset && (
+                            <div className="flex items-center gap-4 mt-3">
+                              <div className="flex items-center gap-1 text-sm" style={{color: weatherData.time.isNight ? '#94a3b8' : 'hsl(var(--muted-foreground))'}}>
+                                <Sunrise className="w-4 h-4" />
+                                {weatherData.time.sunrise}
+                              </div>
+                              <div className="flex items-center gap-1 text-sm" style={{color: weatherData.time.isNight ? '#94a3b8' : 'hsl(var(--muted-foreground))'}}>
+                                <Sunset className="w-4 h-4" />
+                                {weatherData.time.sunset}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-6xl">
+                          {weatherData.current.weatherIcon === 'sun' && <Sun className="w-20 h-20 text-yellow-500" />}
+                          {weatherData.current.weatherIcon === 'moon' && <Moon className="w-20 h-20 text-blue-200" />}
+                          {weatherData.current.weatherIcon === 'cloud-sun' && <CloudSun className="w-20 h-20 text-yellow-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-moon' && <CloudMoon className="w-20 h-20 text-slate-300" />}
+                          {weatherData.current.weatherIcon === 'cloud' && <Cloud className="w-20 h-20 text-gray-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-rain' && <CloudRain className="w-20 h-20 text-blue-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-drizzle' && <CloudDrizzle className="w-20 h-20 text-blue-300" />}
+                          {weatherData.current.weatherIcon === 'cloud-snow' && <CloudSnow className="w-20 h-20 text-blue-200" />}
+                          {weatherData.current.weatherIcon === 'cloud-fog' && <CloudFog className="w-20 h-20 text-gray-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-lightning' && <CloudLightning className="w-20 h-20 text-purple-500" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Weather Details Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-4 rounded-lg bg-white border" style={{borderColor: '#8ab0d1'}}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Wind className="w-5 h-5" style={{color: '#39638b'}} />
+                          <span className="text-sm text-muted-foreground">Wind</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <p className="text-xl font-bold">
+                              {Math.round(convertWindSpeed(weatherData.current.windSpeed, distanceUnit))} {getWindSpeedUnitLabel(distanceUnit)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{weatherData.current.windDirection}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-lg bg-white border" style={{borderColor: '#8ab0d1'}}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-5 h-5" style={{color: '#39638b'}} />
+                          <span className="text-sm text-muted-foreground">Gusts</span>
+                        </div>
+                        <p className="text-xl font-bold">
+                          {Math.round(convertWindSpeed(weatherData.current.windGusts, distanceUnit))} {getWindSpeedUnitLabel(distanceUnit)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Max gusts</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-white border" style={{borderColor: '#8ab0d1'}}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Droplets className="w-5 h-5" style={{color: '#39638b'}} />
+                          <span className="text-sm text-muted-foreground">Humidity</span>
+                        </div>
+                        <p className="text-xl font-bold">{weatherData.current.humidity}%</p>
+                        <p className="text-xs text-muted-foreground">Relative humidity</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-white border" style={{borderColor: '#8ab0d1'}}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Thermometer className="w-5 h-5" style={{color: '#39638b'}} />
+                          <span className="text-sm text-muted-foreground">Feels Like</span>
+                        </div>
+                        <p className="text-xl font-bold">{formatTemperature(weatherData.current.apparentTemperature, distanceUnit)}</p>
+                        <p className="text-xs text-muted-foreground">Apparent temp</p>
+                      </div>
+                    </div>
+
+                    {/* Hourly Forecast */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <Clock className="w-5 h-5" style={{color: '#39638b'}} />
+                        Hourly Forecast
+                      </h3>
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {weatherData.hourly.map((hour, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex-shrink-0 p-3 rounded-lg text-center min-w-[80px] border ${hour.isNight ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}
+                            style={{borderColor: hour.isNight ? undefined : '#8ab0d1'}}
+                          >
+                            <p className={`text-xs mb-1 ${hour.isNight ? 'text-slate-400' : 'text-muted-foreground'}`}>{hour.time}</p>
+                            <div className="my-2">
+                              {hour.weatherIcon === 'sun' && <Sun className="w-8 h-8 mx-auto text-yellow-500" />}
+                              {hour.weatherIcon === 'moon' && <Moon className="w-8 h-8 mx-auto text-blue-200" />}
+                              {hour.weatherIcon === 'cloud-sun' && <CloudSun className="w-8 h-8 mx-auto text-yellow-400" />}
+                              {hour.weatherIcon === 'cloud-moon' && <CloudMoon className="w-8 h-8 mx-auto text-slate-300" />}
+                              {hour.weatherIcon === 'cloud' && <Cloud className={`w-8 h-8 mx-auto ${hour.isNight ? 'text-slate-500' : 'text-gray-400'}`} />}
+                              {hour.weatherIcon === 'cloud-rain' && <CloudRain className="w-8 h-8 mx-auto text-blue-400" />}
+                              {hour.weatherIcon === 'cloud-drizzle' && <CloudDrizzle className="w-8 h-8 mx-auto text-blue-300" />}
+                              {hour.weatherIcon === 'cloud-snow' && <CloudSnow className="w-8 h-8 mx-auto text-blue-200" />}
+                              {hour.weatherIcon === 'cloud-fog' && <CloudFog className="w-8 h-8 mx-auto text-gray-400" />}
+                              {hour.weatherIcon === 'cloud-lightning' && <CloudLightning className="w-8 h-8 mx-auto text-purple-500" />}
+                            </div>
+                            <p className={`text-lg font-bold ${hour.isNight ? 'text-slate-200' : ''}`}>{formatTemperature(hour.temperature, distanceUnit)}</p>
+                            <div className="flex items-center justify-center gap-1 mt-1">
+                              <Wind className={`w-3 h-3 ${hour.isNight ? 'text-slate-500' : 'text-muted-foreground'}`} />
+                              <span className={`text-xs ${hour.isNight ? 'text-slate-500' : 'text-muted-foreground'}`}>{Math.round(convertWindSpeed(hour.windSpeed, distanceUnit))}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Golf Playing Conditions */}
+                    <div className="p-4 rounded-lg border" style={{borderColor: '#8ab0d1', backgroundColor: '#f0fdf4'}}>
+                      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <Target className="w-5 h-5" style={{color: '#39638b'}} />
+                        Golf Conditions
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {weatherData.current.windSpeed > 20 ? (
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                            <Wind className="w-3 h-3 mr-1" /> Windy conditions
+                          </Badge>
+                        ) : weatherData.current.windSpeed > 10 ? (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            <Wind className="w-3 h-3 mr-1" /> Light breeze
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            <Wind className="w-3 h-3 mr-1" /> Calm wind
+                          </Badge>
+                        )}
+                        {weatherData.current.weatherCode >= 61 && weatherData.current.weatherCode <= 67 && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            <CloudRain className="w-3 h-3 mr-1" /> Rain expected
+                          </Badge>
+                        )}
+                        {weatherData.current.weatherCode >= 95 && (
+                          <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                            <CloudLightning className="w-3 h-3 mr-1" /> Thunderstorm
+                          </Badge>
+                        )}
+                        {weatherData.current.temperature > 30 && (
+                          <Badge variant="secondary" className="bg-red-100 text-red-800">
+                            <Thermometer className="w-3 h-3 mr-1" /> Hot weather
+                          </Badge>
+                        )}
+                        {weatherData.current.temperature < 10 && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            <Thermometer className="w-3 h-3 mr-1" /> Cold weather
+                          </Badge>
+                        )}
+                        {weatherData.current.weatherCode >= 0 && weatherData.current.weatherCode <= 3 && (
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                            <Sun className="w-3 h-3 mr-1" /> Good visibility
+                          </Badge>
+                        )}
+                        {weatherData.time.isNight && (
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-800">
+                            <Moon className="w-3 h-3 mr-1" /> Night time
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Refresh Button */}
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => fetchWeather(undefined, true)}
+                        variant="outline"
+                        size="sm"
+                        style={{borderColor: '#a3c4e0'}}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh Weather
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           </TabsContent>
@@ -2546,7 +3905,7 @@ export default function JazelApp() {
             <Card className="bg-white/80 backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" style={{color: '#06402B'}} />
+                  <Users className="w-5 h-5" style={{color: '#39638b'}} />
                   Golfers
                 </CardTitle>
                 <CardDescription>
@@ -2554,24 +3913,46 @@ export default function JazelApp() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Search Bar */}
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search golfers by name, city or country..."
-                    value={golferSearch}
-                    onChange={(e) => setGolferSearch(e.target.value)}
-                    className="pl-10 h-12 bg-white"
-                    style={{borderColor: '#9dd6b3'}}
-                    onFocus={(e) => e.target.style.borderColor = '#06402B'}
-                    onBlur={(e) => e.target.style.borderColor = '#9dd6b3'}
-                  />
+                {/* Filter and Search Row */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  {/* Group Filter */}
+                  <Select value={selectedGroupFilter} onValueChange={setSelectedGroupFilter}>
+                    <SelectTrigger className="w-full sm:w-64 h-12 bg-white" style={{borderColor: '#a3c4e0'}}>
+                      <SelectValue placeholder="Filter by group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Golfers</SelectItem>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name} ({group._count.members})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Search Bar */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search golfers by name, city or country..."
+                      value={golferSearch}
+                      onChange={(e) => setGolferSearch(e.target.value)}
+                      className="pl-10 h-12 bg-white"
+                      style={{borderColor: '#a3c4e0'}}
+                      onFocus={(e) => e.target.style.borderColor = '#39638b'}
+                      onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
+                    />
+                  </div>
                 </div>
-                
+
                 {golfers.length === 0 ? (
                   <div className="text-center py-8">
                     <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No golfers registered yet</p>
+                    <p className="text-muted-foreground">
+                      {selectedGroupFilter !== 'all'
+                        ? 'No golfers in this group'
+                        : 'No golfers registered yet'}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2590,13 +3971,13 @@ export default function JazelApp() {
                         transition={{ delay: index * 0.03 }}
                       >
                         <Card className="transition-colors overflow-hidden"
-                          style={{borderColor: '#c5e6d1'}}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#14b869'}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#c5e6d1'}>
+                          style={{borderColor: '#8ab0d1'}}
+                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#5d8cb8'}
+                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}>
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                                style={{background: 'linear-gradient(135deg, #06402B 0%, #0d7377 100%)'}}>
+                                style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                                 {golfer.avatar ? (
                                   <img 
                                     src={golfer.avatar} 
@@ -2618,15 +3999,15 @@ export default function JazelApp() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between mt-3 pt-3" style={{borderTop: '1px solid #e8f5ed'}}>
+                            <div className="flex items-center justify-between mt-3 pt-3" style={{borderTop: '1px solid #d6e4ef'}}>
                               <div className="flex items-center gap-1">
-                                <Trophy className="w-4 h-4" style={{color: '#06402B'}} />
+                                <Trophy className="w-4 h-4" style={{color: '#39638b'}} />
                                 <span className="text-sm font-medium">
                                   Handicap: {golfer.handicap !== null ? golfer.handicap : '-'}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Target className="w-4 h-4" style={{color: '#0d7377'}} />
+                                <Target className="w-4 h-4" style={{color: '#4a7aa8'}} />
                                 <span className="text-sm text-muted-foreground">
                                   {golfer._count.rounds} rounds
                                 </span>
@@ -2642,6 +4023,217 @@ export default function JazelApp() {
             </Card>
           </TabsContent>
 
+          {/* Tournaments Tab */}
+          <TabsContent value="tournaments" className="space-y-4">
+            {selectedTournament ? (
+              <Card className="bg-white/80 backdrop-blur">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedTournament(null)}
+                      style={{color: '#39638b'}}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Back to Tournaments
+                    </Button>
+                  </div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5" style={{color: '#39638b'}} />
+                    {selectedTournament.name}
+                  </CardTitle>
+                  <CardDescription>
+                    {selectedTournament.course.name} - {selectedTournament.course.city}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Tournament Info */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span>{new Date(selectedTournament.date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span>{selectedTournament.startTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{selectedTournament.format}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          selectedTournament.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          selectedTournament.status === 'in_progress' ? 'bg-green-50 text-green-700 border-green-200' :
+                          selectedTournament.status === 'completed' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                          'bg-red-50 text-red-700 border-red-200'
+                        }
+                      >
+                        {selectedTournament.status === 'in_progress' ? 'In Progress' : 
+                         selectedTournament.status.charAt(0).toUpperCase() + selectedTournament.status.slice(1)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Participants Leaderboard */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold">
+                        Leaderboard ({selectedTournament.participants?.length || 0}/{selectedTournament.maxPlayers} players)
+                      </h3>
+                    </div>
+
+                    {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm items-center">
+                          <div className="col-span-1">#</div>
+                          <div className="col-span-4">Player</div>
+                          <div 
+                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
+                            onClick={() => setParticipantSort('handicap')}
+                          >
+                            Hcp {participantSort === 'handicap' && '↓'}
+                          </div>
+                          <div 
+                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'gross' ? 'bg-primary/10 text-primary' : ''}`}
+                            onClick={() => setParticipantSort('gross')}
+                          >
+                            Brut {participantSort === 'gross' && '↓'}
+                          </div>
+                          <div 
+                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'net' ? 'bg-primary/10 text-primary' : ''}`}
+                            onClick={() => setParticipantSort('net')}
+                          >
+                            Net {participantSort === 'net' && '↓'}
+                          </div>
+                          <div className="col-span-1"></div>
+                        </div>
+                        {/* Sorted participants */}
+                        {(() => {
+                          const sorted = [...selectedTournament.participants].sort((a, b) => {
+                            if (participantSort === 'gross') {
+                              if (a.grossScore === null && b.grossScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
+                              if (a.grossScore === null) return 1;
+                              if (b.grossScore === null) return -1;
+                              return a.grossScore - b.grossScore;
+                            }
+                            if (participantSort === 'net') {
+                              if (a.netScore === null && b.netScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
+                              if (a.netScore === null) return 1;
+                              if (b.netScore === null) return -1;
+                              return a.netScore - b.netScore;
+                            }
+                            return (a.user.handicap || 0) - (b.user.handicap || 0);
+                          });
+                          return sorted.map((participant, index) => (
+                            <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
+                              <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
+                              <div className="col-span-4 font-medium">{participant.user.name || 'Unnamed'}</div>
+                              <div className="col-span-2 text-center">
+                                <Badge variant="outline" className="font-mono">
+                                  {participant.user.handicap?.toFixed(1) || '-'}
+                                </Badge>
+                              </div>
+                              <div className="col-span-2 text-center font-mono">
+                                {participant.grossScore ?? '-'}
+                              </div>
+                              <div className="col-span-2 text-center font-mono">
+                                {participant.netScore ?? '-'}
+                              </div>
+                              <div className="col-span-1"></div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-8">No participants yet</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-white/80 backdrop-blur">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5" style={{color: '#39638b'}} />
+                    Tournaments
+                  </CardTitle>
+                  <CardDescription>
+                    View upcoming and past golf tournaments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tournamentsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
+                    </div>
+                  ) : tournaments.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No tournaments available</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {tournaments.map((tournament) => (
+                        <Card
+                          key={tournament.id}
+                          className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() => {
+                            setSelectedTournament(tournament);
+                            fetchTournamentWithParticipants(tournament.id);
+                          }}
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                                <CardDescription>{tournament.course.name}</CardDescription>
+                              </div>
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  tournament.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  tournament.status === 'in_progress' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  tournament.status === 'completed' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                                  'bg-red-50 text-red-700 border-red-200'
+                                }
+                              >
+                                {tournament.status === 'in_progress' ? 'In Progress' : 
+                                 tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>{new Date(tournament.date).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{tournament.startTime}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Badge variant="secondary">{tournament.format}</Badge>
+                              <Badge variant="outline">{tournament._count?.participants || 0}/{tournament.maxPlayers} players</Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <MapPin className="w-4 h-4" />
+                              <span>{tournament.course.city}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-4">
             {user ? (
@@ -2649,7 +4241,7 @@ export default function JazelApp() {
                 <Card className="bg-white/80 backdrop-blur">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <User className="w-5 h-5" style={{color: '#06402B'}} />
+                      <User className="w-5 h-5" style={{color: '#39638b'}} />
                       My Profile
                     </CardTitle>
                     <CardDescription>
@@ -2660,7 +4252,7 @@ export default function JazelApp() {
                     <div className="flex flex-col sm:flex-row items-center gap-4">
                       <div className="relative group">
                         <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden"
-                        style={{background: 'linear-gradient(135deg, #06402B 0%, #0d7377 100%)'}}>
+                        style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                           {user.avatar ? (
                             <img 
                               src={user.avatar} 
@@ -2703,7 +4295,7 @@ export default function JazelApp() {
                           variant="outline" 
                           size="sm" 
                           className="cursor-pointer"
-                          style={{borderColor: '#9dd6b3'}}
+                          style={{borderColor: '#a3c4e0'}}
                           disabled={avatarUploading}
                           asChild
                         >
@@ -2716,7 +4308,7 @@ export default function JazelApp() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        style={{borderColor: '#9dd6b3'}}
+                        style={{borderColor: '#a3c4e0'}}
                         onClick={handleCameraCapture}
                         disabled={avatarUploading}
                       >
@@ -2738,34 +4330,34 @@ export default function JazelApp() {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card style={{borderColor: '#c5e6d1'}}>
+                      <Card style={{borderColor: '#8ab0d1'}}>
                         <CardContent className="p-4 text-center">
-                          <Trophy className="w-8 h-8 mx-auto mb-2" style={{color: '#06402B'}} />
+                          <Trophy className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
                           <h4 className="font-medium">{roundHistory.length}</h4>
                           <p className="text-sm text-muted-foreground">Rounds Played</p>
                         </CardContent>
                       </Card>
-                      <Card style={{borderColor: '#c5e6d1'}}>
+                      <Card style={{borderColor: '#8ab0d1'}}>
                         <CardContent className="p-4 text-center">
                           <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
                           <h4 className="font-medium">{favoriteIds.length}</h4>
                           <p className="text-sm text-muted-foreground">Favorite Courses</p>
                         </CardContent>
                       </Card>
-                      <Card style={{borderColor: '#c5e6d1'}}>
+                      <Card style={{borderColor: '#8ab0d1'}}>
                         <CardContent className="p-4 text-center">
-                          <Target className="w-8 h-8 mx-auto mb-2" style={{color: '#06402B'}} />
+                          <Target className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
                           <h4 className="font-medium">{user.handicap || '-'}</h4>
                           <p className="text-sm text-muted-foreground">Handicap</p>
                         </CardContent>
                       </Card>
                     </div>
                     
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button
                         variant="outline"
-                        className="flex-1"
-                        style={{borderColor: '#9dd6b3'}}
+                        className="w-full"
+                        style={{borderColor: '#a3c4e0'}}
                         onClick={openProfileEdit}
                       >
                         <Edit2 className="w-4 h-4 mr-2" />
@@ -2773,7 +4365,39 @@ export default function JazelApp() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
+                        className="w-full"
+                        style={{borderColor: '#a3c4e0'}}
+                        onClick={openBagDialog}
+                      >
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {/* Golf bag body */}
+                          <path d="M6 8h12l-1 13H7L6 8z" />
+                          {/* Bag top rim */}
+                          <path d="M5 8h14" />
+                          {/* Club heads sticking out */}
+                          <path d="M8 8V4l-1-2" />
+                          <path d="M12 8V3" />
+                          <path d="M16 8V4l1-2" />
+                          {/* Pocket */}
+                          <path d="M8 12h8v4H8z" />
+                          {/* Base */}
+                          <path d="M7 21h10" />
+                        </svg>
+                        My Bag
+                      </Button>
+                      <Link href="/guide" className="w-full">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          style={{borderColor: '#a3c4e0'}}
+                        >
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Help
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        className="w-full border-red-200 text-red-600 hover:bg-red-50"
                         onClick={handleLogout}
                       >
                         <LogOut className="w-4 h-4 mr-2" />
@@ -2785,13 +4409,112 @@ export default function JazelApp() {
                 
                 <Card className="bg-white/80 backdrop-blur">
                   <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5" style={{color: '#39638b'}} />
+                      Scoring Statistics
+                    </CardTitle>
+                    <CardDescription>
+                      Your performance breakdown
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {statsLoading ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
+                      </div>
+                    ) : scoringStats && scoringStats.totalHoles > 0 ? (
+                      <div className="space-y-4">
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={[
+                                  { name: 'Eagles', value: scoringStats.scoring.eagles, color: '#ea580c' },
+                                  { name: 'Birdies', value: scoringStats.scoring.birdies, color: '#22c55e' },
+                                  { name: 'Pars', value: scoringStats.scoring.pars, color: '#3b82f6' },
+                                  { name: 'Bogeys', value: scoringStats.scoring.bogeys, color: '#f97316' },
+                                  { name: 'D. Bogey', value: scoringStats.scoring.doubleBogeys, color: '#ef4444' },
+                                  { name: 'Triple+', value: scoringStats.scoring.tripleOrWorse, color: '#7c3aed' },
+                                ].filter(d => d.value > 0)}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={50}
+                                outerRadius={80}
+                                paddingAngle={2}
+                                dataKey="value"
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                labelLine={false}
+                              >
+                                {[
+                                  { color: '#ffd700' },
+                                  { color: '#22c55e' },
+                                  { color: '#3b82f6' },
+                                  { color: '#f97316' },
+                                  { color: '#ef4444' },
+                                  { color: '#7c3aed' },
+                                ].map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                          <div className="p-2 rounded-lg" style={{backgroundColor: '#fffbeb'}}>
+                            <div className="font-bold text-amber-600">{scoringStats.scoring.eagles}</div>
+                            <div className="text-xs text-muted-foreground">Eagles</div>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{backgroundColor: '#f0fdf4'}}>
+                            <div className="font-bold text-green-600">{scoringStats.scoring.birdies}</div>
+                            <div className="text-xs text-muted-foreground">Birdies</div>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{backgroundColor: '#eff6ff'}}>
+                            <div className="font-bold text-blue-600">{scoringStats.scoring.pars}</div>
+                            <div className="text-xs text-muted-foreground">Pars</div>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{backgroundColor: '#fff7ed'}}>
+                            <div className="font-bold text-orange-600">{scoringStats.scoring.bogeys}</div>
+                            <div className="text-xs text-muted-foreground">Bogeys</div>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{backgroundColor: '#fef2f2'}}>
+                            <div className="font-bold text-red-600">{scoringStats.scoring.doubleBogeys}</div>
+                            <div className="text-xs text-muted-foreground">Doubles</div>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{backgroundColor: '#f5f3ff'}}>
+                            <div className="font-bold text-purple-600">{scoringStats.scoring.tripleOrWorse}</div>
+                            <div className="text-xs text-muted-foreground">Triple+</div>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-2 border-t" style={{borderColor: '#8ab0d1'}}>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Based on {scoringStats.totalHoles} holes played across {scoringStats.totalRounds} rounds
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                        <p className="text-muted-foreground">No scoring data yet</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Play some rounds to see your statistics!
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-white/80 backdrop-blur">
+                  <CardHeader>
                     <CardTitle className="text-lg">Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-3">
                       <Button
                         className="flex-1 text-white"
-                        style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
+                        style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                         onClick={() => setActiveTab('search')}
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -2800,7 +4523,7 @@ export default function JazelApp() {
                       <Button
                         variant="outline"
                         className="flex-1"
-                        style={{borderColor: '#9dd6b3'}}
+                        style={{borderColor: '#a3c4e0'}}
                         onClick={() => setActiveTab('history')}
                       >
                         <Clock className="w-4 h-4 mr-2" />
@@ -2814,7 +4537,7 @@ export default function JazelApp() {
               <Card className="bg-white/80 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" style={{color: '#06402B'}} />
+                    <User className="w-5 h-5" style={{color: '#39638b'}} />
                     Welcome to Jazel
                   </CardTitle>
                   <CardDescription>
@@ -2824,7 +4547,7 @@ export default function JazelApp() {
                 <CardContent className="space-y-6">
                   <div className="text-center py-8">
                     <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-                      style={{background: 'linear-gradient(135deg, #06402B 0%, #0d7377 100%)'}}>
+                      style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                       <Trophy className="w-10 h-10 text-white" />
                     </div>
                     <h3 className="text-xl font-bold mb-2">Start Your Golf Journey</h3>
@@ -2834,46 +4557,58 @@ export default function JazelApp() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card style={{borderColor: '#c5e6d1'}}>
+                    <Card style={{borderColor: '#8ab0d1'}}>
                       <CardContent className="p-4 text-center">
-                        <Search className="w-8 h-8 mx-auto mb-2" style={{color: '#06402B'}} />
+                        <Search className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
                         <h4 className="font-medium">Find Courses</h4>
                         <p className="text-sm text-muted-foreground">24 Morocco golf courses</p>
                       </CardContent>
                     </Card>
-                    <Card style={{borderColor: '#c5e6d1'}}>
+                    <Card style={{borderColor: '#8ab0d1'}}>
                       <CardContent className="p-4 text-center">
-                        <Target className="w-8 h-8 mx-auto mb-2" style={{color: '#06402B'}} />
+                        <Target className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
                         <h4 className="font-medium">Track Scores</h4>
                         <p className="text-sm text-muted-foreground">Detailed scorecards</p>
                       </CardContent>
                     </Card>
-                    <Card style={{borderColor: '#c5e6d1'}}>
+                    <Card style={{borderColor: '#8ab0d1'}}>
                       <CardContent className="p-4 text-center">
-                        <Bot className="w-8 h-8 mx-auto mb-2" style={{color: '#06402B'}} />
+                        <Bot className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
                         <h4 className="font-medium">AI Caddie</h4>
                         <p className="text-sm text-muted-foreground">Smart recommendations</p>
                       </CardContent>
                     </Card>
                   </div>
                   
-                  <div className="flex gap-3">
-                    <Button
-                      className="flex-1 text-white"
-                      style={{background: 'linear-gradient(to right, #06402B, #0d7377)'}}
-                      onClick={() => setShowSignupDialog(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Account
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      style={{borderColor: '#9dd6b3'}}
-                      onClick={() => setShowLoginDialog(true)}
-                    >
-                      Sign In
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <Button
+                        className="flex-1 text-white"
+                        style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                        onClick={() => setShowSignupDialog(true)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Account
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        style={{borderColor: '#a3c4e0'}}
+                        onClick={() => setShowLoginDialog(true)}
+                      >
+                        Sign In
+                      </Button>
+                    </div>
+                    <Link href="/guide" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        style={{borderColor: '#a3c4e0'}}
+                      >
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        Help
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -2887,19 +4622,29 @@ export default function JazelApp() {
         open={showAICaddie} 
         onOpenChange={setShowAICaddie}
         holeInfo={currentHoleInfo}
+        distanceUnit={distanceUnit}
         onGetRecommendation={(data) => {
           console.log('Getting recommendation for:', data);
         }}
       />
 
       {/* Login Dialog */}
-      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+      <Dialog open={showLoginDialog} onOpenChange={(open) => {
+        setShowLoginDialog(open);
+        if (open) setLoginError(null);
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Welcome Back</DialogTitle>
             <DialogDescription>Sign in to your Jazel account</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {loginError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="login-email">Email</Label>
               <Input
@@ -2907,7 +4652,11 @@ export default function JazelApp() {
                 type="email"
                 placeholder="your@email.com"
                 value={loginForm.email}
-                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                onChange={(e) => {
+                  setLoginForm({ ...loginForm, email: e.target.value });
+                  if (loginError) setLoginError(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && loginForm.email && loginForm.password && handleLogin()}
               />
             </div>
             <div className="space-y-2">
@@ -2917,12 +4666,16 @@ export default function JazelApp() {
                 type="password"
                 placeholder="••••••••"
                 value={loginForm.password}
-                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                onChange={(e) => {
+                  setLoginForm({ ...loginForm, password: e.target.value });
+                  if (loginError) setLoginError(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && loginForm.email && loginForm.password && handleLogin()}
               />
             </div>
             <Button
               className="w-full text-white"
-              style={{backgroundColor: '#06402B'}}
+              style={{backgroundColor: '#39638b'}}
               onClick={handleLogin}
               disabled={authLoading || !loginForm.email || !loginForm.password}
             >
@@ -2936,6 +4689,11 @@ export default function JazelApp() {
                   setShowLoginDialog(false);
                   setShowForgotPasswordDialog(true);
                   setForgotPasswordSent(false);
+                  setForgotPasswordError(null);
+                  // Preserve email from login form if user already typed it
+                  if (loginForm.email) {
+                    setForgotPasswordForm({ email: loginForm.email });
+                  }
                 }}
               >
                 Forgot your password?
@@ -2946,7 +4704,7 @@ export default function JazelApp() {
               <Button
                 variant="link"
                 className="p-0"
-                style={{color: '#06402B'}}
+                style={{color: '#39638b'}}
                 onClick={() => {
                   setShowLoginDialog(false);
                   setShowSignupDialog(true);
@@ -2960,7 +4718,12 @@ export default function JazelApp() {
       </Dialog>
 
       {/* Forgot Password Dialog */}
-      <Dialog open={showForgotPasswordDialog} onOpenChange={setShowForgotPasswordDialog}>
+      <Dialog open={showForgotPasswordDialog} onOpenChange={(open) => {
+        setShowForgotPasswordDialog(open);
+        if (open) {
+          setForgotPasswordError(null); // Clear error when dialog opens
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
@@ -2980,12 +4743,28 @@ export default function JazelApp() {
                   type="email"
                   placeholder="your@email.com"
                   value={forgotPasswordForm.email}
-                  onChange={(e) => setForgotPasswordForm({ email: e.target.value })}
+                  onChange={(e) => {
+                    setForgotPasswordForm({ email: e.target.value });
+                    setForgotPasswordError(null); // Clear error when user types
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && forgotPasswordForm.email && handleForgotPassword()}
+                  className={forgotPasswordError ? 'border-red-500 focus:border-red-500' : ''}
                 />
               </div>
+              
+              {/* Inline error message */}
+              {forgotPasswordError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{forgotPasswordError}</p>
+                  </div>
+                </div>
+              )}
+              
               <Button
                 className="w-full text-white"
-              style={{backgroundColor: '#06402B'}}
+              style={{backgroundColor: '#39638b'}}
                 onClick={handleForgotPassword}
                 disabled={authLoading || !forgotPasswordForm.email}
               >
@@ -2997,6 +4776,7 @@ export default function JazelApp() {
                 onClick={() => {
                   setShowForgotPasswordDialog(false);
                   setShowLoginDialog(true);
+                  setForgotPasswordError(null);
                 }}
               >
                 Back to Login
@@ -3004,8 +4784,8 @@ export default function JazelApp() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 rounded-lg" style={{backgroundColor: '#e8f5ed'}}>
-                <p className="text-sm" style={{color: '#032719'}}>
+              <div className="p-4 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+                <p className="text-sm" style={{color: '#2a4a6a'}}>
                   We've sent a password reset link to <strong>{forgotPasswordForm.email}</strong>. 
                   Please check your inbox and follow the instructions.
                 </p>
@@ -3018,6 +4798,7 @@ export default function JazelApp() {
                   setShowForgotPasswordDialog(false);
                   setShowLoginDialog(true);
                   setForgotPasswordSent(false);
+                  setForgotPasswordError(null);
                 }}
               >
                 Back to Login
@@ -3028,13 +4809,25 @@ export default function JazelApp() {
       </Dialog>
 
       {/* Signup Dialog */}
-      <Dialog open={showSignupDialog} onOpenChange={setShowSignupDialog}>
+      <Dialog open={showSignupDialog} onOpenChange={(open) => {
+        setShowSignupDialog(open);
+        if (open) {
+          setSignupForm({ name: '', email: '', password: '', handicap: '', city: '', country: 'Morocco' });
+          setSignupError(null);
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Create Account</DialogTitle>
             <DialogDescription>Join Jazel and start tracking your golf rounds</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {signupError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-red-700">{signupError}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="signup-name">Name</Label>
               <Input
@@ -3043,6 +4836,8 @@ export default function JazelApp() {
                 placeholder="Your name"
                 value={signupForm.name}
                 onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && signupForm.email && signupForm.password && handleSignup()}
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2">
@@ -3053,6 +4848,8 @@ export default function JazelApp() {
                 placeholder="your@email.com"
                 value={signupForm.email}
                 onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && signupForm.email && signupForm.password && handleSignup()}
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2">
@@ -3063,6 +4860,8 @@ export default function JazelApp() {
                 placeholder="Min. 6 characters"
                 value={signupForm.password}
                 onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && signupForm.email && signupForm.password && handleSignup()}
+                autoComplete="new-password"
               />
             </div>
             <div className="space-y-2">
@@ -3074,11 +4873,13 @@ export default function JazelApp() {
                 placeholder="e.g., 18.5"
                 value={signupForm.handicap}
                 onChange={(e) => setSignupForm({ ...signupForm, handicap: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && signupForm.email && signupForm.password && handleSignup()}
+                autoComplete="off"
               />
             </div>
             <Button
               className="w-full text-white"
-              style={{backgroundColor: '#06402B'}}
+              style={{backgroundColor: '#39638b'}}
               onClick={handleSignup}
               disabled={authLoading || !signupForm.email || !signupForm.password}
             >
@@ -3089,7 +4890,7 @@ export default function JazelApp() {
               <Button
                 variant="link"
                 className="p-0"
-                style={{color: '#06402B'}}
+                style={{color: '#39638b'}}
                 onClick={() => {
                   setShowSignupDialog(false);
                   setShowLoginDialog(true);
@@ -3118,6 +4919,7 @@ export default function JazelApp() {
                 placeholder="Your name"
                 value={profileEditForm.name}
                 onChange={(e) => setProfileEditForm({ ...profileEditForm, name: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
               />
             </div>
             <div className="space-y-2">
@@ -3128,6 +4930,7 @@ export default function JazelApp() {
                 placeholder="your@email.com"
                 value={profileEditForm.email}
                 onChange={(e) => setProfileEditForm({ ...profileEditForm, email: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
               />
             </div>
             <div className="space-y-2">
@@ -3139,6 +4942,7 @@ export default function JazelApp() {
                 placeholder="e.g., 18.5"
                 value={profileEditForm.handicap}
                 onChange={(e) => setProfileEditForm({ ...profileEditForm, handicap: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -3150,6 +4954,7 @@ export default function JazelApp() {
                   placeholder="e.g., Casablanca"
                   value={profileEditForm.city}
                   onChange={(e) => setProfileEditForm({ ...profileEditForm, city: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
                 />
               </div>
               <div className="space-y-2">
@@ -3160,38 +4965,69 @@ export default function JazelApp() {
                   placeholder="e.g., Morocco"
                   value={profileEditForm.country}
                   onChange={(e) => setProfileEditForm({ ...profileEditForm, country: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-nearby-distance">Default Nearby Search Distance (km)</Label>
-              <Select 
-                value={profileEditForm.nearbyDistance?.toString() || '100'} 
-                onValueChange={(v) => setProfileEditForm({ ...profileEditForm, nearbyDistance: parseInt(v) })}
-              >
-                <SelectTrigger id="edit-nearby-distance">
-                  <SelectValue placeholder="Select distance" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10 km</SelectItem>
-                  <SelectItem value="20">20 km</SelectItem>
-                  <SelectItem value="50">50 km</SelectItem>
-                  <SelectItem value="100">100 km</SelectItem>
-                  <SelectItem value="200">200 km</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Used when searching for nearby golf courses</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nearby-distance">Nearby Distance</Label>
+                <Select 
+                  value={profileEditForm.nearbyDistance?.toString() || '100'} 
+                  onValueChange={(v) => setProfileEditForm({ ...profileEditForm, nearbyDistance: parseInt(v) })}
+                >
+                  <SelectTrigger id="edit-nearby-distance">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {distanceUnit === 'yards' ? (
+                      <>
+                        <SelectItem value="10">6 mi</SelectItem>
+                        <SelectItem value="20">12 mi</SelectItem>
+                        <SelectItem value="50">31 mi</SelectItem>
+                        <SelectItem value="100">62 mi</SelectItem>
+                        <SelectItem value="200">124 mi</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="10">10 km</SelectItem>
+                        <SelectItem value="20">20 km</SelectItem>
+                        <SelectItem value="50">50 km</SelectItem>
+                        <SelectItem value="100">100 km</SelectItem>
+                        <SelectItem value="200">200 km</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-distance-unit">Distance Unit</Label>
+                <Select 
+                  value={profileEditForm.distanceUnit || 'yards'} 
+                  onValueChange={(v) => setProfileEditForm({ ...profileEditForm, distanceUnit: v as 'yards' | 'meters' })}
+                >
+                  <SelectTrigger id="edit-distance-unit">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yards">Yards / Miles</SelectItem>
+                    <SelectItem value="meters">Meters / Km</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <Separator className="my-4" />
-            <p className="text-sm text-muted-foreground">Change Password (leave blank to keep current)</p>
+            <p className="text-sm font-medium">Change Password</p>
+            <p className="text-xs text-muted-foreground">Leave blank to keep your current password</p>
             <div className="space-y-2">
               <Label htmlFor="edit-current-password">Current Password</Label>
               <Input
                 id="edit-current-password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Enter current password to change"
                 value={profileEditForm.currentPassword}
                 onChange={(e) => setProfileEditForm({ ...profileEditForm, currentPassword: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
               />
             </div>
             <div className="space-y-2">
@@ -3199,14 +5035,18 @@ export default function JazelApp() {
               <Input
                 id="edit-new-password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Enter new password (min 6 characters)"
                 value={profileEditForm.newPassword}
                 onChange={(e) => setProfileEditForm({ ...profileEditForm, newPassword: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleUpdateProfile()}
               />
+              {profileEditForm.newPassword && !profileEditForm.currentPassword && (
+                <p className="text-xs text-amber-600">⚠️ Enter your current password to change password</p>
+              )}
             </div>
             <Button
               className="w-full text-white"
-              style={{backgroundColor: '#06402B'}}
+              style={{backgroundColor: '#39638b'}}
               onClick={handleUpdateProfile}
               disabled={authLoading}
             >
@@ -3232,7 +5072,7 @@ export default function JazelApp() {
               <Select onValueChange={(value) => {
                 const selectedGolfer = golfers.find(g => g.id === value);
                 if (selectedGolfer && additionalPlayers.length < 3) {
-                  addPlayer(selectedGolfer.name || 'Unknown', selectedGolfer.avatar, selectedGolfer.handicap);
+                  addPlayer(selectedGolfer.name || 'Unknown', selectedGolfer.avatar, selectedGolfer.handicap, selectedGolfer.id);
                 }
               }}>
                 <SelectTrigger>
@@ -3240,7 +5080,7 @@ export default function JazelApp() {
                 </SelectTrigger>
                 <SelectContent>
                   {golfers
-                    .filter(g => g.id !== user?.id && !additionalPlayers.some(p => p.id === g.id || p.name === g.name))
+                    .filter(g => g.id !== user?.id && !additionalPlayers.some(p => p.userId === g.id || p.name === g.name))
                     .map((golfer) => (
                       <SelectItem key={golfer.id} value={golfer.id}>
                         <div className="flex items-center gap-2">
@@ -3284,7 +5124,7 @@ export default function JazelApp() {
                 onClick={() => addPlayer(newPlayerName)}
                 disabled={additionalPlayers.length >= 3 || !newPlayerName.trim()}
                 className="text-white"
-                style={{backgroundColor: '#06402B'}}
+                style={{backgroundColor: '#39638b'}}
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -3294,13 +5134,13 @@ export default function JazelApp() {
               <div className="space-y-2">
                 <Label>Added Players ({additionalPlayers.length}/3)</Label>
                 {additionalPlayers.map((player) => (
-                  <div key={player.id} className="flex items-center justify-between p-2 rounded-lg" style={{backgroundColor: '#e8f5ed'}}>
+                  <div key={player.id} className="flex items-center justify-between p-2 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
                     <div className="flex items-center gap-2">
                       {player.avatar ? (
                         <img src={player.avatar} alt={player.name} className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                          style={{background: 'linear-gradient(135deg, #06402B 0%, #0d7377 100%)'}}>
+                          style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                           {player.name?.charAt(0).toUpperCase() || '?'}
                         </div>
                       )}
@@ -3401,13 +5241,398 @@ export default function JazelApp() {
       </AlertDialog>
 
 
+      {/* Messages Dialog */}
+      <Dialog open={showMessagesDialog} onOpenChange={setShowMessagesDialog}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" style={{color: '#39638b'}} />
+              Messages
+            </DialogTitle>
+            <DialogDescription>
+              {messages.filter(m => !m.isRead).length > 0 
+                ? `You have ${messages.filter(m => !m.isRead).length} unread message${messages.filter(m => !m.isRead).length > 1 ? 's' : ''}`
+                : 'All messages read'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            {selectedMessage ? (
+              <div className="space-y-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedMessage(null)}
+                  className="mb-2"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back to messages
+                </Button>
+                <div className="p-4 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+                  <h3 className="font-bold text-lg mb-2">{selectedMessage.title}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    <span>From: {selectedMessage.author.name || 'Admin'}</span>
+                    <span>•</span>
+                    <span>{new Date(selectedMessage.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap">{selectedMessage.content}</p>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-8">
+                <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No messages yet</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2 pr-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                        message.isRead 
+                          ? 'bg-gray-50 hover:bg-gray-100' 
+                          : 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500'
+                      }`}
+                      onClick={() => {
+                        setSelectedMessage(message);
+                        if (!message.isRead) {
+                          markMessageAsRead(message.id);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <h4 className={`font-medium ${!message.isRead ? 'text-blue-800' : ''}`}>
+                            {message.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                            {message.content}
+                          </p>
+                        </div>
+                        {!message.isRead && (
+                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                        <span>{message.author.name || 'Admin'}</span>
+                        <span>•</span>
+                        <span>{new Date(message.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+          
+          {!selectedMessage && messages.filter(m => !m.isRead).length > 0 && (
+            <DialogFooter>
+              <Button variant="outline" onClick={markAllMessagesAsRead}>
+                Mark all as read
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Hole Selection Dialog */}
+      <Dialog open={showHoleSelectionDialog} onOpenChange={setShowHoleSelectionDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" style={{color: '#39638b'}} />
+              Select Holes to Play
+            </DialogTitle>
+            <DialogDescription>
+              {pendingCourse?.name} - Choose how many holes you'll play
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Number of holes selection */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Number of Holes</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={holesPlayed === 9 ? 'default' : 'outline'}
+                  className={`h-16 flex-col ${holesPlayed === 9 ? 'text-white' : ''}`}
+                  style={holesPlayed === 9 ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                  onClick={() => setHolesPlayed(9)}
+                >
+                  <span className="text-2xl font-bold">9</span>
+                  <span className="text-xs">Holes</span>
+                </Button>
+                <Button
+                  variant={holesPlayed === 18 ? 'default' : 'outline'}
+                  className={`h-16 flex-col ${holesPlayed === 18 ? 'text-white' : ''}`}
+                  style={holesPlayed === 18 ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                  onClick={() => setHolesPlayed(18)}
+                >
+                  <span className="text-2xl font-bold">18</span>
+                  <span className="text-xs">Holes</span>
+                </Button>
+              </div>
+            </div>
+            
+            {/* Front/Back nine selection - only show if 9 holes selected */}
+            {holesPlayed === 9 && (
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Which Nine?</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant={holesType === 'front' ? 'default' : 'outline'}
+                    className={`h-14 flex-col ${holesType === 'front' ? 'text-white' : ''}`}
+                    style={holesType === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                    onClick={() => setHolesType('front')}
+                  >
+                    <span className="font-bold">Front 9</span>
+                    <span className="text-xs">Holes 1-9</span>
+                  </Button>
+                  <Button
+                    variant={holesType === 'back' ? 'default' : 'outline'}
+                    className={`h-14 flex-col ${holesType === 'back' ? 'text-white' : ''}`}
+                    style={holesType === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                    onClick={() => setHolesType('back')}
+                  >
+                    <span className="font-bold">Back 9</span>
+                    <span className="text-xs">Holes 10-18</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Summary */}
+            <div className="p-3 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+              <p className="text-sm text-center" style={{color: '#39638b'}}>
+                {holesPlayed === 18 
+                  ? 'Playing all 18 holes'
+                  : `Playing ${holesType === 'front' ? 'Front 9 (Holes 1-9)' : 'Back 9 (Holes 10-18)'}`
+                }
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowHoleSelectionDialog(false);
+              setPendingCourse(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              className="text-white"
+              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+              onClick={() => {
+                if (pendingCourse) {
+                  initializeRound(pendingCourse, holesPlayed, holesType);
+                }
+              }}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Start Round
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unsaved Work Warning Dialog */}
+      <AlertDialog open={showUnsavedWarningDialog} onOpenChange={setShowUnsavedWarningDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              Unsaved Round in Progress
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have an active round with unsaved scores. Starting a new round will discard all unsaved progress.
+              <br /><br />
+              <span className="text-amber-600">⚠️ This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUnsavedWarningDialog(false);
+              setPendingCourse(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-500 hover:bg-amber-600"
+              onClick={async (e) => {
+                e.preventDefault();
+                // Clear the unsaved work
+                localStorage.removeItem('jazel_active_round');
+                setShowScorecard(false);
+                setScores([]);
+                setAdditionalPlayers([]);
+                setPlayerScores(new Map());
+                setHasUnsavedWork(false);
+                setEditingRoundId(null);
+                setShowUnsavedWarningDialog(false);
+                
+                // Now show the hole selection dialog for the new round
+                if (pendingCourse) {
+                  setHolesPlayed(18);
+                  setHolesType('front');
+                  setShowHoleSelectionDialog(true);
+                }
+              }}
+            >
+              Discard & Start New
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* My Bag Dialog */}
+      <Dialog open={showBagDialog} onOpenChange={setShowBagDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg className="w-5 h-5" style={{color: '#39638b'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8h12l-1 13H7L6 8z" />
+                <path d="M5 8h14" />
+                <path d="M8 8V4l-1-2" />
+                <path d="M12 8V3" />
+                <path d="M16 8V4l1-2" />
+                <path d="M8 12h8v4H8z" />
+                <path d="M7 21h10" />
+              </svg>
+              What's in My Bag
+            </DialogTitle>
+            <DialogDescription>
+              {editingBag 
+                ? 'Select clubs and enter your estimated distances' 
+                : `${userClubs.length} clubs in your bag`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingClubs ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
+            </div>
+          ) : editingBag ? (
+            <div className="space-y-2">
+              {/* Edit Mode - 14 Fields */}
+              {Array.from({ length: 14 }, (_, i) => {
+                const slotIndex = i;
+                const slotData = bagFormData[slotIndex];
+                const GOLF_CLUBS = ['Driver', '3-Wood', '5-Wood', '7-Wood', '2-Hybrid', '3-Hybrid', '4-Hybrid', '5-Hybrid', '2-Iron', '3-Iron', '4-Iron', '5-Iron', '6-Iron', '7-Iron', '8-Iron', '9-Iron', 'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge', 'Putter'];
+                const usedClubs = bagFormData.filter((item, idx) => idx !== slotIndex && item.clubName).map(item => item.clubName);
+                
+                return (
+                  <div key={slotIndex} className="flex items-center gap-2">
+                    <span className="w-6 text-sm text-muted-foreground text-right">{slotIndex + 1}.</span>
+                    <Select
+                      value={slotData?.clubName || ''}
+                      onValueChange={(value) => updateBagFormSlot(slotIndex, 'clubName', value)}
+                    >
+                      <SelectTrigger className="flex-1 h-9">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GOLF_CLUBS
+                          .filter(club => !usedClubs.includes(club))
+                          .map(club => (
+                            <SelectItem key={club} value={club}>{club}</SelectItem>
+                          ))
+                        }
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={400}
+                      placeholder="0"
+                      className="w-24 h-9 text-sm text-left [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={slotData?.estimatedDistance ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          updateBagFormSlot(slotIndex, 'estimatedDistance', null);
+                        } else {
+                          const num = parseInt(val, 10);
+                          if (!isNaN(num) && num >= 0 && num <= 400) {
+                            updateBagFormSlot(slotIndex, 'estimatedDistance', num);
+                          }
+                        }
+                      }}
+                      disabled={!slotData?.clubName}
+                    />
+                  </div>
+                );
+              })}
+              
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setEditingBag(false)}
+                  disabled={authLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  style={{background: '#39638b'}}
+                  onClick={handleSaveBag}
+                  disabled={authLoading}
+                >
+                  {authLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* View Mode - List of clubs */}
+              {userClubs.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No clubs added yet</p>
+              ) : (
+                userClubs.map((club) => (
+                  <div key={club.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                    <span className="font-medium text-sm">{club.clubName}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {club.estimatedDistance ? `${club.estimatedDistance} ${distanceUnit === 'meters' ? 'm' : 'yd'}` : '-'}
+                    </span>
+                  </div>
+                ))
+              )}
+              
+              {/* Edit button */}
+              <Button
+                className="w-full mt-4"
+                style={{background: '#39638b'}}
+                onClick={() => setEditingBag(true)}
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Bag
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Footer */}
-      <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#c5e6d1'}}>
+      <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between text-sm text-muted-foreground flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <Circle className="w-4 h-4" style={{color: '#06402B'}} />
-              <span>Jazel - Golf Scorecard</span>
+              <Circle className="w-4 h-4" style={{color: '#39638b'}} />
+              <span className="font-medium">Jazel Golf</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.4</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
@@ -3415,6 +5640,20 @@ export default function JazelApp() {
           </div>
         </div>
       </footer>
+
+      {/* Course Map Screen */}
+      {showMapScreen && showScorecard && selectedCourse && (
+        <CourseMap
+          course={selectedCourse}
+          currentHole={selectedGPSHole}
+          onHoleChange={setSelectedGPSHole}
+          distanceUnit={distanceUnit}
+          onClose={() => setShowMapScreen(false)}
+          userClubs={userClubs}
+          weatherData={weatherData}
+          onRefreshWeather={() => fetchWeather(undefined, true)}
+        />
+      )}
     </div>
   );
 }

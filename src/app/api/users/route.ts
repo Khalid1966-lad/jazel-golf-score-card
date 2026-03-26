@@ -1,13 +1,31 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const groupId = searchParams.get('groupId');
+
+    // Base where clause - only show non-blocked, non-hidden users
+    const baseWhere = {
+      blocked: false,
+      hiddenFromGolfers: false,
+    };
+
+    // If groupId is provided and not 'all', filter by group membership
+    const whereClause = groupId && groupId !== 'all' 
+      ? {
+          ...baseWhere,
+          groups: {
+            some: {
+              groupId: groupId,
+            },
+          },
+        }
+      : baseWhere;
+
     const users = await db.user.findMany({
-      where: {
-        blocked: false,
-        hiddenFromGolfers: false,
-      },
+      where: whereClause,
       select: {
         id: true,
         name: true,

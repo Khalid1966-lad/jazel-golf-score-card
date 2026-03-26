@@ -1,14 +1,23 @@
-import { BrevoClient } from '@getbrevo/brevo';
+import type { BrevoClient as BrevoClientType } from '@getbrevo/brevo';
 
-// Initialize Brevo client
-const apiKey = process.env.BREVO_API_KEY;
-let brevo: BrevoClient | null = null;
+// Lazy initialize Brevo client
+let brevo: BrevoClientType | null = null;
 
-if (apiKey) {
-  brevo = new BrevoClient({ apiKey });
-  console.log('✅ Brevo client initialized successfully');
-} else {
-  console.log('⚠️ BREVO_API_KEY not found - email service disabled');
+function getBrevoClient(): BrevoClientType | null {
+  if (brevo) return brevo;
+  
+  try {
+    // Dynamic import to avoid build failures
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { BrevoClient } = require('@getbrevo/brevo');
+    brevo = new BrevoClient({
+      apiKey: process.env.BREVO_API_KEY || '',
+    });
+    return brevo;
+  } catch (e) {
+    console.error('Failed to load Brevo client:', e);
+    return null;
+  }
 }
 
 interface SendEmailResult {
@@ -33,11 +42,20 @@ export async function sendPasswordResetEmail({
 }: PasswordResetEmailParams): Promise<SendEmailResult> {
   console.log('📧 Attempting to send password reset email to:', to);
   
-  if (!brevo) {
-    console.error('❌ Brevo client not initialized - BREVO_API_KEY missing');
+  if (!process.env.BREVO_API_KEY) {
+    console.error('❌ BREVO_API_KEY not set');
     return {
       success: false,
       error: 'Email service not configured - BREVO_API_KEY missing',
+    };
+  }
+
+  const client = getBrevoClient();
+  if (!client) {
+    console.error('❌ Brevo client not available');
+    return {
+      success: false,
+      error: 'Email service not available',
     };
   }
 
@@ -117,7 +135,7 @@ export async function sendPasswordResetEmail({
   try {
     console.log('📧 Calling Brevo sendTransacEmail API...');
     
-    const response = await brevo.transactionalEmails.sendTransacEmail({
+    const response = await client.transactionalEmails.sendTransacEmail({
       sender: {
         name: senderName,
         email: senderEmail,
@@ -129,17 +147,17 @@ export async function sendPasswordResetEmail({
       subject: 'Reset Your Password - Jazel Golf Scorecard',
       htmlContent: emailHtml,
     });
-
+    
     console.log('📧 Brevo API response:', JSON.stringify(response, null, 2));
     
-    if (response.data) {
-      console.log('✅ Password reset email sent successfully! MessageId:', response.data.messageId);
+    if (response && response.messageId) {
+      console.log('✅ Password reset email sent successfully! MessageId:', response.messageId);
       return {
         success: true,
-        messageId: response.data.messageId,
+        messageId: response.messageId,
       };
     } else {
-      console.error('❌ Brevo response missing data:', response);
+      console.error('❌ Brevo response missing messageId:', response);
       return {
         success: false,
         error: 'Invalid response from email service',
@@ -165,14 +183,22 @@ export async function sendWelcomeEmail({
   to: string;
   userName?: string;
 }): Promise<SendEmailResult> {
-  if (!brevo) {
+  if (!process.env.BREVO_API_KEY) {
     return {
       success: false,
       error: 'Email service not configured',
     };
   }
 
-  const senderEmail = process.env.EMAIL_FROM || 'a4dd04001@smtp-brevo.com';
+  const client = getBrevoClient();
+  if (!client) {
+    return {
+      success: false,
+      error: 'Email service not available',
+    };
+  }
+
+  const senderEmail = process.env.EMAIL_FROM || 'contact@jazelwebagency.com';
   const senderName = process.env.EMAIL_FROM_NAME || 'Jazel Golf';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://jazel-golf-score-card.vercel.app';
   
@@ -213,7 +239,7 @@ export async function sendWelcomeEmail({
   `;
 
   try {
-    const response = await brevo.transactionalEmails.sendTransacEmail({
+    const response = await client.transactionalEmails.sendTransacEmail({
       sender: {
         name: senderName,
         email: senderEmail,
@@ -228,7 +254,7 @@ export async function sendWelcomeEmail({
 
     return {
       success: true,
-      messageId: response.data?.messageId,
+      messageId: response?.messageId,
     };
   } catch (error: unknown) {
     console.error('Error sending welcome email:', error);

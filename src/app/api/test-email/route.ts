@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { BrevoClient } from '@getbrevo/brevo';
 
 export async function GET() {
   console.log('🧪 Test email endpoint called');
@@ -17,6 +16,9 @@ export async function GET() {
   }
   
   try {
+    // Dynamic import to avoid build failures
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { BrevoClient } = require('@getbrevo/brevo');
     const brevo = new BrevoClient({ apiKey });
     
     // Use the verified sender email from Brevo

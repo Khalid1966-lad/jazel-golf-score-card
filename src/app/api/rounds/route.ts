@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         course: {
           include: {
             holes: { orderBy: { holeNumber: 'asc' } },
+            tees: true,
           },
         },
         scores: {
@@ -56,15 +57,91 @@ export async function POST(request: NextRequest) {
       weatherDesc,
       notes,
       scores,
+      playerNames,
+      playerScores,
+      holesPlayed = 18,
+      holesType = null,
     } = body;
 
-    // Calculate totals
-    const totalStrokes = scores.reduce((sum: number, s: { strokes: number }) => sum + s.strokes, 0);
-    const totalPutts = scores.reduce((sum: number, s: { putts: number }) => sum + (s.putts || 0), 0);
-    const fairwaysHit = scores.filter((s: { fairwayHit: boolean }) => s.fairwayHit).length;
-    const fairwaysTotal = scores.filter((s: { fairwayHit: boolean | null }) => s.fairwayHit !== null).length;
-    const greensInReg = scores.filter((s: { greenInReg: boolean }) => s.greenInReg).length;
-    const penalties = scores.reduce((sum: number, s: { penalties: number }) => sum + (s.penalties || 0), 0);
+    // Build all scores array including main player (index 0) and additional players
+    const allScores: Array<{
+      holeNumber: number;
+      strokes: number;
+      putts?: number;
+      fairwayHit?: boolean | null;
+      greenInReg?: boolean;
+      penalties?: number;
+      sandShots?: number;
+      chipShots?: number;
+      driveDistance?: number | null;
+      playerIndex: number;
+    }> = [];
+
+    // Add main player scores (playerIndex 0)
+    scores.forEach((s: {
+      holeNumber: number;
+      strokes: number;
+      putts?: number;
+      fairwayHit?: boolean | null;
+      greenInReg?: boolean;
+      penalties?: number;
+      sandShots?: number;
+      chipShots?: number;
+      driveDistance?: number | null;
+    }) => {
+      if (s.strokes > 0) {
+        allScores.push({
+          holeNumber: s.holeNumber,
+          strokes: s.strokes,
+          putts: s.putts || 0,
+          fairwayHit: s.fairwayHit ?? null,
+          greenInReg: s.greenInReg || false,
+          penalties: s.penalties || 0,
+          sandShots: s.sandShots || 0,
+          chipShots: s.chipShots || 0,
+          driveDistance: s.driveDistance || null,
+          playerIndex: 0,
+        });
+      }
+    });
+
+    // Add additional player scores (playerIndex 1, 2, 3, etc.)
+    if (playerScores && Array.isArray(playerScores)) {
+      playerScores.forEach((ps: {
+        playerIndex: number;
+        scores: Array<{
+          holeNumber: number;
+          strokes: number;
+          putts?: number;
+          fairwayHit?: boolean | null;
+          greenInReg?: boolean;
+          penalties?: number;
+        }>;
+      }) => {
+        ps.scores.forEach((s) => {
+          if (s.strokes > 0) {
+            allScores.push({
+              holeNumber: s.holeNumber,
+              strokes: s.strokes,
+              putts: s.putts || 0,
+              fairwayHit: s.fairwayHit ?? null,
+              greenInReg: s.greenInReg || false,
+              penalties: s.penalties || 0,
+              playerIndex: ps.playerIndex + 1, // +1 because playerIndex in state is 0-based for additional players
+            });
+          }
+        });
+      });
+    }
+
+    // Calculate totals from main player only (playerIndex 0)
+    const mainPlayerScores = allScores.filter(s => s.playerIndex === 0);
+    const totalStrokes = mainPlayerScores.reduce((sum, s) => sum + s.strokes, 0);
+    const totalPutts = mainPlayerScores.reduce((sum, s) => sum + (s.putts || 0), 0);
+    const fairwaysHit = mainPlayerScores.filter(s => s.fairwayHit === true).length;
+    const fairwaysTotal = mainPlayerScores.filter(s => s.fairwayHit !== null).length;
+    const greensInReg = mainPlayerScores.filter(s => s.greenInReg).length;
+    const penalties = mainPlayerScores.reduce((sum, s) => sum + (s.penalties || 0), 0);
 
     const round = await db.round.create({
       data: {
@@ -75,6 +152,8 @@ export async function POST(request: NextRequest) {
         weatherWind,
         weatherDesc,
         notes,
+        holesPlayed,
+        holesType,
         totalStrokes,
         totalPutts,
         fairwaysHit,
@@ -82,28 +161,9 @@ export async function POST(request: NextRequest) {
         greensInReg,
         penalties,
         completed: true,
+        playerNames,
         scores: {
-          create: scores.map((s: {
-            holeNumber: number;
-            strokes: number;
-            putts?: number;
-            fairwayHit?: boolean;
-            greenInReg?: boolean;
-            penalties?: number;
-            sandShots?: number;
-            chipShots?: number;
-            driveDistance?: number;
-          }) => ({
-            holeNumber: s.holeNumber,
-            strokes: s.strokes,
-            putts: s.putts,
-            fairwayHit: s.fairwayHit,
-            greenInReg: s.greenInReg,
-            penalties: s.penalties || 0,
-            sandShots: s.sandShots || 0,
-            chipShots: s.chipShots || 0,
-            driveDistance: s.driveDistance,
-          })),
+          create: allScores,
         },
       },
       include: {
@@ -136,7 +196,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete scores first (due to foreign key constraint)
-    await db.score.deleteMany({
+    await db.roundScore.deleteMany({
       where: { roundId },
     });
 
@@ -159,7 +219,7 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { roundId, scores } = body;
+    const { roundId, scores, playerNames, playerScores, teeId, holesPlayed, holesType } = body;
 
     if (!roundId) {
       return NextResponse.json(
@@ -181,16 +241,95 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Calculate new totals
-    const totalStrokes = scores.reduce((sum: number, s: { strokes: number }) => sum + s.strokes, 0);
-    const totalPutts = scores.reduce((sum: number, s: { putts: number }) => sum + (s.putts || 0), 0);
-    const fairwaysHit = scores.filter((s: { fairwayHit: boolean }) => s.fairwayHit).length;
-    const fairwaysTotal = scores.filter((s: { fairwayHit: boolean | null }) => s.fairwayHit !== null).length;
-    const greensInReg = scores.filter((s: { greenInReg: boolean }) => s.greenInReg).length;
-    const penalties = scores.reduce((sum: number, s: { penalties: number }) => sum + (s.penalties || 0), 0);
+    // Build all scores array including main player (index 0) and additional players
+    const allScores: Array<{
+      holeNumber: number;
+      strokes: number;
+      putts?: number;
+      fairwayHit?: boolean | null;
+      greenInReg?: boolean;
+      penalties?: number;
+      sandShots?: number;
+      chipShots?: number;
+      driveDistance?: number | null;
+      playerIndex: number;
+    }> = [];
 
-    // Delete existing scores and create new ones
-    await db.score.deleteMany({
+    // Add main player scores (playerIndex 0)
+    scores.forEach((s: {
+      holeNumber: number;
+      strokes: number;
+      putts?: number;
+      fairwayHit?: boolean | null;
+      greenInReg?: boolean;
+      penalties?: number;
+      sandShots?: number;
+      chipShots?: number;
+      driveDistance?: number | null;
+    }) => {
+      if (s.strokes > 0) {
+        allScores.push({
+          holeNumber: s.holeNumber,
+          strokes: s.strokes,
+          putts: s.putts || 0,
+          fairwayHit: s.fairwayHit ?? null,
+          greenInReg: s.greenInReg || false,
+          penalties: s.penalties || 0,
+          sandShots: s.sandShots || 0,
+          chipShots: s.chipShots || 0,
+          driveDistance: s.driveDistance || null,
+          playerIndex: 0,
+        });
+      }
+    });
+
+    // Add additional player scores (playerIndex 1, 2, 3, etc.)
+    if (playerScores && Array.isArray(playerScores)) {
+      playerScores.forEach((ps: {
+        playerIndex: number;
+        scores: Array<{
+          holeNumber: number;
+          strokes: number;
+          putts?: number;
+          fairwayHit?: boolean | null;
+          greenInReg?: boolean;
+          penalties?: number;
+        }>;
+      }) => {
+        ps.scores.forEach((s) => {
+          if (s.strokes > 0) {
+            allScores.push({
+              holeNumber: s.holeNumber,
+              strokes: s.strokes,
+              putts: s.putts || 0,
+              fairwayHit: s.fairwayHit ?? null,
+              greenInReg: s.greenInReg || false,
+              penalties: s.penalties || 0,
+              playerIndex: ps.playerIndex + 1,
+            });
+          }
+        });
+      });
+    }
+
+    if (allScores.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one score with strokes is required' },
+        { status: 400 }
+      );
+    }
+
+    // Calculate totals from main player only (playerIndex 0)
+    const mainPlayerScores = allScores.filter(s => s.playerIndex === 0);
+    const totalStrokes = mainPlayerScores.reduce((sum, s) => sum + s.strokes, 0);
+    const totalPutts = mainPlayerScores.reduce((sum, s) => sum + (s.putts || 0), 0);
+    const fairwaysHit = mainPlayerScores.filter(s => s.fairwayHit === true).length;
+    const fairwaysTotal = mainPlayerScores.filter(s => s.fairwayHit !== null).length;
+    const greensInReg = mainPlayerScores.filter(s => s.greenInReg).length;
+    const penalties = mainPlayerScores.reduce((sum, s) => sum + (s.penalties || 0), 0);
+
+    // Delete existing scores
+    await db.roundScore.deleteMany({
       where: { roundId },
     });
 
@@ -198,6 +337,10 @@ export async function PUT(request: NextRequest) {
     const updatedRound = await db.round.update({
       where: { id: roundId },
       data: {
+        teeId,
+        playerNames,
+        holesPlayed: holesPlayed || existingRound.holesPlayed,
+        holesType: holesType !== undefined ? holesType : existingRound.holesType,
         totalStrokes,
         totalPutts,
         fairwaysHit,
@@ -205,21 +348,7 @@ export async function PUT(request: NextRequest) {
         greensInReg,
         penalties,
         scores: {
-          create: scores.map((s: {
-            holeNumber: number;
-            strokes: number;
-            putts?: number;
-            fairwayHit?: boolean | null;
-            greenInReg?: boolean;
-            penalties?: number;
-          }) => ({
-            holeNumber: s.holeNumber,
-            strokes: s.strokes,
-            putts: s.putts || 0,
-            fairwayHit: s.fairwayHit ?? null,
-            greenInReg: s.greenInReg || false,
-            penalties: s.penalties || 0,
-          })),
+          create: allScores,
         },
       },
       include: {

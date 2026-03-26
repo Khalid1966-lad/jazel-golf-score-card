@@ -1,31 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Super Admin emails - same as frontend
+const SUPER_ADMIN_EMAILS = [
+  'kbelkhalfi@gmail.com',
+  'contact@jazelwebagency.com',
+];
+
+const isSuperAdminEmail = (email: string | null) => {
+  if (!email) return false;
+  return SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
+};
+
 // Helper to verify admin authentication
 async function verifyAdmin(request: NextRequest) {
-  const token = request.cookies.get('admin_token')?.value;
+  // Check for admin access via session_token (same as other admin APIs)
+  const sessionToken = request.cookies.get('session_token')?.value;
   
-  if (!token) {
+  if (!sessionToken) {
     return null;
   }
   
   const session = await db.adminSession.findUnique({
-    where: { token },
+    where: { token: sessionToken },
     include: { 
       user: {
-        select: { id: true, email: true, isAdmin: true }
+        select: { id: true, email: true, isAdmin: true, isSuperAdmin: true }
       }
     }
   });
   
   if (!session || session.expiresAt < new Date() || !session.user.isAdmin) {
     if (session) {
-      await db.adminSession.delete({ where: { token } });
+      await db.adminSession.delete({ where: { token: sessionToken } });
     }
     return null;
   }
   
-  return session.user;
+  // Check super admin - either by database field OR by email list
+  const isSuper = session.user.isSuperAdmin || isSuperAdminEmail(session.user.email);
+  return { ...session.user, isSuperAdmin: isSuper };
+}
+
+// Helper to check if admin has access to a course
+async function checkCourseAccess(courseId: string, admin: { id: string; isSuperAdmin: boolean }) {
+  const course = await db.golfCourse.findUnique({
+    where: { id: courseId },
+    select: { adminId: true }
+  });
+  
+  if (!course) {
+    return { hasAccess: false, reason: 'not_found' };
+  }
+  
+  if (admin.isSuperAdmin || course.adminId === admin.id) {
+    return { hasAccess: true };
+  }
+  
+  return { hasAccess: false, reason: 'access_denied' };
 }
 
 // PUT - Update holes for a course
@@ -40,17 +72,18 @@ export async function PUT(
 
   try {
     const { id } = await params;
+    
+    // Check access
+    const access = await checkCourseAccess(id, admin);
+    if (!access.hasAccess) {
+      if (access.reason === 'not_found') {
+        return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      }
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+    
     const body = await request.json();
     const { holes } = body;
-
-    // Verify course exists
-    const course = await db.golfCourse.findUnique({
-      where: { id }
-    });
-
-    if (!course) {
-      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
-    }
 
     // Update each hole
     const updatePromises = holes.map((hole: { id: string; par: number; handicap: number }) =>
@@ -94,6 +127,16 @@ export async function POST(
 
   try {
     const { id } = await params;
+    
+    // Check access
+    const access = await checkCourseAccess(id, admin);
+    if (!access.hasAccess) {
+      if (access.reason === 'not_found') {
+        return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      }
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+    
     const body = await request.json();
     const { holeNumber, par, handicap } = body;
 
@@ -135,6 +178,16 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    
+    // Check access
+    const access = await checkCourseAccess(id, admin);
+    if (!access.hasAccess) {
+      if (access.reason === 'not_found') {
+        return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      }
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+    
     const { searchParams } = new URL(request.url);
     const holeId = searchParams.get('holeId');
 

@@ -1,31 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Super Admin emails - same as frontend
+const SUPER_ADMIN_EMAILS = [
+  'kbelkhalfi@gmail.com',
+  'contact@jazelwebagency.com',
+];
+
+const isSuperAdminEmail = (email: string | null) => {
+  if (!email) return false;
+  return SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
+};
+
 // Helper to verify admin authentication
 async function verifyAdmin(request: NextRequest) {
-  const token = request.cookies.get('admin_token')?.value;
+  // Check for admin access via session_token (same as other admin APIs)
+  const sessionToken = request.cookies.get('session_token')?.value;
   
-  if (!token) {
+  if (!sessionToken) {
     return null;
   }
   
   const session = await db.adminSession.findUnique({
-    where: { token },
+    where: { token: sessionToken },
     include: { 
       user: {
-        select: { id: true, email: true, isAdmin: true }
+        select: { id: true, email: true, isAdmin: true, isSuperAdmin: true }
       }
     }
   });
   
   if (!session || session.expiresAt < new Date() || !session.user.isAdmin) {
     if (session) {
-      await db.adminSession.delete({ where: { token } });
+      await db.adminSession.delete({ where: { token: sessionToken } });
     }
     return null;
   }
   
-  return session.user;
+  // Check super admin - either by database field OR by email list
+  const isSuper = session.user.isSuperAdmin || isSuperAdminEmail(session.user.email);
+  return { ...session.user, isSuperAdmin: isSuper };
 }
 
 // GET - Get single course with holes
@@ -47,12 +61,20 @@ export async function GET(
         holes: {
           orderBy: { holeNumber: 'asc' }
         },
-        tees: true
+        tees: true,
+        assignedAdmin: {
+          select: { id: true, name: true, email: true }
+        }
       }
     });
 
     if (!course) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+
+    // Check if admin has access to this course
+    if (!admin.isSuperAdmin && course.adminId !== admin.id) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     return NextResponse.json(course);
@@ -74,8 +96,23 @@ export async function PUT(
 
   try {
     const { id } = await params;
+    
+    // Check if admin has access to this course
+    const existingCourse = await db.golfCourse.findUnique({
+      where: { id },
+      select: { adminId: true }
+    });
+    
+    if (!existingCourse) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+    
+    if (!admin.isSuperAdmin && existingCourse.adminId !== admin.id) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+    
     const body = await request.json();
-    const { name, city, region, country, latitude, longitude, totalHoles, description, designer, yearBuilt, phone, website, address } = body;
+    const { name, city, region, country, latitude, longitude, totalHoles, description, designer, yearBuilt, phone, website, address, adminId: newAdminId } = body;
 
     const course = await db.golfCourse.update({
       where: { id },
@@ -92,7 +129,9 @@ export async function PUT(
         yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
         phone,
         website,
-        address
+        address,
+        // Only super admins can reassign courses
+        ...(admin.isSuperAdmin && newAdminId !== undefined && { adminId: newAdminId || null })
       }
     });
 
@@ -115,6 +154,20 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    
+    // Check if admin has access to this course
+    const existingCourse = await db.golfCourse.findUnique({
+      where: { id },
+      select: { adminId: true }
+    });
+    
+    if (!existingCourse) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+    
+    if (!admin.isSuperAdmin && existingCourse.adminId !== admin.id) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
     
     // Get all tee IDs for this course
     const tees = await db.courseTee.findMany({
