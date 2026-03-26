@@ -3142,7 +3142,7 @@ export default function JazelApp() {
                                 {user?.name?.charAt(0).toUpperCase() || 'Y'}
                               </div>
                             )}
-                            <span className="max-w-[60px]">{(() => { const n = user?.name?.split(' ')[0] || 'You'; return n.length > 6 ? n.slice(0, 5) + '..' : n; })()}</span>
+                            <span className="max-w-[60px]">{(() => { const n = user?.name?.split(' ')[0] || 'You'; return n.length > 6 ? n.slice(0, 3) + '..' : n; })()}</span>
                           </div>
                           {/* Additional players columns with photos and delete button */}
                           {additionalPlayers.map((player) => (
@@ -3162,7 +3162,7 @@ export default function JazelApp() {
                                   {player.name?.charAt(0).toUpperCase() || '?'}
                                 </div>
                               )}
-                              <span className="max-w-[60px]">{(() => { const n = player.name.split(' ')[0]; return n.length > 6 ? n.slice(0, 5) + '..' : n; })()}</span>
+                              <span className="max-w-[60px]">{(() => { const n = player.name.split(' ')[0]; return n.length > 6 ? n.slice(0, 3) + '..' : n; })()}</span>
                             </div>
                           ))}
                           <div className="text-center">Putts</div>
