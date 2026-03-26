@@ -3032,31 +3032,13 @@ export default function JazelApp() {
             ) : (
               <div className="space-y-4">
                 {/* Course Info Header - Compact name and city */}
-                <div className="px-3 py-2 rounded-t-lg text-white flex items-center justify-between"
+                <div className="px-3 py-2 rounded-t-lg text-white flex items-center justify-center"
                   style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold">{selectedCourse.name}</h2>
                     <span className="text-white/70">•</span>
                     <p className="text-white/80 text-sm">{selectedCourse.city}</p>
                   </div>
-                  {/* Players List */}
-                  {additionalPlayers.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      {additionalPlayers.map((player) => (
-                        <Badge key={player.id} className="bg-white/30 text-white border-white/30 text-xs px-2 py-0.5">
-                          {player.name}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-3 w-3 p-0 ml-1 hover:bg-white/20"
-                            onClick={() => removePlayer(player.id)}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* Scorecard */}
