@@ -3797,16 +3797,16 @@ export default function JazelApp() {
                           )}
                         </div>
                         <div className="text-6xl">
-                          {weatherData.current.weatherIcon === 'sun' && <Sun className="w-20 h-20 text-yellow-500" />}
-                          {weatherData.current.weatherIcon === 'moon' && <Moon className="w-20 h-20 text-blue-200" />}
-                          {weatherData.current.weatherIcon === 'cloud-sun' && <CloudSun className="w-20 h-20 text-yellow-400" />}
-                          {weatherData.current.weatherIcon === 'cloud-moon' && <CloudMoon className="w-20 h-20 text-slate-300" />}
-                          {weatherData.current.weatherIcon === 'cloud' && <Cloud className="w-20 h-20 text-gray-400" />}
-                          {weatherData.current.weatherIcon === 'cloud-rain' && <CloudRain className="w-20 h-20 text-blue-400" />}
-                          {weatherData.current.weatherIcon === 'cloud-drizzle' && <CloudDrizzle className="w-20 h-20 text-blue-300" />}
-                          {weatherData.current.weatherIcon === 'cloud-snow' && <CloudSnow className="w-20 h-20 text-blue-200" />}
-                          {weatherData.current.weatherIcon === 'cloud-fog' && <CloudFog className="w-20 h-20 text-gray-400" />}
-                          {weatherData.current.weatherIcon === 'cloud-lightning' && <CloudLightning className="w-20 h-20 text-purple-500" />}
+                          {weatherData.current.weatherIcon === 'sun' && <Sun className="w-14 h-14 text-yellow-500" />}
+                          {weatherData.current.weatherIcon === 'moon' && <Moon className="w-14 h-14 text-blue-200" />}
+                          {weatherData.current.weatherIcon === 'cloud-sun' && <CloudSun className="w-14 h-14 text-yellow-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-moon' && <CloudMoon className="w-14 h-14 text-slate-300" />}
+                          {weatherData.current.weatherIcon === 'cloud' && <Cloud className="w-14 h-14 text-gray-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-rain' && <CloudRain className="w-14 h-14 text-blue-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-drizzle' && <CloudDrizzle className="w-14 h-14 text-blue-300" />}
+                          {weatherData.current.weatherIcon === 'cloud-snow' && <CloudSnow className="w-14 h-14 text-blue-200" />}
+                          {weatherData.current.weatherIcon === 'cloud-fog' && <CloudFog className="w-14 h-14 text-gray-400" />}
+                          {weatherData.current.weatherIcon === 'cloud-lightning' && <CloudLightning className="w-14 h-14 text-purple-500" />}
                         </div>
                       </div>
                     </div>
