@@ -763,9 +763,10 @@ export default function CourseMap({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full h-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
       {/* Distance Display */}
-      <div className="flex items-center justify-center gap-4 p-3 bg-gray-50 border-b shrink-0">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 border-b shrink-0 flex-wrap">
         <div className="text-center">
           <p className="text-sm text-muted-foreground">Hole {currentHole}</p>
           <p className="text-xs text-muted-foreground">Par {course.holes.find(h => h.holeNumber === currentHole)?.par || '-'}</p>
@@ -956,7 +957,7 @@ export default function CourseMap({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 p-3 bg-white/70 backdrop-blur-sm border-t shrink-0 text-sm flex-wrap">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 border-t shrink-0 text-xs sm:text-sm flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow" />
           <span className="text-muted-foreground">You</span>
@@ -985,7 +986,7 @@ export default function CourseMap({
       {/* Fullscreen Compass Overlay */}
       {showCompass && (
         <div 
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/10 backdrop-blur-sm"
+          className="absolute inset-0 z-[2000] flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg"
           onClick={() => setShowCompass(false)}
         >
           <div 
@@ -1064,6 +1065,7 @@ export default function CourseMap({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

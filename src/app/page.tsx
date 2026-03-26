@@ -5134,7 +5134,7 @@ export default function JazelApp() {
 
       {/* Add Player Dialog */}
       <Dialog open={showPlayerDialog} onOpenChange={setShowPlayerDialog}>
-        <DialogContent className="max-w-md mx-4 sm:mx-auto w-[calc(100%-2rem)] sm:w-full max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg w-[calc(100%-1rem)] sm:w-full mx-auto">
           <DialogHeader>
             <DialogTitle>Add Players</DialogTitle>
             <DialogDescription>
