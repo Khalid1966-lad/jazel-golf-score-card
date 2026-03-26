@@ -869,7 +869,7 @@ export default function JazelApp() {
   const [showMapScreen, setShowMapScreen] = useState(false);
   const [showGPSPanel, setShowGPSPanel] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(true);
   const [selectedGPSHole, setSelectedGPSHole] = useState(1);
   const [maxNearbyDistance, setMaxNearbyDistance] = useState(100);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -2806,7 +2806,11 @@ export default function JazelApp() {
                   </Card>
                 ))
               ) : (
-                (showFavoritesOnly ? courses.filter(c => favoriteIds.includes(c.id)) : courses).map((course, index) => (
+                (showFavoritesOnly ? courses.filter(c => favoriteIds.includes(c.id)) : [...courses].sort((a, b) => {
+                  const aFav = favoriteIds.includes(a.id) ? 0 : 1;
+                  const bFav = favoriteIds.includes(b.id) ? 0 : 1;
+                  return aFav - bFav;
+                })).map((course, index) => (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 20 }}
