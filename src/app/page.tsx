@@ -933,6 +933,7 @@ export default function JazelApp() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   // Device orientation for compass
   const [deviceHeading, setDeviceHeading] = useState<number>(0); // 0 = facing North
@@ -1874,11 +1875,14 @@ export default function JazelApp() {
       return;
     }
     
+    setIsGettingLocation(true);
+    
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation({ lat: latitude, lon: longitude });
         setIsNearbyMode(true);
+        setIsGettingLocation(false);
         
         try {
           const response = await fetch(
@@ -1896,6 +1900,7 @@ export default function JazelApp() {
         // Use Rabat as default location for demo
         setUserLocation({ lat: 33.9716, lon: -6.8498 });
         setIsNearbyMode(true);
+        setIsGettingLocation(false);
         toast.info('Using Rabat as default location for demo');
       }
     );
@@ -2724,13 +2729,14 @@ export default function JazelApp() {
               <Button
                 onClick={getUserLocation}
                 variant="outline"
+                disabled={isGettingLocation}
                 className="h-12 px-4"
                 style={{borderColor: '#a3c4e0'}}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d6e4ef'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <Navigation className="w-5 h-5 mr-2" />
-                Near Me
+                <Navigation className={`w-5 h-5 mr-2 ${isGettingLocation ? 'animate-spin' : ''}`} />
+                {isGettingLocation ? 'Locating...' : 'Near Me'}
               </Button>
             </div>
 
@@ -3735,15 +3741,16 @@ export default function JazelApp() {
               <CardContent>
                 {!userLocation ? (
                   <div className="text-center py-12">
-                    <Navigation className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <Navigation className={`w-12 h-12 text-muted-foreground mx-auto mb-4 ${isGettingLocation ? 'animate-spin' : 'animate-pulse'}`} />
                     <p className="text-muted-foreground mb-4">Location not available</p>
                     <Button
                       onClick={getUserLocation}
+                      disabled={isGettingLocation}
                       className="text-white"
                       style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                     >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Get My Location
+                      <Navigation className={`w-4 h-4 mr-2 ${isGettingLocation ? 'animate-spin' : ''}`} />
+                      {isGettingLocation ? 'Getting Location...' : 'Get My Location'}
                     </Button>
                   </div>
                 ) : weatherLoading ? (
@@ -5919,7 +5926,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.24</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.25</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
