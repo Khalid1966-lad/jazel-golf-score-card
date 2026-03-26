@@ -3129,7 +3129,7 @@ export default function JazelApp() {
                       <div className="min-w-[500px]">
                         {/* Header Row - Sticky */}
                         <div className="sticky top-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
-                        style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
+                        style={{backgroundColor: '#39638b', gridTemplateColumns: `32px 28px 28px repeat(${6 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Hole</div>
                           <div className="text-center">Par</div>
                           <div className="text-center">HCP</div>
@@ -3200,7 +3200,7 @@ export default function JazelApp() {
                               className={`grid gap-1 p-1.5 text-sm ${index % 2 === 0 ? 'bg-white' : ''}`}
                               style={{
                                 ...(index % 2 !== 0 ? {backgroundColor: 'rgba(232, 245, 237, 0.5)'} : {}),
-                                gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`
+                                gridTemplateColumns: `32px 28px 28px repeat(${6 + additionalPlayers.length}, minmax(0, 1fr))`
                               }}
                             >
                               {/* Hole number - sticky */}
@@ -3323,7 +3323,7 @@ export default function JazelApp() {
 
                         {/* Total Row - Sticky */}
                         <div className="sticky bottom-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
-                          style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
+                          style={{backgroundColor: '#39638b', gridTemplateColumns: `32px 28px 28px repeat(${6 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Total</div>
                           <div className="text-center">{
                             // Calculate par for played holes only
