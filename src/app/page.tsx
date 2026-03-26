@@ -3031,89 +3031,16 @@ export default function JazelApp() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {/* Course Info Header */}
+                {/* Course Info Header - Only name and city */}
                 <Card className="text-white"
                   style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-xl font-bold">{selectedCourse.name}</h2>
                         <p className="text-white/90 text-sm">{selectedCourse.city}, {selectedCourse.region}</p>
                       </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {selectedCourse.tees.length > 0 && (
-                          <Select value={selectedTee} onValueChange={setSelectedTee}>
-                            <SelectTrigger className="w-36 bg-white border-gray-200 text-gray-900">
-                              <SelectValue placeholder="Select Tee" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {selectedCourse.tees.map((tee) => (
-                                <SelectItem key={tee.id} value={tee.id}>
-                                  {tee.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setShowPlayerDialog(true)}
-                          className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                        >
-                          <Users className="w-4 h-4 mr-1" />
-                          Add Players ({additionalPlayers.length}/3)
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setShowAICaddie(true)}
-                          className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                        >
-                          <Bot className="w-4 h-4 mr-1" />
-                          AI Caddie
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setShowMapScreen(true)}
-                          className="bg-white/20 hover:bg-white/30 text-white border-white/30 gap-2"
-                        >
-                          <MapIcon className="w-4 h-4" />
-                          <span className="hidden sm:inline">Map</span>
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setShowGPSPanel(!showGPSPanel)}
-                          className={`gap-2 ${showGPSPanel ? 'bg-white/40' : 'bg-white/20 hover:bg-white/30 text-white border-white/30'}`}
-                        >
-                          <Navigation className="w-4 h-4" />
-                          <span className="hidden sm:inline">GPS</span>
-                        </Button>
-                      </div>
                     </div>
-                    {/* GPS Range Finder Panel */}
-                    {showGPSPanel && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="py-3">
-                          <GPSRangeFinder 
-                            course={selectedCourse} 
-                            userLocation={userLocation}
-                            onLocationUpdate={(loc) => setUserLocation(loc)}
-                            selectedHole={selectedGPSHole}
-                            onHoleChange={setSelectedGPSHole}
-                            distanceUnit={distanceUnit}
-                            userClubs={userClubs}
-                          />
-                        </div>
-                      </motion.div>
-                    )}
                     {/* Players List */}
                     {additionalPlayers.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20">
@@ -3443,27 +3370,110 @@ export default function JazelApp() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="p-4 border-t flex gap-3" style={{borderColor: '#8ab0d1'}}>
-                      <Button
-                        className="flex-1 text-white"
-                        style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
-                        onClick={saveRound}
-                        disabled={scores.filter(s => s.strokes > 0).length === 0}
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Round
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to discard this round? All scores will be lost.')) {
-                            discardRound();
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Discard
-                      </Button>
+                    <div className="p-4 border-t space-y-3" style={{borderColor: '#8ab0d1'}}>
+                      {/* Tee Selector and Action Buttons Row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {selectedCourse.tees.length > 0 && (
+                          <Select value={selectedTee} onValueChange={setSelectedTee}>
+                            <SelectTrigger className="w-32 h-9 text-sm">
+                              <SelectValue placeholder="Select Tee" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedCourse.tees.map((tee) => (
+                                <SelectItem key={tee.id} value={tee.id}>
+                                  {tee.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowPlayerDialog(true)}
+                          className="h-9 text-sm"
+                          style={{borderColor: '#8ab0d1'}}
+                        >
+                          <Users className="w-4 h-4 mr-1" />
+                          Add Players ({additionalPlayers.length}/3)
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAICaddie(true)}
+                          className="h-9 text-sm"
+                          style={{borderColor: '#8ab0d1'}}
+                        >
+                          <Bot className="w-4 h-4 mr-1" />
+                          AI Caddie
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowMapScreen(true)}
+                          className="h-9 text-sm gap-2"
+                          style={{borderColor: '#8ab0d1'}}
+                        >
+                          <MapIcon className="w-4 h-4" />
+                          <span className="hidden sm:inline">Map</span>
+                        </Button>
+                        <Button
+                          variant={showGPSPanel ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setShowGPSPanel(!showGPSPanel)}
+                          className="h-9 text-sm gap-2"
+                          style={showGPSPanel ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                        >
+                          <Navigation className="w-4 h-4" />
+                          <span className="hidden sm:inline">GPS</span>
+                        </Button>
+                      </div>
+                      
+                      {/* GPS Range Finder Panel */}
+                      {showGPSPanel && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-2">
+                            <GPSRangeFinder 
+                              course={selectedCourse} 
+                              userLocation={userLocation}
+                              onLocationUpdate={(loc) => setUserLocation(loc)}
+                              selectedHole={selectedGPSHole}
+                              onHoleChange={setSelectedGPSHole}
+                              distanceUnit={distanceUnit}
+                              userClubs={userClubs}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                      
+                      {/* Save and Discard Buttons */}
+                      <div className="flex gap-3">
+                        <Button
+                          className="flex-1 text-white"
+                          style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                          onClick={saveRound}
+                          disabled={scores.filter(s => s.strokes > 0).length === 0}
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Round
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to discard this round? All scores will be lost.')) {
+                              discardRound();
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Discard
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -5911,7 +5921,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.11</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.12</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
