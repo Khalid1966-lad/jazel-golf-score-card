@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Navigation, Loader2, ZoomIn, ZoomOut, Locate, Map, Satellite, ArrowUp, RotateCcw, Compass, RefreshCw } from 'lucide-react';
+import { X, Navigation, Loader2, ZoomIn, ZoomOut, Locate, Map, Satellite, ArrowUp, RotateCcw, Compass, RefreshCw, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Import Leaflet CSS
@@ -864,9 +864,9 @@ export default function CourseMap({
               variant="secondary"
               onClick={onClose}
               className="h-10 w-10 p-0 bg-white/70 backdrop-blur-sm shadow-lg"
-              title="Close map"
+              title="Return to scorecard"
             >
-              <X className="w-5 h-5" />
+              <Pencil className="w-5 h-5" />
             </Button>
             <Button
               size="sm"

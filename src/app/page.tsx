@@ -3165,27 +3165,37 @@ export default function JazelApp() {
                 {/* Scorecard */}
                 <Card className="bg-white/80 backdrop-blur overflow-hidden">
                   <CardContent className="p-0">
-                    {/* Front 9 / Back 9 Toggle */}
-                    <div className="flex items-center justify-center gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
-                      <Button
-                        variant={scorecardView === 'front' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScorecardView('front')}
-                        style={scorecardView === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                        className="text-sm"
-                      >
-                        Front 9 (1-9)
-                      </Button>
-                      <Button
-                        variant={scorecardView === 'back' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScorecardView('back')}
-                        style={scorecardView === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                        className="text-sm"
-                      >
-                        Back 9 (10-18)
-                      </Button>
-                    </div>
+                    {/* Front 9 / Back 9 Toggle - Only show for 18-hole rounds */}
+                    {holesPlayed === 18 && (
+                      <div className="flex items-center justify-center gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
+                        <Button
+                          variant={scorecardView === 'front' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setScorecardView('front')}
+                          style={scorecardView === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                          className="text-sm"
+                        >
+                          Front 9 (1-9)
+                        </Button>
+                        <Button
+                          variant={scorecardView === 'back' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setScorecardView('back')}
+                          style={scorecardView === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                          className="text-sm"
+                        >
+                          Back 9 (10-18)
+                        </Button>
+                      </div>
+                    )}
+                    {/* 9-hole round indicator */}
+                    {holesPlayed === 9 && (
+                      <div className="flex items-center justify-center gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
+                        <span className="text-sm font-medium" style={{color: '#39638b'}}>
+                          {holesType === 'front' ? 'Front 9 (Holes 1-9)' : 'Back 9 (Holes 10-18)'}
+                        </span>
+                      </div>
+                    )}
                     <div 
                       ref={scorecardRef}
                       className="overflow-x-auto"
@@ -3239,7 +3249,15 @@ export default function JazelApp() {
 
                         {/* Hole Rows */}
                         {scores.filter((score) => {
-                          // Only show 9 holes at a time based on scorecardView
+                          // For 9-hole rounds, show only the selected 9 holes
+                          if (holesPlayed === 9) {
+                            if (holesType === 'front') {
+                              return score.holeNumber >= 1 && score.holeNumber <= 9;
+                            } else {
+                              return score.holeNumber >= 10 && score.holeNumber <= 18;
+                            }
+                          }
+                          // For 18-hole rounds, show 9 holes at a time based on scorecardView
                           if (scorecardView === 'front') {
                             return score.holeNumber >= 1 && score.holeNumber <= 9;
                           } else {
@@ -3383,38 +3401,61 @@ export default function JazelApp() {
                           style={{backgroundColor: '#39638b', gridTemplateColumns: `repeat(${9 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Total</div>
                           <div className="text-center">{
-                            // Calculate par for all holes
+                            // Calculate par for played holes only
                             selectedCourse.holes
+                              .filter(h => {
+                                if (holesPlayed === 9) {
+                                  return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
+                                }
+                                return true;
+                              })
                               .reduce((sum, h) => sum + h.par, 0)
                           }</div>
                           <div className="text-center">-</div>
                           <div className="text-center">{
-                            // Calculate strokes for all holes
+                            // Calculate strokes for played holes only
                             scores
+                              .filter(s => {
+                                if (holesPlayed === 9) {
+                                  return holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10;
+                                }
+                                return true;
+                              })
                               .reduce((sum, s) => sum + (s.strokes || 0), 0) || '-'
                           }</div>
                           {additionalPlayers.map((player, playerIdx) => {
-                            // Calculate player total for all holes
+                            // Calculate player total for played holes only
                             const playerTotal = playerScores.get(playerIdx)
+                              ?.filter(s => {
+                                if (holesPlayed === 9) {
+                                  return holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10;
+                                }
+                                return true;
+                              })
                               ?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
                             return <div key={player.id} className="text-center">{playerTotal || '-'}</div>;
                           })}
                           <div className="text-center">{
-                            scores.reduce((sum, s) => sum + (s.putts || 0), 0) || '-'
+                            scores.filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true)
+                              .reduce((sum, s) => sum + (s.putts || 0), 0) || '-'
                           }</div>
                           <div className="text-center">{
-                            scores.filter(s => s.fairwayHit === true).length || '-'
+                            scores.filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true)
+                              .filter(s => s.fairwayHit === true).length || '-'
                           }</div>
                           <div className="text-center">{
-                            scores.filter(s => s.greenInReg).length || '-'
+                            scores.filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true)
+                              .filter(s => s.greenInReg).length || '-'
                           }</div>
                           <div className="text-center">{
-                            scores.reduce((sum, s) => sum + (s.penalties || 0), 0) || '-'
+                            scores.filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true)
+                              .reduce((sum, s) => sum + (s.penalties || 0), 0) || '-'
                           }</div>
                           <div className="text-center">
                             {(() => {
                               let vsPar = 0;
-                              scores.forEach(s => {
+                              const relevantScores = scores.filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true);
+                              relevantScores.forEach(s => {
                                 if (s.strokes > 0) {
                                   const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
                                   vsPar += s.strokes - (hole?.par || 4);
@@ -5632,7 +5673,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.4</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.6</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
