@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// For SANDBOX: Use SQLite
+// For VERCEL: Change provider to "postgresql" and add directUrl
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  password      String
+  name          String?
+  handicap      Float?
+  homeCourseId  String?
+  avatar        String?
+  isAdmin       Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  rounds        Round[]
+  clubDistances ClubDistance[]
+  adminSessions AdminSession[]
+  favorites     Favorite[]
+  
+  @@map("users")
+}
+
+model AdminSession {
+  id           String   @id @default(cuid())
+  token        String   @unique
+  userId       String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("admin_sessions")
+}
+
+model Favorite {
+  id           String   @id @default(cuid())
+  userId       String
+  courseId     String
+  createdAt    DateTime @default(now())
+  
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       GolfCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@map("favorites")
+}
+
+model ClubDistance {
+  id           String   @id @default(cuid())
+  userId       String
+  club         String
+  avgDistance  Float
+  maxDistance  Float?
+  shotsCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, club])
+  @@map("club_distances")
+}
+
+model GolfCourse {
+  id              String   @id @default(cuid())
+  name            String
+  city            String
+  region          String
+  country         String  @default("Morocco")
+  latitude        Float
+  longitude       Float
+  totalHoles      Int     @default(18)
+  description     String?
+  imageUrl        String?
+  designer        String?
+  yearBuilt       Int?
+  phone           String?
+  website         String?
+  address         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  holes           CourseHole[]
+  tees            CourseTee[]
+  rounds          Round[]
+  favorites       Favorite[]
+  
+  @@map("golf_courses")
+}
+
+model CourseHole {
+  id           String   @id @default(cuid())
+  courseId     String
+  holeNumber   Int
+  par          Int
+  handicap     Int?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  course       GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teeDistances CourseHoleDistance[]
+  
+  @@unique([courseId, holeNumber])
+  @@map("course_holes")
+}
+
+model CourseTee {
+  id           String   @id @default(cuid())
+  courseId     String
+  name         String
+  color        String?
+  gender       String?
+  rating       Float?
+  slope        Int?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  course       GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  holeDistances CourseHoleDistance[]
+  
+  @@unique([courseId, name])
+  @@map("course_tees")
+}
+
+model CourseHoleDistance {
+  id         String   @id @default(cuid())
+  holeId     String
+  teeId      String
+  distance   Int
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  hole       CourseHole @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  tee        CourseTee  @relation(fields: [teeId], references: [id], onDelete: Cascade)
+  
+  @@unique([holeId, teeId])
+  @@map("course_hole_distances")
+}
+
+model Round {
+  id             String   @id @default(cuid())
+  userId         String
+  courseId       String
+  date           DateTime @default(now())
+  teeId          String?
+  weatherTemp    Float?
+  weatherWind    Float?
+  weatherDesc    String?
+  notes          String?
+  totalStrokes   Int?
+  totalPutts     Int?
+  fairwaysHit    Int?
+  fairwaysTotal  Int?
+  greensInReg    Int?
+  penalties      Int?
+  completed      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         GolfCourse  @relation(fields: [courseId], references: [id])
+  scores         RoundScore[]
+  
+  @@map("rounds")
+}
+
+model RoundScore {
+  id           String   @id @default(cuid())
+  roundId      String
+  holeNumber   Int
+  strokes      Int
+  putts        Int?
+  fairwayHit   Boolean?
+  greenInReg   Boolean?
+  penalties    Int      @default(0)
+  sandShots    Int      @default(0)
+  chipShots    Int      @default(0)
+  driveDistance Float?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  round        Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  
+  @@unique([roundId, holeNumber])
+  @@map("round_scores")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("settings")
+}
