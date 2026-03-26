@@ -3031,70 +3031,112 @@ export default function JazelApp() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {/* Course Info Header - Only name and city */}
-                <Card className="text-white"
+                {/* Course Info Header - Compact name and city */}
+                <div className="px-3 py-2 rounded-t-lg text-white flex items-center justify-between"
                   style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold">{selectedCourse.name}</h2>
-                        <p className="text-white/90 text-sm">{selectedCourse.city}, {selectedCourse.region}</p>
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold">{selectedCourse.name}</h2>
+                    <span className="text-white/70">•</span>
+                    <p className="text-white/80 text-sm">{selectedCourse.city}</p>
+                  </div>
+                  {/* Players List */}
+                  {additionalPlayers.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      {additionalPlayers.map((player) => (
+                        <Badge key={player.id} className="bg-white/30 text-white border-white/30 text-xs px-2 py-0.5">
+                          {player.name}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-3 w-3 p-0 ml-1 hover:bg-white/20"
+                            onClick={() => removePlayer(player.id)}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </Button>
+                        </Badge>
+                      ))}
                     </div>
-                    {/* Players List */}
-                    {additionalPlayers.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20">
-                        <span className="text-sm text-white/80">Players:</span>
-                        {additionalPlayers.map((player, idx) => (
-                          <Badge key={player.id} className="bg-white/30 text-white border-white/30">
-                            {player.name}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-white/20"
-                              onClick={() => removePlayer(player.id)}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
 
                 {/* Scorecard */}
                 <Card className="bg-white/80 backdrop-blur overflow-hidden">
                   <CardContent className="p-0">
-                    {/* Front 9 / Back 9 Toggle - Only show for 18-hole rounds */}
+                    {/* Front 9 / Back 9 Toggle with Map/GPS buttons */}
                     {holesPlayed === 18 && (
-                      <div className="flex items-center justify-center gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
-                        <Button
-                          variant={scorecardView === 'front' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setScorecardView('front')}
-                          style={scorecardView === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                          className="text-sm"
-                        >
-                          Front 9 (1-9)
-                        </Button>
-                        <Button
-                          variant={scorecardView === 'back' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setScorecardView('back')}
-                          style={scorecardView === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                          className="text-sm"
-                        >
-                          Back 9 (10-18)
-                        </Button>
+                      <div className="flex items-center justify-between gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={scorecardView === 'front' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setScorecardView('front')}
+                            style={scorecardView === 'front' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                            className="text-sm"
+                          >
+                            Front 9 (1-9)
+                          </Button>
+                          <Button
+                            variant={scorecardView === 'back' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setScorecardView('back')}
+                            style={scorecardView === 'back' ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                            className="text-sm"
+                          >
+                            Back 9 (10-18)
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowMapScreen(true)}
+                            className="h-8 text-sm gap-1"
+                            style={{borderColor: '#8ab0d1'}}
+                          >
+                            <MapIcon className="w-4 h-4" />
+                            <span className="hidden sm:inline">Map</span>
+                          </Button>
+                          <Button
+                            variant={showGPSPanel ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setShowGPSPanel(!showGPSPanel)}
+                            className="h-8 text-sm gap-1"
+                            style={showGPSPanel ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                          >
+                            <Navigation className="w-4 h-4" />
+                            <span className="hidden sm:inline">GPS</span>
+                          </Button>
+                        </div>
                       </div>
                     )}
-                    {/* 9-hole round indicator */}
+                    {/* 9-hole round indicator with Map/GPS buttons */}
                     {holesPlayed === 9 && (
-                      <div className="flex items-center justify-center gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
+                      <div className="flex items-center justify-between gap-2 px-2 py-2 border-b" style={{borderColor: '#8ab0d1'}}>
                         <span className="text-sm font-medium" style={{color: '#39638b'}}>
                           {holesType === 'front' ? 'Front 9 (Holes 1-9)' : 'Back 9 (Holes 10-18)'}
                         </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowMapScreen(true)}
+                            className="h-8 text-sm gap-1"
+                            style={{borderColor: '#8ab0d1'}}
+                          >
+                            <MapIcon className="w-4 h-4" />
+                            <span className="hidden sm:inline">Map</span>
+                          </Button>
+                          <Button
+                            variant={showGPSPanel ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setShowGPSPanel(!showGPSPanel)}
+                            className="h-8 text-sm gap-1"
+                            style={showGPSPanel ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
+                          >
+                            <Navigation className="w-4 h-4" />
+                            <span className="hidden sm:inline">GPS</span>
+                          </Button>
+                        </div>
                       </div>
                     )}
                     <div 
@@ -3396,36 +3438,6 @@ export default function JazelApp() {
                         >
                           <Users className="w-4 h-4 mr-1" />
                           Add Players ({additionalPlayers.length}/3)
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowAICaddie(true)}
-                          className="h-9 text-sm"
-                          style={{borderColor: '#8ab0d1'}}
-                        >
-                          <Bot className="w-4 h-4 mr-1" />
-                          AI Caddie
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowMapScreen(true)}
-                          className="h-9 text-sm gap-2"
-                          style={{borderColor: '#8ab0d1'}}
-                        >
-                          <MapIcon className="w-4 h-4" />
-                          <span className="hidden sm:inline">Map</span>
-                        </Button>
-                        <Button
-                          variant={showGPSPanel ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setShowGPSPanel(!showGPSPanel)}
-                          className="h-9 text-sm gap-2"
-                          style={showGPSPanel ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                        >
-                          <Navigation className="w-4 h-4" />
-                          <span className="hidden sm:inline">GPS</span>
                         </Button>
                       </div>
                       
