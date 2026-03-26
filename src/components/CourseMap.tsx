@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Navigation, Loader2, ZoomIn, ZoomOut, Locate, Map, Satellite, ArrowUp, RotateCcw, Compass, RefreshCw, Pencil } from 'lucide-react';
+import { X, Navigation, Loader2, ZoomIn, ZoomOut, Locate, Map, Satellite, ArrowUp, RotateCcw, Compass, RefreshCw, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Import Leaflet CSS
@@ -817,7 +817,7 @@ export default function CourseMap({
             disabled={currentHole <= 1}
             className="h-8 w-8 p-0"
           >
-            -
+            <ChevronLeft className="w-4 h-4" />
           </Button>
           <Button
             size="sm"
@@ -826,7 +826,7 @@ export default function CourseMap({
             disabled={currentHole >= course.totalHoles}
             className="h-8 w-8 p-0"
           >
-            +
+            <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
