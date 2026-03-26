@@ -5550,19 +5550,18 @@ export default function JazelApp() {
 
       {/* Round Summary Scorecard Dialog */}
       <Dialog open={!!roundToView} onOpenChange={(open) => !open && setRoundToView(null)}>
-        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5" style={{color: '#39638b'}} />
-              Round Scorecard
+        <DialogContent className="w-[95vw] max-w-md max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="p-4 pb-2 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <BookOpen className="w-4 h-4" style={{color: '#39638b'}} />
+              Round Summary
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               {roundToView && (
                 <span>
                   {roundToView.course?.name || 'Unknown Course'} • {' '}
                   {new Date(roundToView.date).toLocaleDateString('en-US', {
                     weekday: 'short',
-                    year: 'numeric',
                     month: 'short',
                     day: 'numeric'
                   })}
@@ -5572,183 +5571,67 @@ export default function JazelApp() {
           </DialogHeader>
           
           {roundToView && (
-            <div className="space-y-4">
-              {/* Scorecard Table - Responsive */}
-              <div className="overflow-x-auto -mx-2 px-2">
-                <table className="w-full border-collapse text-xs sm:text-sm min-w-[600px]">
-                  <thead>
-                    <tr className="text-white" style={{backgroundColor: '#39638b'}}>
-                      <th className="p-1.5 sm:p-2 text-center border whitespace-nowrap">Hole</th>
-                      {roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex).map(s => (
-                        <th key={s.holeNumber} className="p-1.5 sm:p-2 text-center border min-w-[28px] sm:min-w-[36px]">{s.holeNumber}</th>
-                      ))}
-                      <th className="p-1.5 sm:p-2 text-center border font-bold whitespace-nowrap">Total</th>
-                    </tr>
-                    <tr className="bg-gray-100">
-                      <th className="p-1.5 sm:p-2 text-center border whitespace-nowrap">Par</th>
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+                {/* Total Score Header */}
+                <div className="flex items-center justify-center gap-6 py-3 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold" style={{color: '#39638b'}}>{roundToView.totalStrokes || 0}</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                  </div>
+                  <div className="w-px h-8 bg-gray-300" />
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">
                       {(() => {
                         const holesPlayedCount = roundToView.holesPlayed || 18;
                         const holesTypeValue = roundToView.holesType || 'front';
                         const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
                         const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
-                        const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
-                          h.holeNumber >= startHole && h.holeNumber <= endHole
-                        );
-                        return relevantHoles.map((h: { holeNumber: number; par: number }) => (
-                          <th key={h.holeNumber} className="p-1.5 sm:p-2 text-center border">{h.par}</th>
-                        ));
+                        return (roundToView.course?.holes || [])
+                          .filter((h: { holeNumber: number }) => h.holeNumber >= startHole && h.holeNumber <= endHole)
+                          .reduce((sum: number, h: { par: number }) => sum + h.par, 0);
                       })()}
-                      <th className="p-1.5 sm:p-2 text-center border font-bold">
-                        {(() => {
-                          const holesPlayedCount = roundToView.holesPlayed || 18;
-                          const holesTypeValue = roundToView.holesType || 'front';
-                          const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
-                          const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
-                          return (roundToView.course?.holes || [])
-                            .filter((h: { holeNumber: number }) => h.holeNumber >= startHole && h.holeNumber <= endHole)
-                            .reduce((sum: number, h: { par: number }) => sum + h.par, 0);
-                        })()}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Main Player Scores */}
-                    <tr>
-                      <td className="p-1.5 sm:p-2 text-center border font-medium bg-gray-50 whitespace-nowrap">{user?.name?.split(' ')[0] || 'You'}</td>
-                      {(() => {
-                        const holesPlayedCount = roundToView.holesPlayed || 18;
-                        const holesTypeValue = roundToView.holesType || 'front';
-                        const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
-                        const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
-                        const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
-                          h.holeNumber >= startHole && h.holeNumber <= endHole
-                        );
-                        const mainScores = roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex) || [];
-                        
-                        return relevantHoles.map((h: { holeNumber: number; par: number }) => {
-                          const score = mainScores.find(s => s.holeNumber === h.holeNumber);
-                          const strokes = score?.strokes || 0;
-                          const diff = strokes > 0 ? strokes - h.par : 0;
-                          const bgColor = strokes === 0 ? 'bg-white' :
-                            diff <= -2 ? 'bg-yellow-200' :
-                            diff === -1 ? 'bg-green-200' :
-                            diff === 0 ? 'bg-white' :
-                            diff === 1 ? 'bg-blue-200' :
-                            'bg-red-200';
-                          return (
-                            <td key={h.holeNumber} className={`p-1.5 sm:p-2 text-center border font-semibold ${bgColor}`}>
-                              {strokes || '-'}
-                            </td>
-                          );
-                        });
-                      })()}
-                      <td className="p-1.5 sm:p-2 text-center border font-bold" style={{backgroundColor: '#d6e4ef'}}>
-                        {roundToView.totalStrokes || 0}
-                      </td>
-                    </tr>
-                    {/* Additional Players */}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Par</p>
+                  </div>
+                  <div className="w-px h-8 bg-gray-300" />
+                  <div className="text-center">
                     {(() => {
-                      let playerNames: (string | { name: string })[] = [];
-                      if (roundToView.playerNames) {
-                        try {
-                          playerNames = JSON.parse(roundToView.playerNames);
-                        } catch (e) {}
-                      }
-                      
-                      return playerNames.map((playerInfo, idx) => {
-                        const playerName = typeof playerInfo === 'string' ? playerInfo : playerInfo.name;
-                        const playerScoresData = roundToView.scores?.filter(s => s.playerIndex === idx + 1) || [];
-                        
-                        const holesPlayedCount = roundToView.holesPlayed || 18;
-                        const holesTypeValue = roundToView.holesType || 'front';
-                        const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
-                        const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
-                        const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
-                          h.holeNumber >= startHole && h.holeNumber <= endHole
-                        );
-                        
-                        return (
-                          <tr key={idx}>
-                            <td className="p-1.5 sm:p-2 text-center border font-medium bg-gray-50 whitespace-nowrap">{playerName.split(' ')[0]}</td>
-                            {relevantHoles.map((h: { holeNumber: number; par: number }) => {
-                              const score = playerScoresData.find(s => s.holeNumber === h.holeNumber);
-                              const strokes = score?.strokes || 0;
-                              const diff = strokes > 0 ? strokes - h.par : 0;
-                              const bgColor = strokes === 0 ? 'bg-white' :
-                                diff <= -2 ? 'bg-yellow-200' :
-                                diff === -1 ? 'bg-green-200' :
-                                diff === 0 ? 'bg-white' :
-                                diff === 1 ? 'bg-blue-200' :
-                                'bg-red-200';
-                              return (
-                                <td key={h.holeNumber} className={`p-1.5 sm:p-2 text-center border font-semibold ${bgColor}`}>
-                                  {strokes || '-'}
-                                </td>
-                              );
-                            })}
-                            <td className="p-1.5 sm:p-2 text-center border font-bold" style={{backgroundColor: '#d6e4ef'}}>
-                              {playerScoresData.reduce((sum, s) => sum + (s.strokes || 0), 0)}
-                            </td>
-                          </tr>
-                        );
+                      const holesPlayedCount = roundToView.holesPlayed || 18;
+                      const holesTypeValue = roundToView.holesType || 'front';
+                      const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+                      const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+                      const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
+                        h.holeNumber >= startHole && h.holeNumber <= endHole
+                      );
+                      const mainScores = roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex) || [];
+                      let vsPar = 0;
+                      mainScores.forEach(s => {
+                        if (s.strokes > 0) {
+                          const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === s.holeNumber);
+                          vsPar += s.strokes - (hole?.par || 4);
+                        }
                       });
+                      return (
+                        <p className={`text-2xl font-bold ${vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                          {(vsPar > 0 ? '+' : '') + vsPar}
+                        </p>
+                      );
                     })()}
-                    {/* +/- Row */}
-                    <tr className="bg-gray-50">
-                      <td className="p-1.5 sm:p-2 text-center border font-medium whitespace-nowrap">+/-</td>
-                      {(() => {
-                        const holesPlayedCount = roundToView.holesPlayed || 18;
-                        const holesTypeValue = roundToView.holesType || 'front';
-                        const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
-                        const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
-                        const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
-                          h.holeNumber >= startHole && h.holeNumber <= endHole
-                        );
-                        const mainScores = roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex) || [];
-                        
-                        return relevantHoles.map((h: { holeNumber: number; par: number }) => {
-                          const score = mainScores.find(s => s.holeNumber === h.holeNumber);
-                          const strokes = score?.strokes || 0;
-                          const diff = strokes > 0 ? strokes - h.par : 0;
-                          return (
-                            <td key={h.holeNumber} className={`p-1.5 sm:p-2 text-center border font-semibold ${
-                              diff < 0 ? 'text-red-600' : diff > 0 ? 'text-amber-600' : 'text-gray-600'
-                            }`}>
-                              {strokes > 0 ? (diff > 0 ? '+' : '') + diff : '-'}
-                            </td>
-                          );
-                        });
-                      })()}
-                      <td className="p-1.5 sm:p-2 text-center border font-bold">
-                        {(() => {
-                          const holesPlayedCount = roundToView.holesPlayed || 18;
-                          const holesTypeValue = roundToView.holesType || 'front';
-                          const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
-                          const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
-                          const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
-                            h.holeNumber >= startHole && h.holeNumber <= endHole
-                          );
-                          const mainScores = roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex) || [];
-                          let vsPar = 0;
-                          mainScores.forEach(s => {
-                            if (s.strokes > 0) {
-                              const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === s.holeNumber);
-                              vsPar += s.strokes - (hole?.par || 4);
-                            }
-                          });
-                          return (vsPar > 0 ? '+' : '') + vsPar;
-                        })()}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Statistics Graphs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Scoring Distribution Pie Chart */}
-                <Card className="bg-white/80 p-4">
-                  <h3 className="text-sm font-semibold mb-2 text-center" style={{color: '#39638b'}}>Scoring Distribution</h3>
+                    <p className="text-xs text-muted-foreground">+/-</p>
+                  </div>
+                </div>
+                
+                {/* Vertical Scorecard List */}
+                <div className="space-y-1">
+                  <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground px-2 py-1" style={{color: '#39638b'}}>
+                    <span>Hole</span>
+                    <span className="text-center">Par</span>
+                    <span className="text-center">Score</span>
+                    <span className="text-center">+/-</span>
+                  </div>
+                  
                   {(() => {
                     const holesPlayedCount = roundToView.holesPlayed || 18;
                     const holesTypeValue = roundToView.holesType || 'front';
@@ -5759,7 +5642,69 @@ export default function JazelApp() {
                     );
                     const mainScores = roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex) || [];
                     
-                    // Calculate scoring breakdown
+                    return relevantHoles.map((h: { holeNumber: number; par: number }) => {
+                      const score = mainScores.find(s => s.holeNumber === h.holeNumber);
+                      const strokes = score?.strokes || 0;
+                      const diff = strokes > 0 ? strokes - h.par : 0;
+                      const bgColor = strokes === 0 ? 'bg-gray-50' :
+                        diff <= -2 ? 'bg-yellow-100' :
+                        diff === -1 ? 'bg-green-100' :
+                        diff === 0 ? 'bg-white' :
+                        diff === 1 ? 'bg-blue-100' :
+                        'bg-red-100';
+                      
+                      return (
+                        <div key={h.holeNumber} className={`grid grid-cols-4 gap-2 text-sm px-2 py-2 rounded-lg ${bgColor}`}>
+                          <span className="font-medium">{h.holeNumber}</span>
+                          <span className="text-center text-muted-foreground">{h.par}</span>
+                          <span className="text-center font-semibold">{strokes || '-'}</span>
+                          <span className={`text-center font-semibold ${
+                            diff < 0 ? 'text-red-600' : diff > 0 ? 'text-amber-600' : strokes > 0 ? 'text-green-600' : 'text-muted-foreground'
+                          }`}>
+                            {strokes > 0 ? (diff > 0 ? '+' : '') + diff : '-'}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                
+                {/* Statistics */}
+                <div className="pt-2 border-t" style={{borderColor: '#d6e4ef'}}>
+                  <h4 className="text-xs font-semibold mb-2" style={{color: '#39638b'}}>Round Stats</h4>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-gray-50">
+                      <p className="text-lg font-bold" style={{color: '#39638b'}}>{roundToView.totalPutts || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Putts</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-gray-50">
+                      <p className="text-lg font-bold text-green-600">{roundToView.fairwaysHit || 0}/{roundToView.fairwaysTotal || '-'}</p>
+                      <p className="text-[10px] text-muted-foreground">Fairways</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-gray-50">
+                      <p className="text-lg font-bold text-blue-600">{roundToView.greensInReg || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">GIR</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-gray-50">
+                      <p className="text-lg font-bold text-red-600">{roundToView.penalties || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Penalties</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Scoring Distribution Graph */}
+                <div className="pt-2 border-t" style={{borderColor: '#d6e4ef'}}>
+                  <h4 className="text-xs font-semibold mb-2" style={{color: '#39638b'}}>Scoring Distribution</h4>
+                  {(() => {
+                    const holesPlayedCount = roundToView.holesPlayed || 18;
+                    const holesTypeValue = roundToView.holesType || 'front';
+                    const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+                    const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+                    const relevantHoles = (roundToView.course?.holes || []).filter((h: { holeNumber: number }) => 
+                      h.holeNumber >= startHole && h.holeNumber <= endHole
+                    );
+                    const mainScores = roundToView.scores?.filter(s => s.playerIndex === 0 || !s.playerIndex) || [];
+                    
                     let eagles = 0, birdies = 0, pars = 0, bogeys = 0, doubleBogeys = 0, tripleOrWorse = 0;
                     mainScores.forEach(score => {
                       if (score.strokes > 0) {
@@ -5776,24 +5721,24 @@ export default function JazelApp() {
                     });
                     
                     const chartData = [
-                      { name: 'Eagles', value: eagles, color: '#ffd700' },
-                      { name: 'Birdies', value: birdies, color: '#22c55e' },
-                      { name: 'Pars', value: pars, color: '#3b82f6' },
-                      { name: 'Bogeys', value: bogeys, color: '#f97316' },
-                      { name: 'Doubles', value: doubleBogeys, color: '#ef4444' },
+                      { name: 'Eagle', value: eagles, color: '#ffd700' },
+                      { name: 'Birdie', value: birdies, color: '#22c55e' },
+                      { name: 'Par', value: pars, color: '#3b82f6' },
+                      { name: 'Bogey', value: bogeys, color: '#f97316' },
+                      { name: 'Double', value: doubleBogeys, color: '#ef4444' },
                       { name: 'Triple+', value: tripleOrWorse, color: '#7c3aed' },
                     ].filter(d => d.value > 0);
                     
                     return chartData.length > 0 ? (
-                      <div className="h-48">
+                      <div className="h-32">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
                               data={chartData}
                               cx="50%"
                               cy="50%"
-                              innerRadius={35}
-                              outerRadius={60}
+                              innerRadius={25}
+                              outerRadius={45}
                               paddingAngle={2}
                               dataKey="value"
                             >
@@ -5802,85 +5747,22 @@ export default function JazelApp() {
                               ))}
                             </Pie>
                             <Tooltip formatter={(value: number) => [value, 'holes']} />
-                            <Legend wrapperStyle={{ fontSize: '10px' }} />
+                            <Legend wrapperStyle={{ fontSize: '9px' }} iconSize={8} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <p className="text-center text-muted-foreground text-sm py-8">No scores recorded</p>
+                      <p className="text-center text-muted-foreground text-xs py-4">No scores recorded</p>
                     );
                   })()}
-                </Card>
-                
-                {/* Round Stats Bar Chart */}
-                <Card className="bg-white/80 p-4">
-                  <h3 className="text-sm font-semibold mb-2 text-center" style={{color: '#39638b'}}>Round Statistics</h3>
-                  <div className="space-y-3">
-                    {/* Putts */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Total Putts</span>
-                        <span className="font-bold" style={{color: '#39638b'}}>{roundToView.totalPutts || 0}</span>
-                      </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full" 
-                          style={{width: `${Math.min(100, ((roundToView.totalPutts || 0) / 36) * 100)}%`, backgroundColor: '#39638b'}}
-                        />
-                      </div>
-                    </div>
-                    {/* Fairways Hit */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Fairways Hit</span>
-                        <span className="font-bold" style={{color: '#22c55e'}}>
-                          {roundToView.fairwaysHit || 0}/{roundToView.fairwaysTotal || 18}
-                        </span>
-                      </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full bg-green-500" 
-                          style={{width: `${roundToView.fairwaysTotal ? ((roundToView.fairwaysHit || 0) / roundToView.fairwaysTotal) * 100 : 0}%`}}
-                        />
-                      </div>
-                    </div>
-                    {/* GIR */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Greens in Reg</span>
-                        <span className="font-bold" style={{color: '#3b82f6'}}>
-                          {roundToView.greensInReg || 0}/{roundToView.holesPlayed || 18}
-                        </span>
-                      </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full bg-blue-500" 
-                          style={{width: `${((roundToView.greensInReg || 0) / (roundToView.holesPlayed || 18)) * 100}%`}}
-                        />
-                      </div>
-                    </div>
-                    {/* Penalties */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Penalties</span>
-                        <span className="font-bold text-red-600">{roundToView.penalties || 0}</span>
-                      </div>
-                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full bg-red-500" 
-                          style={{width: `${Math.min(100, ((roundToView.penalties || 0) / 10) * 100)}%`}}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+                </div>
               </div>
               
-              {/* Close Button */}
-              <div className="flex justify-end pt-2">
+              {/* Fixed Close Button */}
+              <div className="p-4 pt-2 flex-shrink-0 border-t bg-white" style={{borderColor: '#d6e4ef'}}>
                 <Button
                   onClick={() => setRoundToView(null)}
-                  className="text-white"
+                  className="w-full text-white"
                   style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                 >
                   Close
@@ -6029,7 +5911,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.10</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.11</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
