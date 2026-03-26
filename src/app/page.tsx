@@ -3413,11 +3413,11 @@ export default function JazelApp() {
 
                     {/* Action Buttons */}
                     <div className="p-4 border-t space-y-3" style={{borderColor: '#8ab0d1'}}>
-                      {/* Tee Selector and Action Buttons Row */}
-                      <div className="flex items-center gap-2 flex-wrap">
+                      {/* Tee Selector and Action Buttons Row - Centered */}
+                      <div className="flex items-center justify-center gap-3 flex-wrap">
                         {selectedCourse.tees.length > 0 && (
                           <Select value={selectedTee} onValueChange={setSelectedTee}>
-                            <SelectTrigger className="w-32 h-9 text-sm">
+                            <SelectTrigger className="w-40 h-9 text-sm">
                               <SelectValue placeholder="Select Tee" />
                             </SelectTrigger>
                             <SelectContent>
@@ -5134,7 +5134,7 @@ export default function JazelApp() {
 
       {/* Add Player Dialog */}
       <Dialog open={showPlayerDialog} onOpenChange={setShowPlayerDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md mx-4 sm:mx-auto w-[calc(100%-2rem)] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Players</DialogTitle>
             <DialogDescription>
