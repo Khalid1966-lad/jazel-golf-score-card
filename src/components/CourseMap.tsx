@@ -521,9 +521,9 @@ export default function CourseMap({
     } else {
       const greenIcon = L.divIcon({
         className: 'custom-div-icon',
-        html: `<div style="background-color: #22c55e; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">G</div>`,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        html: `<div style="background-color: #22c55e; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">G</div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
       });
 
       greenMarkerRef.current = L.marker([greenLocation.lat, greenLocation.lon], { icon: greenIcon })
@@ -539,14 +539,14 @@ export default function CourseMap({
       } else {
         const teeIcon = L.divIcon({
           className: 'custom-div-icon',
-          html: `<div style="background-color: #f59e0b; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          html: `<div style="background-color: #f59e0b; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2L12 22"/>
               <path d="M5 12L12 5L19 12"/>
             </svg>
           </div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14]
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
         });
 
         teeMarkerRef.current = L.marker([teeLocation.lat, teeLocation.lon], { icon: teeIcon })
