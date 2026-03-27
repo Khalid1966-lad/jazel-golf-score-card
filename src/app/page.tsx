@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, MapPin, Circle, Trophy, User, Menu, X, 
-  ChevronRight, Star, Clock, TrendingUp, Target, 
+  ChevronRight, ChevronLeft, Star, Clock, TrendingUp, Target, 
   Plus, Check, Navigation, Wind, Thermometer, Sun,
   Bot, Ruler, Compass, Cloud, RefreshCw, Play, Pause,
   Save, Trash2, Edit2, AlertCircle, Heart, Settings, LogOut,
-  Camera, Loader2, Upload, Users, ChevronLeft, ChevronDown,
+  Camera, Loader2, Upload, Users, ChevronDown,
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
@@ -941,6 +941,7 @@ export default function JazelApp() {
   // Messages state
   const [messages, setMessages] = useState<Message[]>([]);
   const [showMessagesDialog, setShowMessagesDialog] = useState(false);
+  const [showMessageDetailDialog, setShowMessageDetailDialog] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
   // User clubs state
@@ -5312,7 +5313,7 @@ export default function JazelApp() {
 
       {/* Messages Dialog */}
       <Dialog open={showMessagesDialog} onOpenChange={setShowMessagesDialog}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-lg w-[calc(100%-6px)] sm:w-full mx-auto max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="w-5 h-5" style={{color: '#39638b'}} />
@@ -5326,34 +5327,7 @@ export default function JazelApp() {
           </DialogHeader>
           
           <div className="flex-1 overflow-hidden">
-            {selectedMessage ? (
-              <div className="space-y-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSelectedMessage(null)}
-                  className="mb-2"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Back to messages
-                </Button>
-                <div className="p-4 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
-                  <h3 className="font-bold text-lg mb-2">{selectedMessage.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                    <span>From: {selectedMessage.author.name || 'Admin'}</span>
-                    <span>•</span>
-                    <span>{new Date(selectedMessage.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    })}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap">{selectedMessage.content}</p>
-                </div>
-              </div>
-            ) : messages.length === 0 ? (
+            {messages.length === 0 ? (
               <div className="text-center py-8">
                 <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No messages yet</p>
@@ -5371,6 +5345,8 @@ export default function JazelApp() {
                       }`}
                       onClick={() => {
                         setSelectedMessage(message);
+                        setShowMessagesDialog(false);
+                        setShowMessageDetailDialog(true);
                         if (!message.isRead) {
                           markMessageAsRead(message.id);
                         }
@@ -5404,13 +5380,60 @@ export default function JazelApp() {
             )}
           </div>
           
-          {!selectedMessage && messages.filter(m => !m.isRead).length > 0 && (
+          {messages.filter(m => !m.isRead).length > 0 && (
             <DialogFooter>
               <Button variant="outline" onClick={markAllMessagesAsRead}>
                 Mark all as read
               </Button>
             </DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Detail Dialog */}
+      <Dialog open={showMessageDetailDialog} onOpenChange={(open) => {
+        setShowMessageDetailDialog(open);
+        if (!open) {
+          setSelectedMessage(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-lg w-[calc(100%-6px)] sm:w-full mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" style={{color: '#39638b'}} />
+              {selectedMessage?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedMessage && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span>From: {selectedMessage.author.name || 'Admin'}</span>
+                  <span>•</span>
+                  <span>{new Date(selectedMessage.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}</span>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="p-4 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+            <p className="whitespace-pre-wrap">{selectedMessage?.content}</p>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowMessageDetailDialog(false);
+              setSelectedMessage(null);
+              setShowMessagesDialog(true);
+            }}>
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Back to messages
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -5926,7 +5949,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.26</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.27</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
