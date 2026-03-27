@@ -8,6 +8,7 @@ const TABLE_TO_MODEL: Record<string, string> = {
   golf_courses: 'golfCourse',
   settings: 'setting',
   golfer_groups: 'golferGroup',
+  admin_permissions: 'adminPermission',
   admin_sessions: 'adminSession',
   password_reset_tokens: 'passwordResetToken',
   club_distances: 'clubDistance',
@@ -31,6 +32,7 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   golf_courses: [],
   settings: [],
   golfer_groups: [],
+  admin_permissions: ['users'],
   admin_sessions: ['users'],
   password_reset_tokens: ['users'],
   club_distances: ['users'],
@@ -126,6 +128,7 @@ async function clearAllTables(): Promise<{ cleared: string[]; errors: string[] }
         case 'golfCourse': await db.golfCourse.deleteMany(); break;
         case 'setting': await db.setting.deleteMany(); break;
         case 'golferGroup': await db.golferGroup.deleteMany(); break;
+        case 'adminPermission': await db.adminPermission.deleteMany(); break;
         case 'adminSession': await db.adminSession.deleteMany(); break;
         case 'passwordResetToken': await db.passwordResetToken.deleteMany(); break;
         case 'clubDistance': await db.clubDistance.deleteMany(); break;
@@ -212,6 +215,13 @@ async function insertRecords(
             where: { id },
             update: filteredRecord as Parameters<typeof db.golferGroup.update>[0]['data'],
             create: filteredRecord as Parameters<typeof db.golferGroup.create>[0]['data']
+          }); 
+          break;
+        case 'adminPermission': 
+          await db.adminPermission.upsert({ 
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.adminPermission.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.adminPermission.create>[0]['data']
           }); 
           break;
         case 'adminSession': 

@@ -12,6 +12,7 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   golfer_groups: [],
   
   // Tables depending on users
+  admin_permissions: ['users'],
   admin_sessions: ['users'],
   password_reset_tokens: ['users'],
   club_distances: ['users'],
@@ -106,6 +107,15 @@ async function fetchAllData() {
     errors.push(`golfer_groups: ${e instanceof Error ? e.message : 'Unknown error'}`);
     data.golfer_groups = [];
     statistics.golfer_groups = 0;
+  }
+
+  try {
+    data.admin_permissions = await db.adminPermission.findMany();
+    statistics.admin_permissions = data.admin_permissions.length;
+  } catch (e) {
+    errors.push(`admin_permissions: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.admin_permissions = [];
+    statistics.admin_permissions = 0;
   }
 
   try {

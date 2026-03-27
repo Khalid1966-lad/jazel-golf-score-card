@@ -5420,7 +5420,7 @@ export default function JazelApp() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="p-4 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+          <div className="p-4 rounded-lg max-h-[60vh] overflow-y-auto" style={{backgroundColor: '#d6e4ef'}}>
             <p className="whitespace-pre-wrap">{selectedMessage?.content}</p>
           </div>
           
@@ -5949,7 +5949,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.27</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.28</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
