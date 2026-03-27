@@ -241,7 +241,7 @@ export default function AdminPage() {
     groups: Record<string, TournamentParticipant[]>;
     unassigned: TournamentParticipant[];
   }>({ groups: {}, unassigned: [] });
-  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [tournamentGroupsLoading, setTournamentGroupsLoading] = useState(false);
   const [assignPlayerDialogOpen, setAssignPlayerDialogOpen] = useState(false);
   const [selectedGroupLetter, setSelectedGroupLetter] = useState<string | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
@@ -1724,7 +1724,7 @@ export default function AdminPage() {
 
   // Fetch groups data
   const fetchGroupsData = async (tournamentId: string) => {
-    setGroupsLoading(true);
+    setTournamentGroupsLoading(true);
     try {
       const response = await fetch(`/api/tournaments/groups?tournamentId=${tournamentId}`);
       if (response.ok) {
@@ -1734,7 +1734,7 @@ export default function AdminPage() {
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to fetch groups data', variant: 'destructive' });
     } finally {
-      setGroupsLoading(false);
+      setTournamentGroupsLoading(false);
     }
   };
 
@@ -1742,7 +1742,7 @@ export default function AdminPage() {
   const autoAssignGroups = async () => {
     if (!selectedTournament) return;
     
-    setGroupsLoading(true);
+    setTournamentGroupsLoading(true);
     try {
       const response = await fetch('/api/tournaments/groups', {
         method: 'POST',
@@ -1770,7 +1770,7 @@ export default function AdminPage() {
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to auto-assign groups', variant: 'destructive' });
     } finally {
-      setGroupsLoading(false);
+      setTournamentGroupsLoading(false);
     }
   };
 
@@ -2780,7 +2780,7 @@ export default function AdminPage() {
                             size="sm" 
                             variant="outline"
                             onClick={addNewGroup}
-                            disabled={groupsLoading}
+                            disabled={tournamentGroupsLoading}
                           >
                             <Plus className="mr-1 h-4 w-4" />
                             Add Group
@@ -2788,9 +2788,9 @@ export default function AdminPage() {
                           <Button 
                             size="sm"
                             onClick={autoAssignGroups}
-                            disabled={groupsLoading || groupsData.unassigned.length === 0}
+                            disabled={tournamentGroupsLoading || groupsData.unassigned.length === 0}
                           >
-                            {groupsLoading ? (
+                            {tournamentGroupsLoading ? (
                               <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                             ) : (
                               <UserPlus className="mr-1 h-4 w-4" />
@@ -2800,7 +2800,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {groupsLoading ? (
+                      {tournamentGroupsLoading ? (
                         <div className="flex items-center justify-center py-12">
                           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                         </div>
