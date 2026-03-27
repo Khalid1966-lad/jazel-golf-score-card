@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     // Build backup object with metadata
     const backup = {
-      version: '1.0',
+      version: '2.0',
       type: 'courses',
       exportDate: new Date().toISOString(),
       exportedBy: session.user.name || session.user.email,
