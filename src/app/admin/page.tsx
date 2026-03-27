@@ -1775,31 +1775,33 @@ export default function AdminPage() {
   };
 
   // Assign a player to a specific group position
-  const assignPlayerToGroup = async (userId: string, groupLetter: string, position: number, teeTime?: string) => {
+  const assignPlayerToGroup = async (userId: string, groupLetter: string, positionInGroup: number) => {
     if (!selectedTournament) return;
     
+    setAssignPlayerDialogOpen(false);
     setTournamentGroupsLoading(true);
+    
     try {
       const response = await fetch('/api/tournaments/groups', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tournamentId: selectedTournament.id,
-          assignments: [{ userId, groupLetter, positionInGroup: position, teeTime }]
+          assignments: [{ userId, groupLetter, positionInGroup }]
         })
       });
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Player assigned to group' });
-        // Close the dialog
-        setAssignPlayerDialogOpen(false);
-        // Fetch fresh groups data
+        
+        // Immediately fetch fresh data and update state
         const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
         if (groupsResponse.ok) {
-          const data = await groupsResponse.json();
-          setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+          const freshData = await groupsResponse.json();
+          setGroupsData({ groups: freshData.groups, unassigned: freshData.unassigned });
         }
-        // Refresh tournament data
+        
+        // Also refresh tournament participants
         const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
         if (tournResponse.ok) {
           const tournData = await tournResponse.json();
@@ -1813,6 +1815,8 @@ export default function AdminPage() {
       toast({ title: 'Error', description: 'Failed to assign player to group', variant: 'destructive' });
     } finally {
       setTournamentGroupsLoading(false);
+      setSelectedGroupLetter(null);
+      setSelectedPosition(null);
     }
   };
 
@@ -2971,6 +2975,45 @@ export default function AdminPage() {
                         </>
                       )}
                     </TabsContent>
+
+                    {/* Assign Player Dialog */}
+                    <Dialog open={assignPlayerDialogOpen} onOpenChange={setAssignPlayerDialogOpen}>
+                      <DialogContent className="max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle>Assign Player to Group {selectedGroupLetter}</DialogTitle>
+                          <DialogDescription>
+                            Position {selectedPosition}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 max-h-64 overflow-y-auto">
+                          {groupsData.unassigned.length > 0 ? (
+                            <div className="space-y-1">
+                              {groupsData.unassigned.map((p) => (
+                                <Button
+                                  key={p.userId}
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    if (selectedGroupLetter && selectedPosition) {
+                                      assignPlayerToGroup(p.userId, selectedGroupLetter, selectedPosition);
+                                    }
+                                  }}
+                                >
+                                  <span className="flex-1 text-left">{p.user.name || 'Unnamed'}</span>
+                                  <Badge variant="outline" className="ml-2">
+                                    Hcp: {p.user.handicap?.toFixed(1) || '-'}
+                                  </Badge>
+                                </Button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No unassigned players available
+                            </p>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </Tabs>
                 </CardContent>
               </Card>
