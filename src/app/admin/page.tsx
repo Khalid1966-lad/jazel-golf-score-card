@@ -136,6 +136,9 @@ interface Tournament {
     userId: string;
     grossScore: number | null;
     netScore: number | null;
+    groupLetter: string | null;
+    positionInGroup: number | null;
+    teeTime: string | null;
     user: {
       id: string;
       name: string | null;
@@ -149,6 +152,9 @@ interface TournamentParticipant {
   tournamentId: string;
   grossScore: number | null;
   netScore: number | null;
+  groupLetter: string | null;
+  positionInGroup: number | null;
+  teeTime: string | null;
   user: {
     id: string;
     name: string | null;
@@ -228,6 +234,18 @@ export default function AdminPage() {
   });
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('handicap');
   const [addParticipantDialogOpen, setAddParticipantDialogOpen] = useState(false);
+  
+  // Tournament Groups state
+  const [tournamentViewTab, setTournamentViewTab] = useState<'leaderboard' | 'groups'>('leaderboard');
+  const [groupsData, setGroupsData] = useState<{
+    groups: Record<string, TournamentParticipant[]>;
+    unassigned: TournamentParticipant[];
+  }>({ groups: {}, unassigned: [] });
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [assignPlayerDialogOpen, setAssignPlayerDialogOpen] = useState(false);
+  const [selectedGroupLetter, setSelectedGroupLetter] = useState<string | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
+  const [teeTimeForm, setTeeTimeForm] = useState({ startTime: '08:00', interval: 10 });
   
   const [editForm, setEditForm] = useState({
     name: '',
@@ -459,6 +477,13 @@ export default function AdminPage() {
       fetchAdminUsers();
     }
   }, [adminPermissions?.isSuperAdmin]);
+
+  // Fetch groups data when tournament is selected and tab is groups
+  useEffect(() => {
+    if (selectedTournament && tournamentViewTab === 'groups') {
+      fetchGroupsData(selectedTournament.id);
+    }
+  }, [selectedTournament?.id, tournamentViewTab]);
 
   // Fetch admin users for permissions management (super admin only)
   const fetchAdminUsers = async () => {
@@ -1697,6 +1722,143 @@ export default function AdminPage() {
     }
   };
 
+  // Fetch groups data
+  const fetchGroupsData = async (tournamentId: string) => {
+    setGroupsLoading(true);
+    try {
+      const response = await fetch(`/api/tournaments/groups?tournamentId=${tournamentId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to fetch groups data', variant: 'destructive' });
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  // Auto-assign players to groups
+  const autoAssignGroups = async () => {
+    if (!selectedTournament) return;
+    
+    setGroupsLoading(true);
+    try {
+      const response = await fetch('/api/tournaments/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentId: selectedTournament.id,
+          startTime: teeTimeForm.startTime,
+          intervalMinutes: teeTimeForm.interval
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast({ title: 'Success', description: `${data.assigned} players assigned to groups` });
+        await fetchGroupsData(selectedTournament.id);
+        // Refresh tournament data
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+        if (tournResponse.ok) {
+          const tournData = await tournResponse.json();
+          setSelectedTournament(tournData.tournament);
+        }
+      } else {
+        throw new Error('Failed to auto-assign groups');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to auto-assign groups', variant: 'destructive' });
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  // Assign a player to a specific group position
+  const assignPlayerToGroup = async (userId: string, groupLetter: string, position: number, teeTime?: string) => {
+    if (!selectedTournament) return;
+    
+    try {
+      const response = await fetch('/api/tournaments/groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentId: selectedTournament.id,
+          assignments: [{ userId, groupLetter, positionInGroup: position, teeTime }]
+        })
+      });
+
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Player assigned to group' });
+        await fetchGroupsData(selectedTournament.id);
+        // Refresh tournament data
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+        if (tournResponse.ok) {
+          const tournData = await tournResponse.json();
+          setSelectedTournament(tournData.tournament);
+        }
+      } else {
+        throw new Error('Failed to assign player');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to assign player to group', variant: 'destructive' });
+    }
+  };
+
+  // Remove player from group
+  const removePlayerFromGroup = async (userId: string) => {
+    if (!selectedTournament) return;
+    
+    try {
+      const response = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&userId=${userId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Player removed from group' });
+        await fetchGroupsData(selectedTournament.id);
+        // Refresh tournament data
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+        if (tournResponse.ok) {
+          const tournData = await tournResponse.json();
+          setSelectedTournament(tournData.tournament);
+        }
+      } else {
+        throw new Error('Failed to remove player from group');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to remove player from group', variant: 'destructive' });
+    }
+  };
+
+  // Get unassigned participants for dropdown
+  const getUnassignedParticipants = () => {
+    return groupsData.unassigned;
+  };
+
+  // Get all group letters used or available
+  const getGroupLetters = () => {
+    const letters = Object.keys(groupsData.groups).sort();
+    return letters;
+  };
+
+  // Get next available group letter
+  const getNextGroupLetter = () => {
+    const existingLetters = Object.keys(groupsData.groups).sort();
+    if (existingLetters.length === 0) return 'A';
+    const lastLetter = existingLetters[existingLetters.length - 1];
+    return String.fromCharCode(lastLetter.charCodeAt(0) + 1);
+  };
+
+  // Add a new empty group
+  const addNewGroup = () => {
+    const nextLetter = getNextGroupLetter();
+    setGroupsData(prev => ({
+      ...prev,
+      groups: { ...prev.groups, [nextLetter]: [] }
+    }));
+  };
+
   // Open edit tournament dialog
   const openTournamentEditDialog = (tournament: Tournament) => {
     setEditTournamentForm({
@@ -2414,7 +2576,7 @@ export default function AdminPage() {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4">
                   {/* Tournament Info */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -2433,143 +2595,352 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Participants */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold">
-                        Participants ({selectedTournament.participants?.length || 0}/{selectedTournament.maxPlayers})
-                      </h3>
-                      <Dialog open={addParticipantDialogOpen} onOpenChange={setAddParticipantDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" disabled={selectedTournament.status === 'completed' || selectedTournament.status === 'cancelled'}>
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Add Participant
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add Participant</DialogTitle>
-                            <DialogDescription>Select a user to add to this tournament</DialogDescription>
-                          </DialogHeader>
-                          <div className="py-4">
-                            <Select onValueChange={(userId) => {
-                              addParticipant(userId);
-                            }}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a user..." />
+                  {/* Tabs for Leaderboard / Groups */}
+                  <Tabs value={tournamentViewTab} onValueChange={(v) => setTournamentViewTab(v as 'leaderboard' | 'groups')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+                      <TabsTrigger value="groups">Groups</TabsTrigger>
+                    </TabsList>
+
+                    {/* Leaderboard Tab */}
+                    <TabsContent value="leaderboard" className="space-y-4">
+                      {/* Participants */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-semibold">
+                            Participants ({selectedTournament.participants?.length || 0}/{selectedTournament.maxPlayers})
+                          </h3>
+                          <Dialog open={addParticipantDialogOpen} onOpenChange={setAddParticipantDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" disabled={selectedTournament.status === 'completed' || selectedTournament.status === 'cancelled'}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Add Participant
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md w-[calc(100%-6px)] sm:w-full mx-auto">
+                              <DialogHeader>
+                                <DialogTitle>Add Participant</DialogTitle>
+                                <DialogDescription>Select a user to add to this tournament</DialogDescription>
+                              </DialogHeader>
+                              <div className="py-4">
+                                <Select onValueChange={(userId) => {
+                                  addParticipant(userId);
+                                }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a user..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getAvailableUsers().map((user) => (
+                                      <SelectItem key={user.id} value={user.id}>
+                                        {user.name || user.email}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {getAvailableUsers().length === 0 && (
+                                  <p className="text-sm text-muted-foreground mt-2">No available users to add</p>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
+                          <div className="border rounded-lg overflow-hidden overflow-x-auto">
+                            <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm items-center min-w-[500px]">
+                              <div className="col-span-1">#</div>
+                              <div className="col-span-4">Player</div>
+                              <div 
+                                className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
+                                onClick={() => setParticipantSort('handicap')}
+                              >
+                                Hcp {participantSort === 'handicap' && '↓'}
+                              </div>
+                              <div 
+                                className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'gross' ? 'bg-primary/10 text-primary' : ''}`}
+                                onClick={() => setParticipantSort('gross')}
+                              >
+                                Brut {participantSort === 'gross' && '↓'}
+                              </div>
+                              <div 
+                                className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'net' ? 'bg-primary/10 text-primary' : ''}`}
+                                onClick={() => setParticipantSort('net')}
+                              >
+                                Net {participantSort === 'net' && '↓'}
+                              </div>
+                              <div className="col-span-1"></div>
+                            </div>
+                            {getSortedParticipants().map((participant, index) => (
+                              <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t min-w-[500px]">
+                                <div className="col-span-1 text-muted-foreground">{index + 1}</div>
+                                <div className="col-span-4 font-medium">{participant.user.name || 'Unnamed'}</div>
+                                <div className="col-span-2 text-center">
+                                  <Badge variant="outline" className="font-mono">
+                                    {participant.user.handicap?.toFixed(1) || '-'}
+                                  </Badge>
+                                </div>
+                                <div className="col-span-2">
+                                  <Input
+                                    type="number"
+                                    className="w-full h-8 text-center"
+                                    placeholder="-"
+                                    value={participant.grossScore ?? ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value ? parseInt(e.target.value) : null;
+                                      const updated = selectedTournament.participants?.map(p =>
+                                        p.userId === participant.userId ? { ...p, grossScore: val } : p
+                                      );
+                                      if (updated && selectedTournament) {
+                                        setSelectedTournament({ ...selectedTournament, participants: updated });
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      const val = e.target.value ? parseInt(e.target.value) : null;
+                                      updateParticipantScore(participant.userId, val, participant.netScore);
+                                    }}
+                                    disabled={selectedTournament.status === 'completed'}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Input
+                                    type="number"
+                                    className="w-full h-8 text-center"
+                                    placeholder="-"
+                                    value={participant.netScore ?? ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value ? parseInt(e.target.value) : null;
+                                      const updated = selectedTournament.participants?.map(p =>
+                                        p.userId === participant.userId ? { ...p, netScore: val } : p
+                                      );
+                                      if (updated && selectedTournament) {
+                                        setSelectedTournament({ ...selectedTournament, participants: updated });
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      const val = e.target.value ? parseInt(e.target.value) : null;
+                                      updateParticipantScore(participant.userId, participant.grossScore, val);
+                                    }}
+                                    disabled={selectedTournament.status === 'completed'}
+                                  />
+                                </div>
+                                <div className="col-span-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-600 hover:text-red-700"
+                                    onClick={() => removeParticipant(participant.userId)}
+                                    disabled={selectedTournament.status === 'completed'}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-8">No participants yet</p>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    {/* Groups Tab */}
+                    <TabsContent value="groups" className="space-y-4">
+                      {/* Groups Controls */}
+                      <div className="flex flex-wrap gap-2 items-center justify-between">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm">Start:</Label>
+                            <Input
+                              type="time"
+                              className="w-28 h-8"
+                              value={teeTimeForm.startTime}
+                              onChange={(e) => setTeeTimeForm({ ...teeTimeForm, startTime: e.target.value })}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm">Interval:</Label>
+                            <Select 
+                              value={teeTimeForm.interval.toString()} 
+                              onValueChange={(v) => setTeeTimeForm({ ...teeTimeForm, interval: parseInt(v) })}
+                            >
+                              <SelectTrigger className="w-20 h-8">
+                                <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {getAvailableUsers().map((user) => (
-                                  <SelectItem key={user.id} value={user.id}>
-                                    {user.name || user.email}
-                                  </SelectItem>
-                                ))}
+                                <SelectItem value="8">8 min</SelectItem>
+                                <SelectItem value="10">10 min</SelectItem>
+                                <SelectItem value="12">12 min</SelectItem>
+                                <SelectItem value="15">15 min</SelectItem>
                               </SelectContent>
                             </Select>
-                            {getAvailableUsers().length === 0 && (
-                              <p className="text-sm text-muted-foreground mt-2">No available users to add</p>
-                            )}
                           </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
-                    {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
-                      <div className="border rounded-lg overflow-hidden">
-                        <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm items-center">
-                          <div className="col-span-1">#</div>
-                          <div className="col-span-4">Player</div>
-                          <div 
-                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
-                            onClick={() => setParticipantSort('handicap')}
-                          >
-                            Hcp {participantSort === 'handicap' && '↓'}
-                          </div>
-                          <div 
-                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'gross' ? 'bg-primary/10 text-primary' : ''}`}
-                            onClick={() => setParticipantSort('gross')}
-                          >
-                            Brut {participantSort === 'gross' && '↓'}
-                          </div>
-                          <div 
-                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'net' ? 'bg-primary/10 text-primary' : ''}`}
-                            onClick={() => setParticipantSort('net')}
-                          >
-                            Net {participantSort === 'net' && '↓'}
-                          </div>
-                          <div className="col-span-1"></div>
                         </div>
-                        {getSortedParticipants().map((participant, index) => (
-                          <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
-                            <div className="col-span-1 text-muted-foreground">{index + 1}</div>
-                            <div className="col-span-4 font-medium">{participant.user.name || 'Unnamed'}</div>
-                            <div className="col-span-2 text-center">
-                              <Badge variant="outline" className="font-mono">
-                                {participant.user.handicap?.toFixed(1) || '-'}
-                              </Badge>
-                            </div>
-                            <div className="col-span-2">
-                              <Input
-                                type="number"
-                                className="w-full h-8 text-center"
-                                placeholder="-"
-                                value={participant.grossScore ?? ''}
-                                onChange={(e) => {
-                                  const val = e.target.value ? parseInt(e.target.value) : null;
-                                  const updated = selectedTournament.participants?.map(p =>
-                                    p.userId === participant.userId ? { ...p, grossScore: val } : p
-                                  );
-                                  if (updated && selectedTournament) {
-                                    setSelectedTournament({ ...selectedTournament, participants: updated });
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  const val = e.target.value ? parseInt(e.target.value) : null;
-                                  updateParticipantScore(participant.userId, val, participant.netScore);
-                                }}
-                                disabled={selectedTournament.status === 'completed'}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Input
-                                type="number"
-                                className="w-full h-8 text-center"
-                                placeholder="-"
-                                value={participant.netScore ?? ''}
-                                onChange={(e) => {
-                                  const val = e.target.value ? parseInt(e.target.value) : null;
-                                  const updated = selectedTournament.participants?.map(p =>
-                                    p.userId === participant.userId ? { ...p, netScore: val } : p
-                                  );
-                                  if (updated && selectedTournament) {
-                                    setSelectedTournament({ ...selectedTournament, participants: updated });
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  const val = e.target.value ? parseInt(e.target.value) : null;
-                                  updateParticipantScore(participant.userId, participant.grossScore, val);
-                                }}
-                                disabled={selectedTournament.status === 'completed'}
-                              />
-                            </div>
-                            <div className="col-span-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => removeParticipant(participant.userId)}
-                                disabled={selectedTournament.status === 'completed'}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={addNewGroup}
+                            disabled={groupsLoading}
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Add Group
+                          </Button>
+                          <Button 
+                            size="sm"
+                            onClick={autoAssignGroups}
+                            disabled={groupsLoading || groupsData.unassigned.length === 0}
+                          >
+                            {groupsLoading ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : (
+                              <UserPlus className="mr-1 h-4 w-4" />
+                            )}
+                            Auto-Assign
+                          </Button>
+                        </div>
+                      </div>
+
+                      {groupsLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <>
+                          {/* Groups Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {/* Render existing groups */}
+                            {getGroupLetters().map((letter) => {
+                              const groupParticipants = groupsData.groups[letter] || [];
+                              const teeTime = groupParticipants[0]?.teeTime || '';
+                              
+                              return (
+                                <div key={letter} className="border rounded-lg overflow-hidden">
+                                  <div className="bg-primary/10 px-3 py-2 flex items-center justify-between">
+                                    <span className="font-semibold">Group {letter}</span>
+                                    {teeTime && <span className="text-sm text-muted-foreground">{teeTime}</span>}
+                                  </div>
+                                  <div className="p-2 space-y-1">
+                                    {[1, 2, 3, 4].map((position) => {
+                                      const participant = groupParticipants.find(p => p.positionInGroup === position);
+                                      
+                                      return (
+                                        <div 
+                                          key={position}
+                                          className="flex items-center gap-2 p-2 rounded border bg-card"
+                                        >
+                                          <span className="text-sm text-muted-foreground w-4">{position}.</span>
+                                          {participant ? (
+                                            <>
+                                              <span className="flex-1 text-sm truncate">{participant.user.name || 'Unnamed'}</span>
+                                              <Badge variant="outline" className="text-xs">
+                                                {participant.user.handicap?.toFixed(1) || '-'}
+                                              </Badge>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+                                                onClick={() => removePlayerFromGroup(participant.userId)}
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span className="flex-1 text-sm text-muted-foreground italic">Empty</span>
+                                              <Dialog>
+                                                <DialogTrigger asChild>
+                                                  <Button 
+                                                    size="sm" 
+                                                    variant="ghost" 
+                                                    className="h-6 w-6 p-0"
+                                                    onClick={() => {
+                                                      setSelectedGroupLetter(letter);
+                                                      setSelectedPosition(position);
+                                                    }}
+                                                  >
+                                                    <Plus className="h-3 w-3" />
+                                                  </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-sm w-[calc(100%-6px)] sm:w-full mx-auto">
+                                                  <DialogHeader>
+                                                    <DialogTitle>Assign Player</DialogTitle>
+                                                    <DialogDescription>
+                                                      Select a player for Group {letter}, Position {position}
+                                                    </DialogDescription>
+                                                  </DialogHeader>
+                                                  <div className="py-4 max-h-64 overflow-y-auto">
+                                                    {groupsData.unassigned.length > 0 ? (
+                                                      <div className="space-y-1">
+                                                        {groupsData.unassigned.map((p) => (
+                                                          <Button
+                                                            key={p.userId}
+                                                            variant="ghost"
+                                                            className="w-full justify-start"
+                                                            onClick={() => {
+                                                              assignPlayerToGroup(p.userId, letter, position);
+                                                            }}
+                                                          >
+                                                            <span className="flex-1 text-left">{p.user.name || 'Unnamed'}</span>
+                                                            <Badge variant="outline" className="ml-2">
+                                                              {p.user.handicap?.toFixed(1) || '-'}
+                                                            </Badge>
+                                                          </Button>
+                                                        ))}
+                                                      </div>
+                                                    ) : (
+                                                      <p className="text-sm text-muted-foreground text-center py-4">
+                                                        No unassigned players
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                </DialogContent>
+                                              </Dialog>
+                                            </>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            
+                            {/* Add new group card */}
+                            <div 
+                              className="border-2 border-dashed rounded-lg flex items-center justify-center min-h-[200px] cursor-pointer hover:border-primary/50 transition-colors"
+                              onClick={addNewGroup}
+                            >
+                              <div className="text-center text-muted-foreground">
+                                <Plus className="w-8 h-8 mx-auto mb-2" />
+                                <span className="text-sm">Add Group</span>
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-center py-8">No participants yet</p>
-                    )}
-                  </div>
+
+                          {/* Unassigned Players */}
+                          {groupsData.unassigned.length > 0 && (
+                            <div className="border rounded-lg overflow-hidden">
+                              <div className="bg-amber-100 dark:bg-amber-900/20 px-4 py-2 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                <span className="font-medium">Unassigned Players ({groupsData.unassigned.length})</span>
+                              </div>
+                              <div className="p-3 flex flex-wrap gap-2">
+                                {groupsData.unassigned.map((p) => (
+                                  <Badge 
+                                    key={p.userId} 
+                                    variant="outline" 
+                                    className="py-1 px-2 text-sm"
+                                  >
+                                    {p.user.name || 'Unnamed'} ({p.user.handicap?.toFixed(1) || '-'})
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             ) : (

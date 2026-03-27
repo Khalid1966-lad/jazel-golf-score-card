@@ -365,6 +365,9 @@ model TournamentParticipant {
   registeredAt    DateTime @default(now())
   grossScore      Int?
   netScore        Int?
+  groupLetter     String?  // "A", "B", "C", etc.
+  positionInGroup Int?     // 1, 2, 3, or 4 (position within the group)
+  teeTime         String?  // "08:00", "08:10", etc.
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
