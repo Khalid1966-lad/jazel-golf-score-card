@@ -1757,7 +1757,12 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json();
         toast({ title: 'Success', description: `${data.assigned} players assigned to groups` });
-        await fetchGroupsData(selectedTournament.id);
+        // Refresh groups data
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+        if (groupsResponse.ok) {
+          const groupsData = await groupsResponse.json();
+          setGroupsData({ groups: groupsData.groups, unassigned: groupsData.unassigned });
+        }
         // Refresh tournament data
         const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
         if (tournResponse.ok) {
@@ -1778,6 +1783,7 @@ export default function AdminPage() {
   const assignPlayerToGroup = async (userId: string, groupLetter: string, position: number, teeTime?: string) => {
     if (!selectedTournament) return;
     
+    setTournamentGroupsLoading(true);
     try {
       const response = await fetch('/api/tournaments/groups', {
         method: 'PUT',
@@ -1793,7 +1799,11 @@ export default function AdminPage() {
         // Close the dialog
         setAssignPlayerDialogOpen(false);
         // Refresh groups data
-        await fetchGroupsData(selectedTournament.id);
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+        if (groupsResponse.ok) {
+          const data = await groupsResponse.json();
+          setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+        }
         // Refresh tournament data
         const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
         if (tournResponse.ok) {
@@ -1806,6 +1816,8 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to assign player to group', variant: 'destructive' });
+    } finally {
+      setTournamentGroupsLoading(false);
     }
   };
 
@@ -1813,6 +1825,7 @@ export default function AdminPage() {
   const removePlayerFromGroup = async (userId: string) => {
     if (!selectedTournament) return;
     
+    setTournamentGroupsLoading(true);
     try {
       const response = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&userId=${userId}`, {
         method: 'DELETE'
@@ -1820,7 +1833,12 @@ export default function AdminPage() {
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Player removed from group' });
-        await fetchGroupsData(selectedTournament.id);
+        // Refresh groups data
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+        if (groupsResponse.ok) {
+          const data = await groupsResponse.json();
+          setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+        }
         // Refresh tournament data
         const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
         if (tournResponse.ok) {
@@ -1832,6 +1850,8 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to remove player from group', variant: 'destructive' });
+    } finally {
+      setTournamentGroupsLoading(false);
     }
   };
 
