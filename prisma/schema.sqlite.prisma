@@ -38,7 +38,7 @@ model User {
   readMessages         MessageRead[]
   tournamentParticipations TournamentParticipant[]
   groups               UserGroup[]
-  assignedCourses      GolfCourse[]       @relation("CourseAdmin")
+  assignedCourses      GolfCourse[]        @relation("CourseAdmin")
   adminPermission      AdminPermission?
 
   @@map("users")
@@ -131,7 +131,7 @@ model GolfCourse {
   website         String?
   address         String?
   isActive        Boolean  @default(true)
-  adminId         String?
+  adminId         String?  // Admin assigned to edit this course
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -140,7 +140,7 @@ model GolfCourse {
   rounds          Round[]
   favorites       Favorite[]
   tournaments     Tournament[]
-  assignedAdmin   User?    @relation("CourseAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  assignedAdmin   User?    @relation("CourseAdmin", fields: [adminId], references: [id])
   
   @@map("golf_courses")
 }
@@ -267,7 +267,8 @@ model Setting {
 
 model AdminPermission {
   id           String   @id @default(cuid())
-  userId       String   @unique
+  userId       String
+  canViewCourses Boolean @default(true)
   canViewUsers Boolean   @default(true)
   canViewTournaments Boolean @default(true)
   canViewGroups Boolean  @default(true)
@@ -280,6 +281,7 @@ model AdminPermission {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId])
   @@map("admin_permissions")
 }
 

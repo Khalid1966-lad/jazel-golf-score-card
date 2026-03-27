@@ -2392,29 +2392,26 @@ export default function AdminPage() {
             {selectedTournament ? (
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5" />
-                        {selectedTournament.name}
-                      </CardTitle>
-                      <CardDescription>
-                        {selectedTournament.course.name} - {new Date(selectedTournament.date).toLocaleDateString()}
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => window.open(`/api/tournaments/export?id=${selectedTournament.id}`, '_blank')}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Excel
-                      </Button>
-                      <Button variant="outline" onClick={() => setSelectedTournament(null)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Tournaments
-                      </Button>
-                    </div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5" />
+                    {selectedTournament.name}
+                  </CardTitle>
+                  <CardDescription>
+                    {selectedTournament.course.name} - {new Date(selectedTournament.date).toLocaleDateString()}
+                  </CardDescription>
+                  <div className="flex gap-2 mt-2">
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/api/tournaments/export?id=${selectedTournament.id}`, '_blank')}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Excel
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedTournament(null)}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Tournaments
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
