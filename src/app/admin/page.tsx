@@ -2910,6 +2910,45 @@ export default function AdminPage() {
                         </>
                       )}
                     </TabsContent>
+
+                    {/* Assign Player Dialog */}
+                    <Dialog open={assignPlayerDialogOpen} onOpenChange={setAssignPlayerDialogOpen}>
+                      <DialogContent className="max-w-sm w-[calc(100%-6px)] sm:w-full mx-auto">
+                        <DialogHeader>
+                          <DialogTitle>Assign Player</DialogTitle>
+                          <DialogDescription>
+                            Select a player for Group {selectedGroupLetter}, Position {selectedPosition}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 max-h-64 overflow-y-auto">
+                          {groupsData.unassigned.length > 0 ? (
+                            <div className="space-y-1">
+                              {groupsData.unassigned.map((p) => (
+                                <Button
+                                  key={p.userId}
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    if (selectedGroupLetter && selectedPosition) {
+                                      assignPlayerToGroup(p.userId, selectedGroupLetter, selectedPosition);
+                                    }
+                                  }}
+                                >
+                                  <span className="flex-1 text-left">{p.user.name || 'Unnamed'}</span>
+                                  <Badge variant="outline" className="ml-2">
+                                    Hcp: {p.user.handicap?.toFixed(1) || '-'}
+                                  </Badge>
+                                </Button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No unassigned players available
+                            </p>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </Tabs>
                 </CardContent>
               </Card>
