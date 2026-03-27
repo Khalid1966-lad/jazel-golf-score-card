@@ -485,6 +485,16 @@ export default function AdminPage() {
     }
   }, [selectedTournament?.id, tournamentViewTab]);
 
+  // Initialize teeTimeForm from selected tournament's start time
+  useEffect(() => {
+    if (selectedTournament?.startTime) {
+      setTeeTimeForm(prev => ({
+        ...prev,
+        startTime: selectedTournament.startTime
+      }));
+    }
+  }, [selectedTournament?.startTime]);
+
   // Fetch admin users for permissions management (super admin only)
   const fetchAdminUsers = async () => {
     try {
@@ -1652,6 +1662,10 @@ export default function AdminPage() {
             setTournaments(prev => prev.map(t => t.id === data.tournament.id ? data.tournament : t));
           }
         }
+        // Also refresh groups data if on groups tab
+        if (tournamentViewTab === 'groups') {
+          await fetchGroupsData(selectedTournament.id);
+        }
       } else {
         const data = await response.json();
         throw new Error(data.error || 'Failed to add participant');
@@ -1681,6 +1695,10 @@ export default function AdminPage() {
             // Also update the tournaments list
             setTournaments(prev => prev.map(t => t.id === data.tournament.id ? data.tournament : t));
           }
+        }
+        // Also refresh groups data if on groups tab
+        if (tournamentViewTab === 'groups') {
+          await fetchGroupsData(selectedTournament.id);
         }
       } else {
         throw new Error('Failed to remove participant');
@@ -2809,12 +2827,22 @@ export default function AdminPage() {
                                   })
                                 });
                                 if (response.ok) {
-                                  toast({ title: 'Success', description: 'Tee times updated successfully' });
-                                  // Refresh data
+                                  toast({ title: 'Success', description: 'Tee times and start time updated successfully' });
+                                  // Refresh groups data
                                   const dataRes = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
                                   if (dataRes.ok) {
                                     const data = await dataRes.json();
                                     setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+                                  }
+                                  // Refresh tournament data to get updated startTime
+                                  const tournRes = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+                                  if (tournRes.ok) {
+                                    const tournData = await tournRes.json();
+                                    if (tournData.tournament) {
+                                      setSelectedTournament(tournData.tournament);
+                                      // Update tournaments list too
+                                      setTournaments(prev => prev.map(t => t.id === tournData.tournament.id ? tournData.tournament : t));
+                                    }
                                   }
                                 } else {
                                   toast({ title: 'Error', description: 'Failed to update tee times', variant: 'destructive' });

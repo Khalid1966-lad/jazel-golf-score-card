@@ -308,7 +308,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH /api/tournaments/groups - Update tee times for all groups
+// PATCH /api/tournaments/groups - Update tee times for all groups and save tournament start time
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
@@ -316,6 +316,14 @@ export async function PATCH(request: NextRequest) {
 
     if (!tournamentId) {
       return NextResponse.json({ error: 'Missing tournamentId' }, { status: 400 });
+    }
+
+    // Update the tournament's start time
+    if (startTime) {
+      await db.tournament.update({
+        where: { id: tournamentId },
+        data: { startTime }
+      });
     }
 
     // Get all assigned participants ordered by group and position
@@ -331,7 +339,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (participants.length === 0) {
-      return NextResponse.json({ message: 'No assigned participants', updated: 0 });
+      return NextResponse.json({ message: 'No assigned participants', updated: 0, startTimeSaved: !!startTime });
     }
 
     const startMinutes = startTime ? parseTimeToMinutes(startTime) : 480; // Default 8:00 AM
@@ -356,7 +364,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, updated, groupsUpdated: groupLetters.length });
+    return NextResponse.json({ success: true, updated, groupsUpdated: groupLetters.length, startTimeSaved: !!startTime });
   } catch (error) {
     console.error('Error updating tee times:', error);
     return NextResponse.json({ error: 'Failed to update tee times: ' + (error as Error).message }, { status: 500 });
