@@ -1652,20 +1652,8 @@ export default function AdminPage() {
       if (response.ok) {
         toast({ title: 'Success', description: 'Participant added successfully' });
         setAddParticipantDialogOpen(false);
-        // Refresh tournament data with participants
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
-        if (tournResponse.ok) {
-          const data = await tournResponse.json();
-          if (data.tournament) {
-            setSelectedTournament(data.tournament);
-            // Also update the tournaments list
-            setTournaments(prev => prev.map(t => t.id === data.tournament.id ? data.tournament : t));
-          }
-        }
-        // Also refresh groups data if on groups tab
-        if (tournamentViewTab === 'groups') {
-          await fetchGroupsData(selectedTournament.id);
-        }
+        // Refresh all tournament data
+        await refreshTournamentData();
       } else {
         const data = await response.json();
         throw new Error(data.error || 'Failed to add participant');
@@ -1686,20 +1674,8 @@ export default function AdminPage() {
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Participant removed successfully' });
-        // Refresh tournament data with participants
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
-        if (tournResponse.ok) {
-          const data = await tournResponse.json();
-          if (data.tournament) {
-            setSelectedTournament(data.tournament);
-            // Also update the tournaments list
-            setTournaments(prev => prev.map(t => t.id === data.tournament.id ? data.tournament : t));
-          }
-        }
-        // Also refresh groups data if on groups tab
-        if (tournamentViewTab === 'groups') {
-          await fetchGroupsData(selectedTournament.id);
-        }
+        // Refresh all tournament data
+        await refreshTournamentData();
       } else {
         throw new Error('Failed to remove participant');
       }
@@ -1756,6 +1732,34 @@ export default function AdminPage() {
     }
   };
 
+  // Central refresh function for tournament data - use this after ALL operations
+  const refreshTournamentData = async () => {
+    if (!selectedTournament) return;
+    
+    setTournamentGroupsLoading(true);
+    try {
+      // Fetch groups data
+      const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+      if (groupsResponse.ok) {
+        const groupsData = await groupsResponse.json();
+        setGroupsData({ groups: groupsData.groups, unassigned: groupsData.unassigned });
+      }
+      
+      // Fetch tournament with participants
+      const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+      if (tournResponse.ok) {
+        const tournData = await tournResponse.json();
+        setSelectedTournament(tournData.tournament);
+        // Update tournaments list too
+        setTournaments(prev => prev.map(t => t.id === tournData.tournament.id ? tournData.tournament : t));
+      }
+    } catch (error) {
+      console.error('Error refreshing tournament data:', error);
+    } finally {
+      setTournamentGroupsLoading(false);
+    }
+  };
+
   // Auto-assign players to groups
   const autoAssignGroups = async () => {
     if (!selectedTournament) return;
@@ -1775,13 +1779,8 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json();
         toast({ title: 'Success', description: `${data.assigned} players assigned to groups` });
-        await fetchGroupsData(selectedTournament.id);
-        // Refresh tournament data
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
-        if (tournResponse.ok) {
-          const tournData = await tournResponse.json();
-          setSelectedTournament(tournData.tournament);
-        }
+        // Refresh all tournament data
+        await refreshTournamentData();
       } else {
         throw new Error('Failed to auto-assign groups');
       }
@@ -1811,20 +1810,8 @@ export default function AdminPage() {
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Player assigned to group' });
-        
-        // Immediately fetch fresh data and update state
-        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
-        if (groupsResponse.ok) {
-          const freshData = await groupsResponse.json();
-          setGroupsData({ groups: freshData.groups, unassigned: freshData.unassigned });
-        }
-        
-        // Also refresh tournament participants
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
-        if (tournResponse.ok) {
-          const tournData = await tournResponse.json();
-          setSelectedTournament(tournData.tournament);
-        }
+        // Refresh all tournament data
+        await refreshTournamentData();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to assign player');
@@ -1850,18 +1837,8 @@ export default function AdminPage() {
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Player removed from group' });
-        // Fetch fresh groups data
-        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
-        if (groupsResponse.ok) {
-          const data = await groupsResponse.json();
-          setGroupsData({ groups: data.groups, unassigned: data.unassigned });
-        }
-        // Refresh tournament data
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
-        if (tournResponse.ok) {
-          const tournData = await tournResponse.json();
-          setSelectedTournament(tournData.tournament);
-        }
+        // Refresh all tournament data
+        await refreshTournamentData();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to remove player from group');
@@ -2828,22 +2805,8 @@ export default function AdminPage() {
                                 });
                                 if (response.ok) {
                                   toast({ title: 'Success', description: 'Tee times and start time updated successfully' });
-                                  // Refresh groups data
-                                  const dataRes = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
-                                  if (dataRes.ok) {
-                                    const data = await dataRes.json();
-                                    setGroupsData({ groups: data.groups, unassigned: data.unassigned });
-                                  }
-                                  // Refresh tournament data to get updated startTime
-                                  const tournRes = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
-                                  if (tournRes.ok) {
-                                    const tournData = await tournRes.json();
-                                    if (tournData.tournament) {
-                                      setSelectedTournament(tournData.tournament);
-                                      // Update tournaments list too
-                                      setTournaments(prev => prev.map(t => t.id === tournData.tournament.id ? tournData.tournament : t));
-                                    }
-                                  }
+                                  // Refresh all tournament data
+                                  await refreshTournamentData();
                                 } else {
                                   toast({ title: 'Error', description: 'Failed to update tee times', variant: 'destructive' });
                                 }
@@ -2862,20 +2825,7 @@ export default function AdminPage() {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={async () => {
-                              if (!selectedTournament) return;
-                              setTournamentGroupsLoading(true);
-                              try {
-                                const res = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
-                                if (res.ok) {
-                                  const data = await res.json();
-                                  setGroupsData({ groups: data.groups, unassigned: data.unassigned });
-                                  toast({ title: 'Refreshed', description: 'Groups data updated' });
-                                }
-                              } finally {
-                                setTournamentGroupsLoading(false);
-                              }
-                            }}
+                            onClick={refreshTournamentData}
                             disabled={tournamentGroupsLoading}
                           >
                             <RefreshCw className={`mr-1 h-4 w-4 ${tournamentGroupsLoading ? 'animate-spin' : ''}`} />
@@ -2943,12 +2893,8 @@ export default function AdminPage() {
                                             });
                                             if (response.ok) {
                                               toast({ title: 'Success', description: `Group ${letter} deleted` });
-                                              // Refresh data
-                                              const dataRes = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
-                                              if (dataRes.ok) {
-                                                const data = await dataRes.json();
-                                                setGroupsData({ groups: data.groups, unassigned: data.unassigned });
-                                              }
+                                              // Refresh all tournament data
+                                              await refreshTournamentData();
                                             } else {
                                               toast({ title: 'Error', description: 'Failed to delete group', variant: 'destructive' });
                                             }

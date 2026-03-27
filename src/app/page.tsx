@@ -5949,7 +5949,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.39</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.40</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
