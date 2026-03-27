@@ -1993,15 +1993,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to App</span>
-            </Link>
-            <Separator orientation="vertical" className="h-6" />
-            <h1 className="text-xl font-bold">Setup</h1>
-          </div>
+        <div className="container flex h-16 items-center px-4">
           <Button variant="ghost" size="sm" onClick={handleBackToApp} style={{color: '#39638b'}}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to App
@@ -2796,6 +2788,61 @@ export default function AdminPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={async () => {
+                              if (selectedTournament) {
+                                setTournamentGroupsLoading(true);
+                                try {
+                                  const response = await fetch('/api/tournaments/groups', {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      tournamentId: selectedTournament.id,
+                                      startTime: teeTimeForm.startTime,
+                                      intervalMinutes: teeTimeForm.interval
+                                    })
+                                  });
+                                  if (response.ok) {
+                                    toast({ title: 'Success', description: 'Tee times updated' });
+                                    const data = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+                                    if (data.ok) {
+                                      const groupsData = await data.json();
+                                      setGroupsData({ groups: groupsData.groups, unassigned: groupsData.unassigned });
+                                    }
+                                  }
+                                } catch (error) {
+                                  toast({ title: 'Error', description: 'Failed to update tee times', variant: 'destructive' });
+                                } finally {
+                                  setTournamentGroupsLoading(false);
+                                }
+                              }
+                            }}
+                            disabled={tournamentGroupsLoading}
+                          >
+                            <Clock className="mr-1 h-4 w-4" />
+                            Update Times
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              if (selectedTournament) {
+                                setTournamentGroupsLoading(true);
+                                fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`)
+                                  .then(res => res.json())
+                                  .then(data => {
+                                    setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+                                  })
+                                  .finally(() => setTournamentGroupsLoading(false));
+                              }
+                            }}
+                            disabled={tournamentGroupsLoading}
+                          >
+                            <RefreshCw className={`mr-1 h-4 w-4 ${tournamentGroupsLoading ? 'animate-spin' : ''}`} />
+                            Refresh
+                          </Button>
                           <Button 
                             size="sm" 
                             variant="outline"

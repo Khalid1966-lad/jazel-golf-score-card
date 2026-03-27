@@ -229,6 +229,61 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+// PATCH /api/tournaments/groups - Recalculate tee times for all groups
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { tournamentId, startTime, intervalMinutes } = body;
+
+    if (!tournamentId) {
+      return NextResponse.json({ error: 'Missing tournamentId' }, { status: 400 });
+    }
+
+    // Get all assigned participants ordered by group and position
+    const participants = await db.tournamentParticipant.findMany({
+      where: { 
+        tournamentId,
+        groupLetter: { not: null }
+      },
+      orderBy: [
+        { groupLetter: 'asc' },
+        { positionInGroup: 'asc' }
+      ]
+    });
+
+    if (participants.length === 0) {
+      return NextResponse.json({ message: 'No assigned participants', updated: 0 });
+    }
+
+    const startMinutes = startTime ? parseTimeToMinutes(startTime) : 480; // Default 8:00 AM
+    const interval = intervalMinutes || 10;
+
+    // Get unique group letters in order
+    const groupLetters = [...new Set(participants.map(p => p.groupLetter))].sort();
+
+    // Update tee times for each group
+    let updated = 0;
+    for (const letter of groupLetters) {
+      const groupParticipants = participants.filter(p => p.groupLetter === letter);
+      const groupIndex = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+      const teeTime = minutesToTime(startMinutes + groupIndex * interval);
+
+      for (const participant of groupParticipants) {
+        await db.tournamentParticipant.update({
+          where: { id: participant.id },
+          data: { teeTime }
+        });
+        updated++;
+      }
+    }
+
+    return NextResponse.json({ success: true, updated });
+  } catch (error) {
+    console.error('Error recalculating tee times:', error);
+    return NextResponse.json({ error: 'Failed to recalculate tee times: ' + (error as Error).message }, { status: 500 });
+  }
+}
+
 // Helper: Parse "08:00" to minutes since midnight
 function parseTimeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
