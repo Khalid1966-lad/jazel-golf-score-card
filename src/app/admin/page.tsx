@@ -1790,6 +1790,9 @@ export default function AdminPage() {
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Player assigned to group' });
+        // Close the dialog
+        setAssignPlayerDialogOpen(false);
+        // Refresh groups data
         await fetchGroupsData(selectedTournament.id);
         // Refresh tournament data
         const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
@@ -1798,7 +1801,8 @@ export default function AdminPage() {
           setSelectedTournament(tournData.tournament);
         }
       } else {
-        throw new Error('Failed to assign player');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to assign player');
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to assign player to group', variant: 'destructive' });
@@ -2847,54 +2851,18 @@ export default function AdminPage() {
                                           ) : (
                                             <>
                                               <span className="flex-1 text-sm text-muted-foreground italic">Empty</span>
-                                              <Dialog>
-                                                <DialogTrigger asChild>
-                                                  <Button 
-                                                    size="sm" 
-                                                    variant="ghost" 
-                                                    className="h-6 w-6 p-0"
-                                                    onClick={() => {
-                                                      setSelectedGroupLetter(letter);
-                                                      setSelectedPosition(position);
-                                                    }}
-                                                  >
-                                                    <Plus className="h-3 w-3" />
-                                                  </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="max-w-sm w-[calc(100%-6px)] sm:w-full mx-auto">
-                                                  <DialogHeader>
-                                                    <DialogTitle>Assign Player</DialogTitle>
-                                                    <DialogDescription>
-                                                      Select a player for Group {letter}, Position {position}
-                                                    </DialogDescription>
-                                                  </DialogHeader>
-                                                  <div className="py-4 max-h-64 overflow-y-auto">
-                                                    {groupsData.unassigned.length > 0 ? (
-                                                      <div className="space-y-1">
-                                                        {groupsData.unassigned.map((p) => (
-                                                          <Button
-                                                            key={p.userId}
-                                                            variant="ghost"
-                                                            className="w-full justify-start"
-                                                            onClick={() => {
-                                                              assignPlayerToGroup(p.userId, letter, position);
-                                                            }}
-                                                          >
-                                                            <span className="flex-1 text-left">{p.user.name || 'Unnamed'}</span>
-                                                            <Badge variant="outline" className="ml-2">
-                                                              {p.user.handicap?.toFixed(1) || '-'}
-                                                            </Badge>
-                                                          </Button>
-                                                        ))}
-                                                      </div>
-                                                    ) : (
-                                                      <p className="text-sm text-muted-foreground text-center py-4">
-                                                        No unassigned players
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                </DialogContent>
-                                              </Dialog>
+                                              <Button 
+                                                size="sm" 
+                                                variant="ghost" 
+                                                className="h-6 w-6 p-0"
+                                                onClick={() => {
+                                                  setSelectedGroupLetter(letter);
+                                                  setSelectedPosition(position);
+                                                  setAssignPlayerDialogOpen(true);
+                                                }}
+                                              >
+                                                <Plus className="h-3 w-3" />
+                                              </Button>
                                             </>
                                           )}
                                         </div>
@@ -2940,6 +2908,45 @@ export default function AdminPage() {
                         </>
                       )}
                     </TabsContent>
+
+                    {/* Assign Player Dialog */}
+                    <Dialog open={assignPlayerDialogOpen} onOpenChange={setAssignPlayerDialogOpen}>
+                      <DialogContent className="max-w-sm w-[calc(100%-6px)] sm:w-full mx-auto">
+                        <DialogHeader>
+                          <DialogTitle>Assign Player</DialogTitle>
+                          <DialogDescription>
+                            Select a player for Group {selectedGroupLetter}, Position {selectedPosition}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 max-h-64 overflow-y-auto">
+                          {groupsData.unassigned.length > 0 ? (
+                            <div className="space-y-1">
+                              {groupsData.unassigned.map((p) => (
+                                <Button
+                                  key={p.userId}
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    if (selectedGroupLetter && selectedPosition) {
+                                      assignPlayerToGroup(p.userId, selectedGroupLetter, selectedPosition);
+                                    }
+                                  }}
+                                >
+                                  <span className="flex-1 text-left">{p.user.name || 'Unnamed'}</span>
+                                  <Badge variant="outline" className="ml-2">
+                                    Hcp: {p.user.handicap?.toFixed(1) || '-'}
+                                  </Badge>
+                                </Button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No unassigned players available
+                            </p>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </Tabs>
                 </CardContent>
               </Card>
