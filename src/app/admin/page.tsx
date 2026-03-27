@@ -2765,7 +2765,7 @@ export default function AdminPage() {
                       <div className="flex flex-wrap gap-2 items-center justify-between">
                         <div className="flex flex-wrap gap-2 items-center">
                           <div className="flex items-center gap-2">
-                            <Label className="text-sm">Start:</Label>
+                            <Label className="text-sm whitespace-nowrap">Start Time:</Label>
                             <Input
                               type="time"
                               className="w-28 h-8"
@@ -2774,7 +2774,7 @@ export default function AdminPage() {
                             />
                           </div>
                           <div className="flex items-center gap-2">
-                            <Label className="text-sm">Interval:</Label>
+                            <Label className="text-sm whitespace-nowrap">Interval:</Label>
                             <Select 
                               value={teeTimeForm.interval.toString()} 
                               onValueChange={(v) => setTeeTimeForm({ ...teeTimeForm, interval: parseInt(v) })}
@@ -2791,73 +2791,70 @@ export default function AdminPage() {
                             </Select>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={async () => {
-                              if (selectedTournament) {
-                                setTournamentGroupsLoading(true);
-                                try {
-                                  const response = await fetch('/api/tournaments/groups', {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      tournamentId: selectedTournament.id,
-                                      startTime: teeTimeForm.startTime,
-                                      intervalMinutes: teeTimeForm.interval
-                                    })
-                                  });
-                                  if (response.ok) {
-                                    toast({ title: 'Success', description: 'Tee times updated' });
-                                    const data = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
-                                    if (data.ok) {
-                                      const groupsData = await data.json();
-                                      setGroupsData({ groups: groupsData.groups, unassigned: groupsData.unassigned });
-                                    }
+                              if (!selectedTournament) return;
+                              setTournamentGroupsLoading(true);
+                              try {
+                                const response = await fetch('/api/tournaments/groups', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    tournamentId: selectedTournament.id,
+                                    startTime: teeTimeForm.startTime,
+                                    intervalMinutes: teeTimeForm.interval
+                                  })
+                                });
+                                if (response.ok) {
+                                  toast({ title: 'Success', description: 'Tee times updated successfully' });
+                                  // Refresh data
+                                  const dataRes = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+                                  if (dataRes.ok) {
+                                    const data = await dataRes.json();
+                                    setGroupsData({ groups: data.groups, unassigned: data.unassigned });
                                   }
-                                } catch (error) {
+                                } else {
                                   toast({ title: 'Error', description: 'Failed to update tee times', variant: 'destructive' });
-                                } finally {
-                                  setTournamentGroupsLoading(false);
                                 }
+                              } catch (error) {
+                                toast({ title: 'Error', description: 'Failed to update tee times', variant: 'destructive' });
+                              } finally {
+                                setTournamentGroupsLoading(false);
                               }
                             }}
                             disabled={tournamentGroupsLoading}
                           >
                             <Clock className="mr-1 h-4 w-4" />
-                            Update Times
+                            <span className="hidden sm:inline">Update Times</span>
+                            <span className="sm:hidden">Times</span>
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => {
-                              if (selectedTournament) {
-                                setTournamentGroupsLoading(true);
-                                fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`)
-                                  .then(res => res.json())
-                                  .then(data => {
-                                    setGroupsData({ groups: data.groups, unassigned: data.unassigned });
-                                  })
-                                  .finally(() => setTournamentGroupsLoading(false));
+                            onClick={async () => {
+                              if (!selectedTournament) return;
+                              setTournamentGroupsLoading(true);
+                              try {
+                                const res = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+                                  toast({ title: 'Refreshed', description: 'Groups data updated' });
+                                }
+                              } finally {
+                                setTournamentGroupsLoading(false);
                               }
                             }}
                             disabled={tournamentGroupsLoading}
                           >
                             <RefreshCw className={`mr-1 h-4 w-4 ${tournamentGroupsLoading ? 'animate-spin' : ''}`} />
-                            Refresh
+                            <span className="hidden sm:inline">Refresh</span>
                           </Button>
                           <Button 
                             size="sm" 
-                            variant="outline"
-                            onClick={addNewGroup}
-                            disabled={tournamentGroupsLoading}
-                          >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Add Group
-                          </Button>
-                          <Button 
-                            size="sm"
                             onClick={autoAssignGroups}
                             disabled={tournamentGroupsLoading || groupsData.unassigned.length === 0}
                           >
@@ -2866,7 +2863,8 @@ export default function AdminPage() {
                             ) : (
                               <UserPlus className="mr-1 h-4 w-4" />
                             )}
-                            Auto-Assign
+                            <span className="hidden sm:inline">Auto-Assign</span>
+                            <span className="sm:hidden">Assign</span>
                           </Button>
                         </div>
                       </div>
@@ -2878,18 +2876,67 @@ export default function AdminPage() {
                       ) : (
                         <>
                           {/* Groups Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {/* Render existing groups */}
                             {getGroupLetters().map((letter) => {
                               const groupParticipants = groupsData.groups[letter] || [];
                               const teeTime = groupParticipants[0]?.teeTime || '';
+                              const playerCount = groupParticipants.length;
                               
                               return (
-                                <div key={letter} className="border rounded-lg overflow-hidden">
-                                  <div className="bg-primary/10 px-3 py-2 flex items-center justify-between">
-                                    <span className="font-semibold">Group {letter}</span>
-                                    {teeTime && <span className="text-sm text-muted-foreground">{teeTime}</span>}
+                                <div key={letter} className="border rounded-lg overflow-hidden shadow-sm">
+                                  {/* Group Header with prominent tee time */}
+                                  <div className="bg-gradient-to-r from-primary/20 to-primary/10 px-3 py-2 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-lg">Group {letter}</span>
+                                      <Badge variant="secondary" className="text-xs">
+                                        {playerCount}/4
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {teeTime && (
+                                        <Badge variant="default" className="font-mono text-sm bg-primary text-primary-foreground">
+                                          <Clock className="w-3 h-3 mr-1" />
+                                          {teeTime}
+                                        </Badge>
+                                      )}
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={async () => {
+                                          if (!selectedTournament) return;
+                                          if (!confirm(`Delete Group ${letter}? All ${playerCount} player(s) will be moved to unassigned.`)) return;
+                                          
+                                          setTournamentGroupsLoading(true);
+                                          try {
+                                            const response = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&groupLetter=${letter}&deleteGroup=true`, {
+                                              method: 'DELETE'
+                                            });
+                                            if (response.ok) {
+                                              toast({ title: 'Success', description: `Group ${letter} deleted` });
+                                              // Refresh data
+                                              const dataRes = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+                                              if (dataRes.ok) {
+                                                const data = await dataRes.json();
+                                                setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+                                              }
+                                            } else {
+                                              toast({ title: 'Error', description: 'Failed to delete group', variant: 'destructive' });
+                                            }
+                                          } catch (error) {
+                                            toast({ title: 'Error', description: 'Failed to delete group', variant: 'destructive' });
+                                          } finally {
+                                            setTournamentGroupsLoading(false);
+                                          }
+                                        }}
+                                        title="Delete group"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </div>
+                                  {/* Group Body */}
                                   <div className="p-2 space-y-1">
                                     {[1, 2, 3, 4].map((position) => {
                                       const participant = groupParticipants.find(p => p.positionInGroup === position);
@@ -2897,38 +2944,40 @@ export default function AdminPage() {
                                       return (
                                         <div 
                                           key={position}
-                                          className="flex items-center gap-2 p-2 rounded border bg-card"
+                                          className="flex items-center gap-2 p-2 rounded border bg-card hover:bg-accent/50 transition-colors"
                                         >
-                                          <span className="text-sm text-muted-foreground w-4">{position}.</span>
+                                          <span className="text-sm text-muted-foreground w-4 font-medium">{position}.</span>
                                           {participant ? (
                                             <>
-                                              <span className="flex-1 text-sm truncate">{participant.user.name || 'Unnamed'}</span>
-                                              <Badge variant="outline" className="text-xs">
-                                                {participant.user.handicap?.toFixed(1) || '-'}
+                                              <span className="flex-1 text-sm truncate font-medium">{participant.user.name || 'Unnamed'}</span>
+                                              <Badge variant="outline" className="text-xs shrink-0">
+                                                Hcp: {participant.user.handicap?.toFixed(1) || '-'}
                                               </Badge>
                                               <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+                                                className="h-6 w-6 p-0 text-muted-foreground hover:text-red-500"
                                                 onClick={() => removePlayerFromGroup(participant.userId)}
+                                                title="Remove from group"
                                               >
                                                 <X className="h-3 w-3" />
                                               </Button>
                                             </>
                                           ) : (
                                             <>
-                                              <span className="flex-1 text-sm text-muted-foreground italic">Empty</span>
+                                              <span className="flex-1 text-sm text-muted-foreground italic">Empty slot</span>
                                               <Button 
                                                 size="sm" 
                                                 variant="ghost" 
-                                                className="h-6 w-6 p-0"
+                                                className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
                                                 onClick={() => {
                                                   setSelectedGroupLetter(letter);
                                                   setSelectedPosition(position);
                                                   setAssignPlayerDialogOpen(true);
                                                 }}
+                                                title="Add player"
                                               >
-                                                <Plus className="h-3 w-3" />
+                                                <Plus className="h-4 w-4" />
                                               </Button>
                                             </>
                                           )}
@@ -2942,12 +2991,12 @@ export default function AdminPage() {
                             
                             {/* Add new group card */}
                             <div 
-                              className="border-2 border-dashed rounded-lg flex items-center justify-center min-h-[200px] cursor-pointer hover:border-primary/50 transition-colors"
+                              className="border-2 border-dashed rounded-lg flex items-center justify-center min-h-[180px] cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
                               onClick={addNewGroup}
                             >
                               <div className="text-center text-muted-foreground">
                                 <Plus className="w-8 h-8 mx-auto mb-2" />
-                                <span className="text-sm">Add Group</span>
+                                <span className="text-sm font-medium">Add Group</span>
                               </div>
                             </div>
                           </div>
@@ -2955,18 +3004,20 @@ export default function AdminPage() {
                           {/* Unassigned Players */}
                           {groupsData.unassigned.length > 0 && (
                             <div className="border rounded-lg overflow-hidden">
-                              <div className="bg-amber-100 dark:bg-amber-900/20 px-4 py-2 flex items-center gap-2">
-                                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                <span className="font-medium">Unassigned Players ({groupsData.unassigned.length})</span>
+                              <div className="bg-amber-100 dark:bg-amber-900/30 px-4 py-3 flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                                <span className="font-semibold">Unassigned Players ({groupsData.unassigned.length})</span>
+                                <span className="text-sm text-muted-foreground ml-2">- Click Auto-Assign to place them in groups</span>
                               </div>
                               <div className="p-3 flex flex-wrap gap-2">
                                 {groupsData.unassigned.map((p) => (
                                   <Badge 
                                     key={p.userId} 
                                     variant="outline" 
-                                    className="py-1 px-2 text-sm"
+                                    className="py-1.5 px-3 text-sm border-amber-300 bg-amber-50 dark:bg-amber-900/20"
                                   >
-                                    {p.user.name || 'Unnamed'} ({p.user.handicap?.toFixed(1) || '-'})
+                                    {p.user.name || 'Unnamed'} 
+                                    <span className="text-muted-foreground ml-1">(Hcp: {p.user.handicap?.toFixed(1) || '-'})</span>
                                   </Badge>
                                 ))}
                               </div>
