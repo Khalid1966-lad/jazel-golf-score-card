@@ -1883,11 +1883,17 @@ export default function AdminPage() {
     }
   };
 
-  // Delete an entire group - moves all players to unassigned
-  const deleteGroup = async (groupLetter: string) => {
+  // Delete an entire tournament group - moves all players to unassigned
+  const deleteTournamentGroup = async (groupLetter: string) => {
     if (!selectedTournament) return;
     
     const groupParticipants = groupsData.groups[groupLetter] || [];
+    const confirmMsg = groupParticipants.length > 0
+      ? `Delete Group ${groupLetter}? ${groupParticipants.length} player(s) will be moved to unassigned.`
+      : `Delete empty Group ${groupLetter}?`;
+    
+    if (!confirm(confirmMsg)) return;
+    
     if (groupParticipants.length === 0) {
       // Empty group - just remove from local state
       setGroupsData(prev => {
@@ -2926,7 +2932,7 @@ export default function AdminPage() {
                                         size="sm"
                                         variant="ghost"
                                         className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                        onClick={() => deleteGroup(letter)}
+                                        onClick={() => deleteTournamentGroup(letter)}
                                         title="Delete group"
                                       >
                                         <Trash2 className="h-3 w-3" />
