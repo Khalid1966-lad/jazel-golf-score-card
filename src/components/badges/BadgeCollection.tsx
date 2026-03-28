@@ -154,19 +154,9 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
       {/* HEADER - Fixed height, contained */}
       <div className="flex-shrink-0 p-4 border-b bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
         {/* Title row */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-            <span className="font-bold text-base">My Badges</span>
-          </div>
-          <button
-            onClick={refreshAchievements}
-            disabled={refreshing}
-            className="p-1.5 rounded hover:bg-white/50 dark:hover:bg-black/20 transition-colors"
-            title="Refresh achievements"
-          >
-            <RefreshCw className={`w-4 h-4 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
+        <div className="flex items-center gap-2 mb-3">
+          <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+          <span className="font-bold text-base">My Badges</span>
         </div>
 
         {/* Level row with badge count */}
@@ -177,6 +167,14 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
             <Badge className="text-xs flex-shrink-0 bg-blue-500 hover:bg-blue-600">
               {data.earnedCount}/{data.totalCount}
             </Badge>
+            <button
+              onClick={refreshAchievements}
+              disabled={refreshing}
+              className="p-1 rounded hover:bg-white/50 dark:hover:bg-black/20 transition-colors"
+              title="Refresh achievements"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
           <span className="text-muted-foreground flex-shrink-0 font-medium">{data.totalPoints} pts</span>
         </div>
