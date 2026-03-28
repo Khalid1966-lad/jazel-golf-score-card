@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag
+  Map as MapIcon, Flag, Medal
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -2605,18 +2605,6 @@ export default function JazelApp() {
                   )}
                 </Button>
               )}
-              {user && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1"
-                  style={{color: '#39638b'}}
-                  onClick={() => setShowBadgesDialog(true)}
-                >
-                  <Trophy className="w-4 h-4" />
-                  <span className="hidden sm:inline">Badges</span>
-                </Button>
-              )}
               {user ? (
                 <div className="flex items-center gap-2">
                   {user.avatar ? (
@@ -4451,6 +4439,15 @@ export default function JazelApp() {
                         variant="outline"
                         className="w-full"
                         style={{borderColor: '#a3c4e0'}}
+                        onClick={() => setShowBadgesDialog(true)}
+                      >
+                        <Medal className="w-4 h-4 mr-2" />
+                        My Badges
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        style={{borderColor: '#a3c4e0'}}
                         onClick={openBagDialog}
                       >
                         <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -5963,7 +5960,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.45</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.46</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
