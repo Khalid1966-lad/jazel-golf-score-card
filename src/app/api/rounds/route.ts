@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
       playerScores,
       holesPlayed = 18,
       holesType = null,
+      completed = true,  // Allow saving as draft (completed: false)
     } = body;
 
     // Build all scores array including main player (index 0) and additional players
@@ -230,8 +231,8 @@ export async function POST(request: NextRequest) {
         fairwaysTotal,
         greensInReg,
         penalties,
-        completed: true,
-        completedAt: new Date(),  // Track when round was actually finished
+        completed,
+        completedAt: completed ? new Date() : null,  // Only set if completing
         playerNames,
         scores: {
           create: allScores,
@@ -243,9 +244,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Check and award achievements (non-blocking)
-    checkRoundAchievements(userId, totalStrokes, holesPlayed)
-      .catch(err => console.error('Error checking achievements:', err));
+    // Check and award achievements only for completed rounds (non-blocking)
+    if (completed) {
+      checkRoundAchievements(userId, totalStrokes, holesPlayed)
+        .catch(err => console.error('Error checking achievements:', err));
+    }
 
     return NextResponse.json({ round });
   } catch (error) {
@@ -294,7 +297,7 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { roundId, scores, playerNames, playerScores, teeId, holesPlayed, holesType } = body;
+    const { roundId, scores, playerNames, playerScores, teeId, holesPlayed, holesType, completed } = body;
 
     if (!roundId) {
       return NextResponse.json(
@@ -315,6 +318,11 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Determine if we're completing the round now
+    const wasCompleted = existingRound.completed;
+    const willBeCompleted = completed !== undefined ? completed : existingRound.completed;
+    const isNowCompleting = !wasCompleted && willBeCompleted;
 
     // Build all scores array including main player (index 0) and additional players
     const allScores: Array<{
@@ -422,7 +430,8 @@ export async function PUT(request: NextRequest) {
         fairwaysTotal,
         greensInReg,
         penalties,
-        completedAt: existingRound.completedAt || new Date(),  // Set if not already set
+        completed: willBeCompleted,
+        completedAt: isNowCompleting ? new Date() : existingRound.completedAt,  // Set only when first completing
         scores: {
           create: allScores,
         },
@@ -433,9 +442,11 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    // Check and award achievements (non-blocking)
-    checkRoundAchievements(existingRound.userId, totalStrokes, holesPlayed || existingRound.holesPlayed)
-      .catch(err => console.error('Error checking achievements:', err));
+    // Check and award achievements only when completing (non-blocking)
+    if (willBeCompleted) {
+      checkRoundAchievements(existingRound.userId, totalStrokes, holesPlayed || existingRound.holesPlayed)
+        .catch(err => console.error('Error checking achievements:', err));
+    }
 
     return NextResponse.json({ round: updatedRound });
   } catch (error) {

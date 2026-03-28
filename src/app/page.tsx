@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal
+  Map as MapIcon, Flag, Medal, CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -2098,7 +2098,7 @@ export default function JazelApp() {
     }
   }, [showScorecard, selectedCourse, additionalPlayers, checkScrollPosition]);
 
-  // Keyboard shortcut for saving scorecard (Ctrl+S / Cmd+S)
+  // Keyboard shortcut for saving scorecard (Ctrl+S / Cmd+S) - saves as draft
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -2106,7 +2106,7 @@ export default function JazelApp() {
           e.preventDefault();
           const scoresWithStrokes = scores.filter(s => s.strokes > 0);
           if (scoresWithStrokes.length > 0) {
-            saveRound();
+            saveRound(false);  // Save as draft
           }
         }
       }
@@ -2123,8 +2123,8 @@ export default function JazelApp() {
     ));
   };
 
-  // Save round
-  const saveRound = async () => {
+  // Save round (completed = true for final save, false for draft)
+  const saveRound = async (completed: boolean = true) => {
     if (!user || !selectedCourse) return;
 
     // Get scores with entered strokes (at least one score must have strokes)
@@ -2173,13 +2173,14 @@ export default function JazelApp() {
             playerScores: playerScoresArray,
             holesPlayed: holesPlayed,
             holesType: holesType,
+            completed,
           }),
         });
         
         const data = await response.json();
         
         if (response.ok) {
-          toast.success('Round updated successfully!');
+          toast.success(completed ? 'Round completed successfully!' : 'Draft saved!');
           
           // Clear saved round from localStorage
           localStorage.removeItem('jazel_active_round');
@@ -2216,13 +2217,14 @@ export default function JazelApp() {
             playerScores: playerScoresArray,
             holesPlayed: holesPlayed,
             holesType: holesPlayed === 9 ? holesType : null,
+            completed,
           }),
         });
         
         const data = await response.json();
         
         if (response.ok) {
-          toast.success('Round saved successfully!');
+          toast.success(completed ? 'Round completed successfully!' : 'Draft saved!');
           
           // Clear saved round from localStorage
           localStorage.removeItem('jazel_active_round');
@@ -3461,13 +3463,22 @@ export default function JazelApp() {
                       {/* Save and Discard Buttons */}
                       <div className="flex gap-3">
                         <Button
-                          className="flex-1 text-white"
-                          style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
-                          onClick={saveRound}
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => saveRound(false)}
                           disabled={scores.filter(s => s.strokes > 0).length === 0}
                         >
                           <Save className="w-4 h-4 mr-2" />
-                          Save Round
+                          Save Draft
+                        </Button>
+                        <Button
+                          className="flex-1 text-white"
+                          style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                          onClick={() => saveRound(true)}
+                          disabled={scores.filter(s => s.strokes > 0).length === 0}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Complete Round
                         </Button>
                         <Button
                           variant="destructive"
