@@ -129,15 +129,15 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   const levelProgress = ((data.totalPoints - prevThreshold) / (nextThreshold - prevThreshold)) * 100;
 
   return (
-    <div className="flex flex-col h-[85vh] sm:h-[80vh] max-h-[600px]">
+    <div className="flex flex-col" style={{ maxHeight: '80vh' }}>
       {/* Header - Fixed */}
       <div className="flex-shrink-0 bg-card p-4 border-b">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-primary flex-shrink-0" />
-            <h2 className="font-bold text-lg truncate">My Badges</h2>
+            <h2 className="font-bold text-lg">My Badges</h2>
           </div>
-          <Badge variant="secondary" className="text-xs flex-shrink-0 font-mono">
+          <Badge variant="secondary" className="text-xs font-mono">
             {data.earnedCount}/{data.totalCount}
           </Badge>
         </div>
@@ -162,12 +162,12 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
         </div>
       </div>
 
-      {/* Category Tabs - Fixed */}
-      <div className="flex-shrink-0 border-b bg-muted/30 overflow-x-auto">
-        <div className="flex gap-1 p-2 min-w-max">
+      {/* Category Tabs - Scrollable horizontally */}
+      <div className="flex-shrink-0 border-b bg-muted/30">
+        <div className="flex gap-1 p-2 overflow-x-auto scrollbar-thin">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${
               selectedCategory === 'all'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-background hover:bg-muted text-muted-foreground border'
@@ -182,7 +182,7 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-background hover:bg-muted text-muted-foreground border'
@@ -197,8 +197,8 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
         </div>
       </div>
 
-      {/* Achievements Grid - SCROLLABLE */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3">
+      {/* Achievements Grid - Scrollable vertically */}
+      <div className="flex-1 overflow-y-auto p-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filteredAchievements.map(achievement => (
             <AchievementBadge key={achievement.id} achievement={achievement} />
@@ -246,9 +246,9 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
         </div>
         
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className={`font-semibold text-sm truncate ${!isEarned && 'text-muted-foreground'}`}>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className={`font-semibold text-sm ${!isEarned && 'text-muted-foreground'}`}>
               {achievement.name}
             </h4>
             {isEarned && (
@@ -258,13 +258,13 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
             )}
           </div>
           
-          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {achievement.description}
           </p>
           
           {/* Points indicator for locked */}
           {!isEarned && (
-            <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
                 {achievement.points} pts
               </Badge>

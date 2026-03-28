@@ -5985,7 +5985,7 @@ export default function JazelApp() {
 
       {/* Badges Dialog */}
       <Dialog open={showBadgesDialog} onOpenChange={setShowBadgesDialog}>
-        <DialogContent className="w-[calc(100%-6px)] max-w-lg sm:max-w-xl md:max-w-2xl p-0 gap-0 mx-auto rounded-xl">
+        <DialogContent className="max-w-lg sm:max-w-xl md:max-w-2xl p-0 gap-0 rounded-xl">
           {user && (
             <BadgeCollection userId={user.id} />
           )}
