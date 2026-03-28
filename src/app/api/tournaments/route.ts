@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, courseId, date, startTime, format, maxPlayers, notes } = body;
+    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes } = body;
 
     if (!name || !courseId || !date) {
       return NextResponse.json({ error: 'Name, course, and date are required' }, { status: 400 });
@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
         courseId,
         date: new Date(date),
         startTime: startTime || '08:00',
+        teeTimeInterval: teeTimeInterval || 10,
         format: format || 'Stroke Play',
         maxPlayers: maxPlayers || 144,
         notes: notes || null,
@@ -144,7 +145,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, courseId, date, startTime, format, maxPlayers, notes, status } = body;
+    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes, status } = body;
 
     // Verify tournament exists
     const existingTournament = await db.tournament.findUnique({
@@ -171,6 +172,7 @@ export async function PUT(request: NextRequest) {
     if (courseId !== undefined) updateData.courseId = courseId;
     if (date !== undefined) updateData.date = new Date(date);
     if (startTime !== undefined) updateData.startTime = startTime;
+    if (teeTimeInterval !== undefined) updateData.teeTimeInterval = teeTimeInterval;
     if (format !== undefined) updateData.format = format;
     if (maxPlayers !== undefined) updateData.maxPlayers = maxPlayers;
     if (notes !== undefined) updateData.notes = notes;

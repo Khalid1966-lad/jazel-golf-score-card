@@ -202,15 +202,51 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/tournaments/groups - Remove a player from a group
+// DELETE /api/tournaments/groups - Remove a player from a group OR delete entire group
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const tournamentId = searchParams.get('tournamentId');
     const userId = searchParams.get('userId');
+    const groupLetter = searchParams.get('groupLetter');
+    const renumber = searchParams.get('renumber') === 'true';
 
-    if (!tournamentId || !userId) {
-      return NextResponse.json({ error: 'Missing tournamentId or userId' }, { status: 400 });
+    if (!tournamentId) {
+      return NextResponse.json({ error: 'Missing tournamentId' }, { status: 400 });
+    }
+
+    // If groupLetter is provided, delete the entire group
+    if (groupLetter) {
+      // Get all participants in this group to move them to unassigned
+      const groupParticipants = await db.tournamentParticipant.findMany({
+        where: { tournamentId, groupLetter }
+      });
+
+      // Move all participants to unassigned
+      await db.tournamentParticipant.updateMany({
+        where: { tournamentId, groupLetter },
+        data: {
+          groupLetter: null,
+          positionInGroup: null,
+          teeTime: null,
+        }
+      });
+
+      // If renumber is requested, renumber all remaining groups
+      if (renumber) {
+        await renumberGroups(tournamentId);
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        movedCount: groupParticipants.length,
+        message: `Group ${groupLetter} deleted. ${groupParticipants.length} participants moved to unassigned.`
+      });
+    }
+
+    // Otherwise, remove single player from group
+    if (!userId) {
+      return NextResponse.json({ error: 'Missing userId or groupLetter' }, { status: 400 });
     }
 
     const participant = await db.tournamentParticipant.update({
@@ -226,6 +262,71 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error removing from group:', error);
     return NextResponse.json({ error: 'Failed to remove from group' }, { status: 500 });
+  }
+}
+
+// Helper: Renumber all groups sequentially (A, B, C...) and recalculate tee times
+async function renumberGroups(tournamentId: string) {
+  // Get tournament start time and tee time interval
+  const tournament = await db.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { startTime: true, teeTimeInterval: true }
+  });
+
+  const startMinutes = tournament?.startTime 
+    ? parseTimeToMinutes(tournament.startTime) 
+    : 480; // Default 8:00 AM
+  
+  const interval = tournament?.teeTimeInterval || 10; // Default 10 minutes
+
+  // Get all assigned participants ordered by group letter and position
+  const participants = await db.tournamentParticipant.findMany({
+    where: { 
+      tournamentId,
+      groupLetter: { not: null }
+    },
+    orderBy: [
+      { groupLetter: 'asc' },
+      { positionInGroup: 'asc' }
+    ]
+  });
+
+  // Group by current group letter
+  const groupMap = new Map<string, typeof participants>();
+  for (const p of participants) {
+    if (p.groupLetter) {
+      if (!groupMap.has(p.groupLetter)) {
+        groupMap.set(p.groupLetter, []);
+      }
+      groupMap.get(p.groupLetter)!.push(p);
+    }
+  }
+
+  // Sort groups by their letter
+  const sortedGroups = Array.from(groupMap.keys()).sort();
+
+  // Renumber: map old letter to new letter
+  let newLetter = 'A';
+  for (const oldLetter of sortedGroups) {
+    const groupParticipants = groupMap.get(oldLetter)!;
+    
+    // Calculate tee time for this group (each group starts interval minutes after previous)
+    const groupIndex = newLetter.charCodeAt(0) - 'A'.charCodeAt(0);
+    const teeTimeMinutes = startMinutes + groupIndex * interval;
+    const teeTime = minutesToTime(teeTimeMinutes);
+
+    // Update all participants in this group
+    for (const p of groupParticipants) {
+      await db.tournamentParticipant.update({
+        where: { id: p.id },
+        data: {
+          groupLetter: newLetter,
+          teeTime,
+        }
+      });
+    }
+
+    newLetter = String.fromCharCode(newLetter.charCodeAt(0) + 1);
   }
 }
 

@@ -119,6 +119,7 @@ interface Tournament {
   courseId: string;
   date: string;
   startTime: string;
+  teeTimeInterval: number;
   format: string;
   maxPlayers: number;
   notes: string | null;
@@ -218,6 +219,7 @@ export default function AdminPage() {
     courseId: '',
     date: '',
     startTime: '08:00',
+    teeTimeInterval: 10,
     format: 'Stroke Play',
     maxPlayers: 144,
     notes: ''
@@ -227,6 +229,7 @@ export default function AdminPage() {
     courseId: '',
     date: '',
     startTime: '08:00',
+    teeTimeInterval: 10,
     format: 'Stroke Play',
     maxPlayers: 144,
     notes: '',
@@ -482,6 +485,12 @@ export default function AdminPage() {
   useEffect(() => {
     if (selectedTournament && tournamentViewTab === 'groups') {
       fetchGroupsData(selectedTournament.id);
+      // Initialize tee time form with tournament's start time
+      setTeeTimeForm(prev => ({
+        ...prev,
+        startTime: selectedTournament.startTime || '08:00',
+        interval: selectedTournament.teeTimeInterval || 10
+      }));
     }
   }, [selectedTournament?.id, tournamentViewTab]);
 
@@ -1547,6 +1556,7 @@ export default function AdminPage() {
           courseId: newTournamentForm.courseId,
           date: newTournamentForm.date,
           startTime: newTournamentForm.startTime,
+          teeTimeInterval: newTournamentForm.teeTimeInterval,
           format: newTournamentForm.format,
           maxPlayers: newTournamentForm.maxPlayers,
           notes: newTournamentForm.notes || null
@@ -1562,6 +1572,7 @@ export default function AdminPage() {
           courseId: '',
           date: '',
           startTime: '08:00',
+          teeTimeInterval: 10,
           format: 'Stroke Play',
           maxPlayers: 144,
           notes: ''
@@ -1590,6 +1601,7 @@ export default function AdminPage() {
           courseId: editTournamentForm.courseId,
           date: editTournamentForm.date,
           startTime: editTournamentForm.startTime,
+          teeTimeInterval: editTournamentForm.teeTimeInterval,
           format: editTournamentForm.format,
           maxPlayers: editTournamentForm.maxPlayers,
           notes: editTournamentForm.notes || null,
@@ -1800,6 +1812,66 @@ export default function AdminPage() {
     }
   };
 
+  // Recalculate and save tee times for all groups
+  const recalculateTeeTimes = async () => {
+    if (!selectedTournament) return;
+    
+    try {
+      const startMinutes = parseTimeToMinutes(teeTimeForm.startTime);
+      const interval = teeTimeForm.interval;
+      
+      // Build assignments for all participants
+      const assignments: Array<{ userId: string; groupLetter: string; positionInGroup: number; teeTime: string }> = [];
+      
+      for (const letter of getGroupLetters()) {
+        const groupParticipants = groupsData.groups[letter] || [];
+        const groupIndex = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+        const teeTimeMinutes = startMinutes + groupIndex * interval;
+        const teeTime = minutesToTime(teeTimeMinutes);
+        
+        for (const participant of groupParticipants) {
+          assignments.push({
+            userId: participant.userId,
+            groupLetter: letter,
+            positionInGroup: participant.positionInGroup || 1,
+            teeTime
+          });
+        }
+      }
+      
+      if (assignments.length === 0) {
+        toast({ title: 'Info', description: 'No groups to update' });
+        return;
+      }
+      
+      const response = await fetch('/api/tournaments/groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+        body: JSON.stringify({
+          tournamentId: selectedTournament.id,
+          assignments
+        })
+      });
+      
+      if (response.ok) {
+        toast({ title: 'Success', description: `Updated tee times for ${assignments.length} players` });
+        // Refresh groups data
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (groupsResponse.ok) {
+          const data = await groupsResponse.json();
+          setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+        }
+      } else {
+        throw new Error('Failed to update tee times');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to recalculate tee times', variant: 'destructive' });
+    }
+  };
+
   // Assign a player to a specific group position
   const assignPlayerToGroup = async (userId: string, groupLetter: string, position: number, teeTime?: string) => {
     if (!selectedTournament) return;
@@ -1883,13 +1955,13 @@ export default function AdminPage() {
     }
   };
 
-  // Delete an entire tournament group - moves all players to unassigned
+  // Delete an entire tournament group - moves all players to unassigned and renumbers remaining groups
   const deleteTournamentGroup = async (groupLetter: string) => {
     if (!selectedTournament) return;
     
     const groupParticipants = groupsData.groups[groupLetter] || [];
     const confirmMsg = groupParticipants.length > 0
-      ? `Delete Group ${groupLetter}? ${groupParticipants.length} player(s) will be moved to unassigned.`
+      ? `Delete Group ${groupLetter}? ${groupParticipants.length} player(s) will be moved to unassigned. Remaining groups will be renumbered.`
       : `Delete empty Group ${groupLetter}?`;
     
     if (!confirm(confirmMsg)) return;
@@ -1905,39 +1977,63 @@ export default function AdminPage() {
     }
     
     try {
-      // Remove all players from this group one by one
-      const removePromises = groupParticipants.map(p => 
-        fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&userId=${p.userId}`, {
-          method: 'DELETE',
+      // Call API to delete group with renumbering
+      const response = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&groupLetter=${groupLetter}&renumber=true`, {
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        toast({ title: 'Success', description: result.message || `Group ${groupLetter} deleted.` });
+        
+        // Refresh groups data with cache-busting
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
+          cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache' }
-        })
-      );
-      
-      await Promise.all(removePromises);
-      
-      toast({ title: 'Success', description: `Group ${groupLetter} deleted. ${groupParticipants.length} players moved to unassigned.` });
-      
-      // Refresh groups data with cache-busting
-      const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      if (groupsResponse.ok) {
-        const data = await groupsResponse.json();
-        setGroupsData({ groups: data.groups, unassigned: data.unassigned });
-      }
-      // Refresh tournament data with cache-busting
-      const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      if (tournResponse.ok) {
-        const tournData = await tournResponse.json();
-        setSelectedTournament(tournData.tournament);
+        });
+        if (groupsResponse.ok) {
+          const data = await groupsResponse.json();
+          setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+        }
+        // Refresh tournament data with cache-busting
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (tournResponse.ok) {
+          const tournData = await tournResponse.json();
+          setSelectedTournament(tournData.tournament);
+        }
+      } else {
+        throw new Error('Failed to delete group');
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to delete group', variant: 'destructive' });
     }
+  };
+  
+  // Calculate tee time for a group based on tournament start time and interval
+  const calculateGroupTeeTime = (groupLetter: string) => {
+    if (!selectedTournament?.startTime) return null;
+    
+    const startMinutes = parseTimeToMinutes(selectedTournament.startTime);
+    const groupIndex = groupLetter.charCodeAt(0) - 'A'.charCodeAt(0);
+    const teeTimeMinutes = startMinutes + groupIndex * teeTimeForm.interval;
+    return minutesToTime(teeTimeMinutes);
+  };
+  
+  // Helper: Parse "08:00" to minutes since midnight
+  const parseTimeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  
+  // Helper: Convert minutes to "08:00" format
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   };
 
   // Get unassigned participants for dropdown
@@ -1975,6 +2071,7 @@ export default function AdminPage() {
       courseId: tournament.courseId,
       date: tournament.date,
       startTime: tournament.startTime,
+      teeTimeInterval: tournament.teeTimeInterval || 10,
       format: tournament.format,
       maxPlayers: tournament.maxPlayers,
       notes: tournament.notes || '',
@@ -2883,6 +2980,16 @@ export default function AdminPage() {
                               </SelectContent>
                             </Select>
                           </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={recalculateTeeTimes}
+                            disabled={tournamentGroupsLoading || getGroupLetters().length === 0}
+                            title="Apply start time and interval to all groups"
+                          >
+                            <Save className="mr-1 h-4 w-4" />
+                            Save Times
+                          </Button>
                         </div>
                         <div className="flex gap-2">
                           <Button 
@@ -2920,24 +3027,32 @@ export default function AdminPage() {
                             {/* Render existing groups */}
                             {getGroupLetters().map((letter) => {
                               const groupParticipants = groupsData.groups[letter] || [];
-                              const teeTime = groupParticipants[0]?.teeTime || '';
+                              // Calculate tee time based on tournament start time and group position
+                              const calculatedTeeTime = calculateGroupTeeTime(letter);
+                              // Use stored tee time if available, otherwise use calculated
+                              const teeTime = groupParticipants[0]?.teeTime || calculatedTeeTime || '';
                               
                               return (
                                 <div key={letter} className="border rounded-lg overflow-hidden">
                                   <div className="bg-primary/10 px-3 py-2 flex items-center justify-between">
-                                    <span className="font-semibold">Group {letter}</span>
                                     <div className="flex items-center gap-2">
-                                      {teeTime && <span className="text-sm text-muted-foreground">{teeTime}</span>}
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                        onClick={() => deleteTournamentGroup(letter)}
-                                        title="Delete group"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
+                                      <span className="font-semibold">Group {letter}</span>
+                                      {teeTime && (
+                                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          {teeTime}
+                                        </span>
+                                      )}
                                     </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                      onClick={() => deleteTournamentGroup(letter)}
+                                      title="Delete group"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
                                   </div>
                                   <div className="p-2 space-y-1">
                                     {[1, 2, 3, 4].map((position) => {
@@ -3134,6 +3249,17 @@ export default function AdminPage() {
                               onChange={(e) => setNewTournamentForm({ ...newTournamentForm, startTime: e.target.value })}
                             />
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="teeTimeInterval">Tee Time Interval (min)</Label>
+                            <Input
+                              id="teeTimeInterval"
+                              type="number"
+                              min={5}
+                              max={30}
+                              value={newTournamentForm.teeTimeInterval}
+                              onChange={(e) => setNewTournamentForm({ ...newTournamentForm, teeTimeInterval: parseInt(e.target.value) || 10 })}
+                            />
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
@@ -3218,6 +3344,7 @@ export default function AdminPage() {
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
                               <span>{tournament.startTime}</span>
+                              <span className="text-xs text-muted-foreground">({tournament.teeTimeInterval || 10}min intervals)</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
@@ -4373,6 +4500,16 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>Tee Time Interval (min)</Label>
+                <Input
+                  type="number"
+                  min={5}
+                  max={30}
+                  value={editTournamentForm.teeTimeInterval}
+                  onChange={(e) => setEditTournamentForm({ ...editTournamentForm, teeTimeInterval: parseInt(e.target.value) || 10 })}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Format</Label>
                 <Select
                   value={editTournamentForm.format}
@@ -4388,6 +4525,8 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Max Players</Label>
                 <Input
@@ -4397,23 +4536,23 @@ export default function AdminPage() {
                   onChange={(e) => setEditTournamentForm({ ...editTournamentForm, maxPlayers: parseInt(e.target.value) || 144 })}
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={editTournamentForm.status}
-                onValueChange={(value) => setEditTournamentForm({ ...editTournamentForm, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={editTournamentForm.status}
+                  onValueChange={(value) => setEditTournamentForm({ ...editTournamentForm, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
