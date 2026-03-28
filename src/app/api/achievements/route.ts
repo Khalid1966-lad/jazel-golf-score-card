@@ -49,31 +49,39 @@ const ACHIEVEMENT_DEFINITIONS = [
   { code: 'sunset_golfer', name: 'Sunset Golfer', description: 'Complete a round after 6 PM', icon: '🌇', category: 'special', points: 20, sortOrder: 71 },
 ];
 
-// Seed achievements if they don't exist
+// Seed achievements if they don't exist, or update if definition changed
 async function ensureAchievementsSeeded() {
   try {
-    const count = await db.achievement.count();
-    if (count === 0) {
-      console.log('Seeding achievements...');
-      for (const achievement of ACHIEVEMENT_DEFINITIONS) {
-        await db.achievement.create({
-          data: {
-            code: achievement.code,
-            name: achievement.name,
-            description: achievement.description,
-            icon: achievement.icon,
-            category: achievement.category,
-            points: achievement.points,
-            holesRequired: achievement.holesRequired || null,
-            threshold: achievement.threshold || null,
-            sortOrder: achievement.sortOrder,
-          },
-        });
-      }
-      console.log(`Seeded ${ACHIEVEMENT_DEFINITIONS.length} achievements`);
+    console.log('Syncing achievements...');
+    for (const achievement of ACHIEVEMENT_DEFINITIONS) {
+      await db.achievement.upsert({
+        where: { code: achievement.code },
+        update: {
+          name: achievement.name,
+          description: achievement.description,
+          icon: achievement.icon,
+          category: achievement.category,
+          points: achievement.points,
+          holesRequired: achievement.holesRequired || null,
+          threshold: achievement.threshold || null,
+          sortOrder: achievement.sortOrder,
+        },
+        create: {
+          code: achievement.code,
+          name: achievement.name,
+          description: achievement.description,
+          icon: achievement.icon,
+          category: achievement.category,
+          points: achievement.points,
+          holesRequired: achievement.holesRequired || null,
+          threshold: achievement.threshold || null,
+          sortOrder: achievement.sortOrder,
+        },
+      });
     }
+    console.log(`Synced ${ACHIEVEMENT_DEFINITIONS.length} achievements`);
   } catch (error) {
-    console.error('Error seeding achievements:', error);
+    console.error('Error syncing achievements:', error);
   }
 }
 
