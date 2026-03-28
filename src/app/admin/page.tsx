@@ -393,10 +393,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleBackToApp = () => {
-    window.location.href = '/';
-  };
-
   // Fetch courses - use admin-specific endpoint for permission filtering
   const fetchCourses = async () => {
     try {
@@ -2188,10 +2184,6 @@ export default function AdminPage() {
             <Separator orientation="vertical" className="h-6" />
             <h1 className="text-xl font-bold">Setup</h1>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleBackToApp} style={{color: '#39638b'}}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to App
-          </Button>
         </div>
       </header>
 
