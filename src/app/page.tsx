@@ -2127,10 +2127,18 @@ export default function JazelApp() {
   const saveRound = async (completed: boolean = true) => {
     if (!user || !selectedCourse) return;
 
-    // Get scores with entered strokes (at least one score must have strokes)
+    // Get scores with entered strokes
     const scoresWithStrokes = scores.filter(s => s.strokes > 0);
-    if (scoresWithStrokes.length === 0) {
+    
+    // Validation for draft: at least one score
+    if (!completed && scoresWithStrokes.length === 0) {
       toast.error('Please enter at least one score');
+      return;
+    }
+    
+    // Validation for complete: all holes must have scores
+    if (completed && scoresWithStrokes.length < holesPlayed) {
+      toast.error(`Please enter scores for all ${holesPlayed} holes to complete the round`);
       return;
     }
 
@@ -3466,7 +3474,7 @@ export default function JazelApp() {
                           variant="outline"
                           className="flex-1"
                           onClick={() => saveRound(false)}
-                          disabled={scores.filter(s => s.strokes > 0).length === 0}
+                          disabled={scores.filter(s => s.strokes > 0).length === holesPlayed}
                         >
                           <Save className="w-4 h-4 mr-2" />
                           Save Draft
@@ -3475,13 +3483,17 @@ export default function JazelApp() {
                           className="flex-1 text-white"
                           style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                           onClick={() => saveRound(true)}
-                          disabled={scores.filter(s => s.strokes > 0).length === 0}
+                          disabled={scores.filter(s => s.strokes > 0).length < holesPlayed}
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
                           Complete Round
                         </Button>
+                      </div>
+                      <div className="flex justify-center mt-2">
                         <Button
-                          variant="destructive"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive"
                           onClick={() => {
                             if (confirm('Are you sure you want to discard this round? All scores will be lost.')) {
                               discardRound();
@@ -3489,7 +3501,7 @@ export default function JazelApp() {
                           }}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Discard
+                          Discard Round
                         </Button>
                       </div>
                     </div>
