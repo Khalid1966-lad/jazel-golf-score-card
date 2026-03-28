@@ -188,27 +188,33 @@ export async function GET(request: NextRequest) {
       };
     });
     
-    // Calculate level based on points
+    // Calculate level based on points - more challenging thresholds
+    const LEVELS = [
+      { level: 'Beginner', minPoints: 0 },
+      { level: 'Amateur', minPoints: 50 },
+      { level: 'Intermediate', minPoints: 150 },
+      { level: 'Advanced', minPoints: 300 },
+      { level: 'Expert', minPoints: 500 },
+      { level: 'Master', minPoints: 800 },
+      { level: 'Legend', minPoints: 1200 },
+    ];
+    
     let level = 'Beginner';
     let nextLevel = 'Amateur';
     let pointsToNext = 50 - totalPoints;
     
-    if (totalPoints >= 200) {
-      level = 'Master';
-      nextLevel = 'Legend';
-      pointsToNext = 500 - totalPoints;
-    } else if (totalPoints >= 100) {
-      level = 'Expert';
-      nextLevel = 'Master';
-      pointsToNext = 200 - totalPoints;
-    } else if (totalPoints >= 50) {
-      level = 'Advanced';
-      nextLevel = 'Expert';
-      pointsToNext = 100 - totalPoints;
-    } else if (totalPoints >= 20) {
-      level = 'Intermediate';
-      nextLevel = 'Advanced';
-      pointsToNext = 50 - totalPoints;
+    for (let i = LEVELS.length - 1; i >= 0; i--) {
+      if (totalPoints >= LEVELS[i].minPoints) {
+        level = LEVELS[i].level;
+        if (i < LEVELS.length - 1) {
+          nextLevel = LEVELS[i + 1].level;
+          pointsToNext = LEVELS[i + 1].minPoints - totalPoints;
+        } else {
+          nextLevel = 'Max Level!';
+          pointsToNext = 0;
+        }
+        break;
+      }
     }
     
     return NextResponse.json({
