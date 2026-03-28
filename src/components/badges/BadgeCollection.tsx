@@ -52,12 +52,13 @@ const categoryData = [
 
 const LEVELS = [
   { level: 'Beginner', minPoints: 0 },
-  { level: 'Amateur', minPoints: 50 },
-  { level: 'Intermediate', minPoints: 150 },
-  { level: 'Advanced', minPoints: 300 },
-  { level: 'Expert', minPoints: 500 },
-  { level: 'Master', minPoints: 800 },
-  { level: 'Legend', minPoints: 1200 },
+  { level: 'Amateur', minPoints: 100 },
+  { level: 'Intermediate', minPoints: 250 },
+  { level: 'Advanced', minPoints: 450 },
+  { level: 'Expert', minPoints: 700 },
+  { level: 'Master', minPoints: 1000 },
+  { level: 'Legend', minPoints: 1500 },
+  { level: 'Immortal', minPoints: 2000 },
 ];
 
 interface BadgeCollectionProps {
@@ -123,14 +124,16 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   const levelProgress = pointsNeededForNext > 0 ? (pointsInLevel / pointsNeededForNext) * 100 : 100;
 
   return (
-    <div className="flex flex-col h-[70vh] max-h-[500px] w-full overflow-hidden">
+    <div className="flex flex-col h-[85vh] max-h-[700px] w-full overflow-hidden">
       {/* HEADER - Fixed height, contained */}
       <div className="flex-shrink-0 p-4 border-b bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
-        {/* Title row */}
-        <div className="flex items-center gap-2 mb-3">
-          <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-          <span className="font-bold text-base">My Badges</span>
-          <Badge className="text-xs ml-auto flex-shrink-0 bg-blue-500 hover:bg-blue-600">
+        {/* Title row with badge count */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+            <span className="font-bold text-base">My Badges</span>
+          </div>
+          <Badge className="text-xs flex-shrink-0 bg-blue-500 hover:bg-blue-600">
             {data.earnedCount}/{data.totalCount}
           </Badge>
         </div>

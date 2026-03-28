@@ -191,17 +191,18 @@ export async function GET(request: NextRequest) {
     // Calculate level based on points - more challenging thresholds
     const LEVELS = [
       { level: 'Beginner', minPoints: 0 },
-      { level: 'Amateur', minPoints: 50 },
-      { level: 'Intermediate', minPoints: 150 },
-      { level: 'Advanced', minPoints: 300 },
-      { level: 'Expert', minPoints: 500 },
-      { level: 'Master', minPoints: 800 },
-      { level: 'Legend', minPoints: 1200 },
+      { level: 'Amateur', minPoints: 100 },
+      { level: 'Intermediate', minPoints: 250 },
+      { level: 'Advanced', minPoints: 450 },
+      { level: 'Expert', minPoints: 700 },
+      { level: 'Master', minPoints: 1000 },
+      { level: 'Legend', minPoints: 1500 },
+      { level: 'Immortal', minPoints: 2000 },
     ];
     
     let level = 'Beginner';
     let nextLevel = 'Amateur';
-    let pointsToNext = 50 - totalPoints;
+    let pointsToNext = 100 - totalPoints;
     
     for (let i = LEVELS.length - 1; i >= 0; i--) {
       if (totalPoints >= LEVELS[i].minPoints) {
