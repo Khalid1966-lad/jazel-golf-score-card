@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAllRoundAchievements } from '@/lib/achievements';
 
 // GET /api/rounds - Get user's rounds
 export async function GET(request: NextRequest) {
@@ -171,6 +172,10 @@ export async function POST(request: NextRequest) {
         scores: true,
       },
     });
+
+    // Check and award achievements (non-blocking)
+    checkAllRoundAchievements(userId, totalStrokes, holesPlayed, round.date)
+      .catch(err => console.error('Error checking achievements:', err));
 
     return NextResponse.json({ round });
   } catch (error) {
@@ -356,6 +361,10 @@ export async function PUT(request: NextRequest) {
         scores: true,
       },
     });
+
+    // Check and award achievements (non-blocking)
+    checkAllRoundAchievements(existingRound.userId, totalStrokes, holesPlayed || existingRound.holesPlayed, updatedRound.date)
+      .catch(err => console.error('Error checking achievements:', err));
 
     return NextResponse.json({ round: updatedRound });
   } catch (error) {

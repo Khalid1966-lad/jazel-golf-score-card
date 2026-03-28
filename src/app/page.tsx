@@ -40,6 +40,7 @@ import {
   type DistanceUnit 
 } from '@/lib/distance';
 import CourseMap from '@/components/CourseMap';
+import { BadgeCollection } from '@/components/badges/BadgeCollection';
 
 // Types
 interface CourseHole {
@@ -941,6 +942,7 @@ export default function JazelApp() {
   // Messages state
   const [messages, setMessages] = useState<Message[]>([]);
   const [showMessagesDialog, setShowMessagesDialog] = useState(false);
+  const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [showMessageDetailDialog, setShowMessageDetailDialog] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
@@ -2601,6 +2603,18 @@ export default function JazelApp() {
                       {messages.filter(m => !m.isRead).length}
                     </span>
                   )}
+                </Button>
+              )}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1"
+                  style={{color: '#39638b'}}
+                  onClick={() => setShowBadgesDialog(true)}
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span className="hidden sm:inline">Badges</span>
                 </Button>
               )}
               {user ? (
@@ -5949,7 +5963,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.34</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.44</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
@@ -5971,6 +5985,15 @@ export default function JazelApp() {
           onRefreshWeather={() => fetchWeather(undefined, true)}
         />
       )}
+
+      {/* Badges Dialog */}
+      <Dialog open={showBadgesDialog} onOpenChange={setShowBadgesDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-0">
+          {user && (
+            <BadgeCollection userId={user.id} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

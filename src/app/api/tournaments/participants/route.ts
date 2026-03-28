@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkTournamentAchievements } from '@/lib/achievements';
 
 // POST add a participant to a tournament
 export async function POST(request: NextRequest) {
@@ -74,6 +75,11 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Check and award tournament achievements (non-blocking)
+    const tournamentCount = await db.tournamentParticipant.count({ where: { userId } });
+    checkTournamentAchievements(userId, tournamentCount)
+      .catch(err => console.error('Error checking tournament achievements:', err));
 
     console.log('Participant added successfully:', participant);
     return NextResponse.json({ participant }, { status: 201 });

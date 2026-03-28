@@ -40,6 +40,7 @@ model User {
   groups               UserGroup[]
   assignedCourses      GolfCourse[]        @relation("CourseAdmin")
   adminPermission      AdminPermission?
+  achievements         UserAchievement[]
 
   @@map("users")
 }
@@ -371,4 +372,37 @@ model TournamentParticipant {
   
   @@unique([tournamentId, userId])
   @@map("tournament_participants")
+}
+
+// Achievement definitions - system-wide badges
+model Achievement {
+  id            String   @id @default(cuid())
+  code          String   @unique    // e.g., "first_round", "under_100_18"
+  name          String              // e.g., "First Swing"
+  description   String              // e.g., "Complete your first round"
+  icon          String              // emoji icon
+  category      String              // "rounds", "scoring", "courses", "tournaments", "special"
+  points        Int      @default(10)
+  holesRequired Int?               // 9, 18, or null for any
+  threshold     Int?               // e.g., 10 for "10 rounds", 100 for "under 100"
+  sortOrder     Int      @default(0) // for display ordering
+  createdAt     DateTime @default(now())
+  
+  userAchievements UserAchievement[]
+  
+  @@map("achievements")
+}
+
+// User's earned achievements - permanent record
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId]) // User can only earn each achievement once
+  @@map("user_achievements")
 }
