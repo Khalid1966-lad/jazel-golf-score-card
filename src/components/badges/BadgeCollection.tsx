@@ -42,24 +42,34 @@ interface AchievementProgress {
 }
 
 const categoryIcons: Record<string, React.ReactNode> = {
-  rounds: <Target className="w-3.5 h-3.5" />,
-  scoring: <Medal className="w-3.5 h-3.5" />,
-  courses: <MapPin className="w-3.5 h-3.5" />,
-  tournaments: <Trophy className="w-3.5 h-3.5" />,
-  handicap: <Star className="w-3.5 h-3.5" />,
-  social: <Users className="w-3.5 h-3.5" />,
-  special: <Sparkles className="w-3.5 h-3.5" />,
+  rounds: <Target className="w-3 h-3" />,
+  scoring: <Medal className="w-3 h-3" />,
+  courses: <MapPin className="w-3 h-3" />,
+  tournaments: <Trophy className="w-3 h-3" />,
+  handicap: <Star className="w-3 h-3" />,
+  social: <Users className="w-3 h-3" />,
+  special: <Sparkles className="w-3 h-3" />,
 };
 
 const categoryLabels: Record<string, string> = {
   rounds: 'Rounds',
   scoring: 'Scoring',
   courses: 'Courses',
-  tournaments: 'Tournaments',
+  tournaments: 'Tourn.',
   handicap: 'Handicap',
   social: 'Social',
   special: 'Special',
 };
+
+// Level definitions with clear thresholds
+const LEVELS = [
+  { level: 'Beginner', minPoints: 0 },
+  { level: 'Amateur', minPoints: 20 },
+  { level: 'Intermediate', minPoints: 50 },
+  { level: 'Advanced', minPoints: 100 },
+  { level: 'Expert', minPoints: 200 },
+  { level: 'Master', minPoints: 500 },
+];
 
 interface BadgeCollectionProps {
   userId: string;
@@ -69,6 +79,7 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   const [data, setData] = useState<AchievementProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [tabsRef, setTabsRef] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchAchievements();
@@ -114,24 +125,18 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
     ? data.achievements 
     : data.achievements.filter(a => a.category === selectedCategory);
 
-  const levelThresholds = [
-    { level: 'Beginner', points: 0 },
-    { level: 'Amateur', points: 20 },
-    { level: 'Intermediate', points: 50 },
-    { level: 'Advanced', points: 100 },
-    { level: 'Expert', points: 200 },
-    { level: 'Master', points: 500 },
-  ];
-  
-  const currentLevelIndex = levelThresholds.findIndex(l => l.level === data.level);
-  const nextThreshold = levelThresholds[currentLevelIndex + 1]?.points || 500;
-  const prevThreshold = levelThresholds[currentLevelIndex]?.points || 0;
-  const levelProgress = ((data.totalPoints - prevThreshold) / (nextThreshold - prevThreshold)) * 100;
+  // Calculate level progress
+  const currentLevelIndex = LEVELS.findIndex(l => l.level === data.level);
+  const nextLevelData = LEVELS[currentLevelIndex + 1];
+  const currentLevelData = LEVELS[currentLevelIndex];
+  const pointsInCurrentLevel = data.totalPoints - (currentLevelData?.minPoints || 0);
+  const pointsNeededForNext = nextLevelData ? nextLevelData.minPoints - (currentLevelData?.minPoints || 0) : 0;
+  const levelProgress = pointsNeededForNext > 0 ? (pointsInCurrentLevel / pointsNeededForNext) * 100 : 100;
 
   return (
     <div className="flex flex-col" style={{ maxHeight: '80vh' }}>
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 bg-card p-4 border-b">
+      <div className="flex-shrink-0 bg-card p-3 border-b">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-primary flex-shrink-0" />
@@ -142,7 +147,7 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
           </Badge>
         </div>
         
-        {/* Level Progress */}
+        {/* Level Progress with clear thresholds */}
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium flex items-center gap-1.5">
@@ -154,20 +159,45 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
             </span>
           </div>
           <Progress value={Math.min(100, levelProgress)} className="h-2" />
-          {data.pointsToNext > 0 && (
-            <p className="text-xs text-muted-foreground text-center">
-              {data.pointsToNext} pts to {data.nextLevel}
-            </p>
-          )}
+          
+          {/* Clear level progression */}
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>{currentLevelData?.minPoints || 0} pts</span>
+            {nextLevelData && (
+              <span className="font-medium text-primary">
+                Next: {nextLevelData.level} at {nextLevelData.minPoints} pts ({data.pointsToNext} more needed)
+              </span>
+            )}
+            <span>{nextLevelData?.minPoints || '∞'}</span>
+          </div>
+        </div>
+        
+        {/* Level legend */}
+        <div className="mt-2 flex flex-wrap gap-1 text-[9px] text-muted-foreground">
+          {LEVELS.map((l, i) => (
+            <span 
+              key={l.level} 
+              className={`px-1.5 py-0.5 rounded ${l.level === data.level ? 'bg-primary/10 text-primary font-medium' : ''}`}
+            >
+              {l.level}: {l.minPoints}pts
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* Category Tabs - Scrollable horizontally */}
+      {/* Category Tabs - Horizontally scrollable */}
       <div className="flex-shrink-0 border-b bg-muted/30">
-        <div className="flex gap-1 p-2 overflow-x-auto scrollbar-thin">
+        <div 
+          ref={setTabsRef}
+          className="flex gap-1 p-2 overflow-x-auto"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin'
+          }}
+        >
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+            className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${
               selectedCategory === 'all'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-background hover:bg-muted text-muted-foreground border'
@@ -182,7 +212,7 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-background hover:bg-muted text-muted-foreground border'
@@ -190,16 +220,16 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
               >
                 {categoryIcons[cat]}
                 {categoryLabels[cat]}
-                <span className="opacity-70">({earned}/{count})</span>
+                <span className="opacity-70">{earned}/{count}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Achievements Grid - Scrollable vertically */}
-      <div className="flex-1 overflow-y-auto p-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Achievements Grid - Single column, scrollable */}
+      <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex flex-col gap-2">
           {filteredAchievements.map(achievement => (
             <AchievementBadge key={achievement.id} achievement={achievement} />
           ))}
@@ -225,51 +255,46 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
   return (
     <div
       className={`
-        relative rounded-xl p-3 transition-all duration-300 cursor-pointer border
+        rounded-lg p-2.5 transition-all cursor-pointer border
         ${isEarned 
-          ? 'bg-card border-primary/30 hover:shadow-md' 
-          : 'bg-muted/50 border-border hover:bg-muted'
+          ? 'bg-card border-primary/30' 
+          : 'bg-muted/50 border-border'
         }
       `}
       onClick={() => setShowDetails(!showDetails)}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-2.5">
         {/* Icon */}
         <div className={`
-          flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+          flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl
           ${isEarned 
             ? 'bg-primary/10' 
             : 'bg-muted grayscale opacity-50'
           }
         `}>
-          {isEarned ? achievement.icon : <Lock className="w-5 h-5 text-muted-foreground" />}
+          {isEarned ? achievement.icon : <Lock className="w-4 h-4 text-muted-foreground" />}
         </div>
         
         {/* Content */}
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
             <h4 className={`font-semibold text-sm ${!isEarned && 'text-muted-foreground'}`}>
               {achievement.name}
             </h4>
-            {isEarned && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 border-primary/20">
-                +{achievement.points} pts
-              </Badge>
-            )}
+            <Badge variant={isEarned ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 h-4">
+              {isEarned ? '+' : ''}{achievement.points} pts
+            </Badge>
           </div>
           
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
             {achievement.description}
           </p>
           
-          {/* Points indicator for locked */}
+          {/* Progress for locked */}
           {!isEarned && (
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                {achievement.points} pts
-              </Badge>
-              <span className="text-[10px] text-muted-foreground">{achievement.progressText}</span>
-            </div>
+            <p className="text-[10px] text-primary mt-1 font-medium">
+              {achievement.progressText}
+            </p>
           )}
           
           {/* Earned date */}
@@ -285,10 +310,10 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
       
       {/* Expanded Details */}
       {showDetails && (
-        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground space-y-2">
+        <div className="mt-2 pt-2 border-t text-xs text-muted-foreground space-y-1.5">
           <p>{achievement.description}</p>
           <div className="flex items-center gap-2 text-primary font-medium">
-            <Info className="w-3.5 h-3.5" />
+            <Info className="w-3 h-3" />
             <span>
               {isEarned 
                 ? `You earned ${achievement.points} points!` 
