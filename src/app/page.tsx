@@ -3615,13 +3615,23 @@ export default function JazelApp() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                       >
-                        <Card className="transition-colors" style={{borderColor: '#8ab0d1'}}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#5d8cb8'}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}>
+                        <Card 
+                          className="transition-colors" 
+                          style={{
+                            borderColor: round.completed ? '#8ab0d1' : '#f59e0b',
+                            backgroundColor: round.completed ? 'white' : 'rgba(251, 191, 36, 0.1)'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.borderColor = round.completed ? '#5d8cb8' : '#d97706'}
+                          onMouseLeave={(e) => e.currentTarget.style.borderColor = round.completed ? '#8ab0d1' : '#f59e0b'}>
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <h4 className="font-medium">{round.course?.name || 'Unknown Course'}</h4>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium">{round.course?.name || 'Unknown Course'}</h4>
+                                  {!round.completed && (
+                                    <Badge className="bg-amber-500 text-white text-xs">Draft</Badge>
+                                  )}
+                                </div>
                                 <p className="text-sm text-muted-foreground">
                                   {new Date(round.date).toLocaleDateString('en-US', {
                                     weekday: 'short',
