@@ -1491,7 +1491,13 @@ export default function AdminPage() {
   // Fetch tournaments
   const fetchTournaments = async () => {
     try {
-      const response = await fetch('/api/tournaments');
+      const response = await fetch(`/api/tournaments?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setTournaments(data.tournaments || []);
@@ -1504,7 +1510,13 @@ export default function AdminPage() {
   // Select tournament and fetch participants
   const selectTournamentWithParticipants = async (tournament: Tournament) => {
     try {
-      const response = await fetch(`/api/tournaments?id=${tournament.id}&includeParticipants=true`);
+      const response = await fetch(`/api/tournaments?id=${tournament.id}&includeParticipants=true&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setSelectedTournament(data.tournament);
@@ -1726,7 +1738,13 @@ export default function AdminPage() {
   const fetchGroupsData = async (tournamentId: string) => {
     setTournamentGroupsLoading(true);
     try {
-      const response = await fetch(`/api/tournaments/groups?tournamentId=${tournamentId}`);
+      const response = await fetch(`/api/tournaments/groups?tournamentId=${tournamentId}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setGroupsData({ groups: data.groups, unassigned: data.unassigned });
@@ -1742,11 +1760,10 @@ export default function AdminPage() {
   const autoAssignGroups = async () => {
     if (!selectedTournament) return;
     
-    setTournamentGroupsLoading(true);
     try {
       const response = await fetch('/api/tournaments/groups', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
         body: JSON.stringify({
           tournamentId: selectedTournament.id,
           startTime: teeTimeForm.startTime,
@@ -1757,14 +1774,20 @@ export default function AdminPage() {
       if (response.ok) {
         const data = await response.json();
         toast({ title: 'Success', description: `${data.assigned} players assigned to groups` });
-        // Refresh groups data
-        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+        // Refresh groups data with cache-busting
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (groupsResponse.ok) {
           const groupsData = await groupsResponse.json();
           setGroupsData({ groups: groupsData.groups, unassigned: groupsData.unassigned });
         }
-        // Refresh tournament data
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+        // Refresh tournament data with cache-busting
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (tournResponse.ok) {
           const tournData = await tournResponse.json();
           setSelectedTournament(tournData.tournament);
@@ -1774,8 +1797,6 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to auto-assign groups', variant: 'destructive' });
-    } finally {
-      setTournamentGroupsLoading(false);
     }
   };
 
@@ -1783,11 +1804,10 @@ export default function AdminPage() {
   const assignPlayerToGroup = async (userId: string, groupLetter: string, position: number, teeTime?: string) => {
     if (!selectedTournament) return;
     
-    setTournamentGroupsLoading(true);
     try {
       const response = await fetch('/api/tournaments/groups', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
         body: JSON.stringify({
           tournamentId: selectedTournament.id,
           assignments: [{ userId, groupLetter, positionInGroup: position, teeTime }]
@@ -1798,14 +1818,20 @@ export default function AdminPage() {
         toast({ title: 'Success', description: 'Player assigned to group' });
         // Close the dialog
         setAssignPlayerDialogOpen(false);
-        // Refresh groups data
-        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+        // Refresh groups data with cache-busting
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (groupsResponse.ok) {
           const data = await groupsResponse.json();
           setGroupsData({ groups: data.groups, unassigned: data.unassigned });
         }
-        // Refresh tournament data
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+        // Refresh tournament data with cache-busting
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (tournResponse.ok) {
           const tournData = await tournResponse.json();
           setSelectedTournament(tournData.tournament);
@@ -1816,8 +1842,6 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to assign player to group', variant: 'destructive' });
-    } finally {
-      setTournamentGroupsLoading(false);
     }
   };
 
@@ -1825,22 +1849,28 @@ export default function AdminPage() {
   const removePlayerFromGroup = async (userId: string) => {
     if (!selectedTournament) return;
     
-    setTournamentGroupsLoading(true);
     try {
       const response = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&userId=${userId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Cache-Control': 'no-cache' }
       });
 
       if (response.ok) {
         toast({ title: 'Success', description: 'Player removed from group' });
-        // Refresh groups data
-        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}`);
+        // Refresh groups data with cache-busting
+        const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (groupsResponse.ok) {
           const data = await groupsResponse.json();
           setGroupsData({ groups: data.groups, unassigned: data.unassigned });
         }
-        // Refresh tournament data
-        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+        // Refresh tournament data with cache-busting
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
         if (tournResponse.ok) {
           const tournData = await tournResponse.json();
           setSelectedTournament(tournData.tournament);
@@ -1850,8 +1880,6 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to remove player from group', variant: 'destructive' });
-    } finally {
-      setTournamentGroupsLoading(false);
     }
   };
 
