@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     // Get all completed rounds for the user
     const rounds = await db.round.findMany({
       where: { userId, completed: true },
-      select: { totalStrokes: true, holesPlayed: true, courseId: true, date: true },
+      select: { totalStrokes: true, holesPlayed: true, courseId: true, date: true, completedAt: true },
     });
     
     const roundCount = rounds.length;
@@ -329,10 +329,12 @@ export async function POST(request: NextRequest) {
     if (tournamentCount >= 3 && await awardAchievement(userId, 'tournaments_3')) awardedBadges.push('tournaments_3');
     if (tournamentCount >= 5 && await awardAchievement(userId, 'tournaments_5')) awardedBadges.push('tournaments_5');
     
-    // Special achievements - check round times
+    // Special achievements - check round completion times
     for (const round of rounds) {
-      if (round.date) {
-        const hour = new Date(round.date).getHours();
+      // Use completedAt if available, otherwise fall back to date
+      const timeToCheck = round.completedAt || round.date;
+      if (timeToCheck) {
+        const hour = new Date(timeToCheck).getHours();
         if (hour < 7 && await awardAchievement(userId, 'early_bird')) awardedBadges.push('early_bird');
         if (hour >= 18 && await awardAchievement(userId, 'sunset_golfer')) awardedBadges.push('sunset_golfer');
       }

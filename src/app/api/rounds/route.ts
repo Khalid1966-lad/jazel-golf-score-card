@@ -231,6 +231,7 @@ export async function POST(request: NextRequest) {
         greensInReg,
         penalties,
         completed: true,
+        completedAt: new Date(),  // Track when round was actually finished
         playerNames,
         scores: {
           create: allScores,
@@ -421,6 +422,7 @@ export async function PUT(request: NextRequest) {
         fairwaysTotal,
         greensInReg,
         penalties,
+        completedAt: existingRound.completedAt || new Date(),  // Set if not already set
         scores: {
           create: allScores,
         },
