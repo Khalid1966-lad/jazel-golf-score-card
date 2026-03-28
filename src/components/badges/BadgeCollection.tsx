@@ -14,7 +14,8 @@ import {
   Lock,
   Sparkles,
   ChevronRight,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 
 interface Achievement {
@@ -42,13 +43,13 @@ interface AchievementProgress {
 }
 
 const categoryIcons: Record<string, React.ReactNode> = {
-  rounds: <Target className="w-4 h-4" />,
-  scoring: <Medal className="w-4 h-4" />,
-  courses: <MapPin className="w-4 h-4" />,
-  tournaments: <Trophy className="w-4 h-4" />,
-  handicap: <Star className="w-4 h-4" />,
-  social: <Users className="w-4 h-4" />,
-  special: <Sparkles className="w-4 h-4" />,
+  rounds: <Target className="w-3.5 h-3.5" />,
+  scoring: <Medal className="w-3.5 h-3.5" />,
+  courses: <MapPin className="w-3.5 h-3.5" />,
+  tournaments: <Trophy className="w-3.5 h-3.5" />,
+  handicap: <Star className="w-3.5 h-3.5" />,
+  social: <Users className="w-3.5 h-3.5" />,
+  special: <Sparkles className="w-3.5 h-3.5" />,
 };
 
 const categoryLabels: Record<string, string> = {
@@ -59,6 +60,17 @@ const categoryLabels: Record<string, string> = {
   handicap: 'Handicap',
   social: 'Social',
   special: 'Special',
+};
+
+// Category colors
+const categoryColors: Record<string, string> = {
+  rounds: 'bg-emerald-500',
+  scoring: 'bg-amber-500',
+  courses: 'bg-sky-500',
+  tournaments: 'bg-purple-500',
+  handicap: 'bg-rose-500',
+  social: 'bg-teal-500',
+  special: 'bg-gradient-to-r from-pink-500 to-violet-500',
 };
 
 interface BadgeCollectionProps {
@@ -94,16 +106,18 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
 
   if (loading) {
     return (
-      <Card className="overflow-hidden">
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+      </div>
     );
   }
 
   if (!data) {
-    return null;
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Unable to load achievements
+      </div>
+    );
   }
 
   // Group achievements by category
@@ -130,95 +144,92 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   const levelProgress = ((data.totalPoints - prevThreshold) / (nextThreshold - prevThreshold)) * 100;
 
   return (
-    <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card to-muted/30">
-      {/* Header with Level Progress */}
-      <CardHeader className="pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Trophy className="w-5 h-5 text-primary" />
-            Badge Collection
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="font-mono">
-              {data.earnedCount}/{data.totalCount}
-            </Badge>
+    <div className="flex flex-col h-full">
+      {/* Header with Level Progress - Fixed */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30 p-4 border-b">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Trophy className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <h2 className="font-bold text-base sm:text-lg truncate">My Badges</h2>
           </div>
+          <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs flex-shrink-0">
+            {data.earnedCount}/{data.totalCount}
+          </Badge>
         </div>
         
-        {/* Level Progress Bar */}
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium flex items-center gap-1">
-              <Star className="w-4 h-4 text-yellow-500" />
-              {data.level}
+        {/* Level Progress */}
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="font-semibold flex items-center gap-1 text-amber-700 dark:text-amber-400">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+              <span className="truncate">{data.level}</span>
             </span>
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {data.totalPoints} pts
             </span>
           </div>
-          <div className="relative">
-            <Progress value={Math.min(100, levelProgress)} className="h-2" />
-            {data.pointsToNext > 0 && (
-              <span className="absolute right-0 -top-6 text-xs text-muted-foreground">
-                {data.pointsToNext} pts to {data.nextLevel}
-              </span>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-0">
-        {/* Category Tabs */}
-        <div className="border-b overflow-x-auto">
-          <div className="flex gap-1 p-2 min-w-max">
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                selectedCategory === 'all'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'hover:bg-muted text-muted-foreground'
-              }`}
-            >
-              All ({data.achievements.length})
-            </button>
-            {categories.map(cat => {
-              const count = data.achievements.filter(a => a.category === cat).length;
-              const earned = data.achievements.filter(a => a.category === cat && a.earned).length;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                    selectedCategory === cat
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'hover:bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {categoryIcons[cat]}
-                  {categoryLabels[cat]}
-                  <span className="text-xs opacity-70">({earned}/{count})</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Achievements Grid */}
-        <div className="p-4 max-h-[400px] overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {filteredAchievements.map(achievement => (
-              <AchievementBadge key={achievement.id} achievement={achievement} />
-            ))}
-          </div>
-          
-          {filteredAchievements.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No achievements in this category
-            </div>
+          <Progress value={Math.min(100, levelProgress)} className="h-2 bg-amber-100 dark:bg-amber-900/30" />
+          {data.pointsToNext > 0 && (
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
+              {data.pointsToNext} pts to <span className="font-medium">{data.nextLevel}</span>
+            </p>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Category Tabs - Scrollable */}
+      <div className="flex-shrink-0 border-b bg-muted/30 overflow-x-auto">
+        <div className="flex gap-1 p-2 min-w-max">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+              selectedCategory === 'all'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'bg-background hover:bg-muted text-muted-foreground border'
+            }`}
+          >
+            All ({data.achievements.length})
+          </button>
+          {categories.map(cat => {
+            const count = data.achievements.filter(a => a.category === cat).length;
+            const earned = data.achievements.filter(a => a.category === cat && a.earned).length;
+            const isActive = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 whitespace-nowrap ${
+                  isActive
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'bg-background hover:bg-muted text-muted-foreground border'
+                }`}
+              >
+                <span className={isActive ? 'text-white' : categoryColors[cat].replace('bg-', 'text-')}>
+                  {categoryIcons[cat]}
+                </span>
+                <span className="hidden sm:inline">{categoryLabels[cat]}</span>
+                <span className="text-[10px] opacity-80">({earned}/{count})</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Achievements Grid - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-2 sm:p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+          {filteredAchievements.map(achievement => (
+            <AchievementBadge key={achievement.id} achievement={achievement} />
+          ))}
+        </div>
+        
+        {filteredAchievements.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            No achievements in this category
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -229,74 +240,87 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
   const isEarned = achievement.earned;
   const progressPercent = Math.min(100, achievement.progress);
   
+  // Category colors for badge borders
+  const categoryBorderColors: Record<string, string> = {
+    rounds: 'border-l-emerald-500',
+    scoring: 'border-l-amber-500',
+    courses: 'border-l-sky-500',
+    tournaments: 'border-l-purple-500',
+    handicap: 'border-l-rose-500',
+    social: 'border-l-teal-500',
+    special: 'border-l-pink-500',
+  };
+  
   return (
     <div
       className={`
-        relative rounded-xl p-3 transition-all duration-300 cursor-pointer
+        relative rounded-lg p-2.5 sm:p-3 transition-all duration-300 cursor-pointer border-l-4
         ${isEarned 
-          ? 'bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 hover:shadow-md hover:border-primary/40' 
-          : 'bg-muted/50 border border-border/50 hover:bg-muted/80'
+          ? `bg-gradient-to-br from-white to-amber-50 dark:from-card dark:to-amber-950/20 shadow-sm hover:shadow-md ${categoryBorderColors[achievement.category]}` 
+          : `bg-muted/30 hover:bg-muted/50 border-l-gray-300 dark:border-l-gray-600`
         }
       `}
       onClick={() => setShowDetails(!showDetails)}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2.5">
         {/* Icon */}
         <div className={`
-          flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+          flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-xl sm:text-2xl
           ${isEarned 
-            ? 'bg-gradient-to-br from-primary/20 to-primary/10 shadow-sm' 
+            ? 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 shadow-sm' 
             : 'bg-muted grayscale opacity-50'
           }
         `}>
-          {isEarned ? achievement.icon : <Lock className="w-5 h-5 text-muted-foreground" />}
+          {isEarned ? achievement.icon : <Lock className="w-4 h-4 text-muted-foreground" />}
         </div>
         
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className={`font-semibold text-sm truncate ${!isEarned && 'text-muted-foreground'}`}>
+          <div className="flex items-center gap-1.5">
+            <h4 className={`font-semibold text-xs sm:text-sm truncate ${!isEarned && 'text-muted-foreground'}`}>
               {achievement.name}
             </h4>
             {isEarned && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 border-primary/20">
+              <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-500 text-white border-0">
                 +{achievement.points}
               </Badge>
             )}
           </div>
           
-          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">
             {achievement.description}
           </p>
           
-          {/* Progress bar for locked achievements */}
-          {!isEarned && progressPercent > 0 && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+          {/* Progress for locked achievements */}
+          {!isEarned && (
+            <div className="mt-1.5">
+              <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground mb-0.5">
                 <span>{achievement.progressText}</span>
-                <span>{Math.round(progressPercent)}%</span>
+                {progressPercent > 0 && <span>{Math.round(progressPercent)}%</span>}
               </div>
-              <Progress value={progressPercent} className="h-1" />
+              {progressPercent > 0 && (
+                <Progress value={progressPercent} className="h-1" />
+              )}
             </div>
           )}
           
           {/* Earned date */}
           {isEarned && achievement.earnedAt && (
-            <p className="text-[10px] text-muted-foreground mt-1">
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">
               Earned {new Date(achievement.earnedAt).toLocaleDateString()}
             </p>
           )}
         </div>
         
-        <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showDetails ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform flex-shrink-0 ${showDetails ? 'rotate-90' : ''}`} />
       </div>
       
       {/* Expanded Details */}
       {showDetails && (
-        <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+        <div className="mt-2 pt-2 border-t border-border/50 text-[10px] sm:text-xs text-muted-foreground">
           <p>{achievement.description}</p>
           {!isEarned && (
-            <p className="mt-1 font-medium text-primary">
+            <p className="mt-1 font-medium text-amber-600 dark:text-amber-400">
               {achievement.progressText}
             </p>
           )}
@@ -337,13 +361,13 @@ export function BadgeSummary({ userId }: BadgeCollectionProps) {
     .slice(0, 5);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-primary" />
+          <Trophy className="w-4 h-4 text-amber-500" />
           <span className="font-medium text-sm">Badges</span>
         </div>
-        <Badge variant="secondary" className="text-xs">
+        <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
           {data.earnedCount}/{data.totalCount}
         </Badge>
       </div>
@@ -353,7 +377,7 @@ export function BadgeSummary({ userId }: BadgeCollectionProps) {
         {recentAchievements.map(a => (
           <div
             key={a.id}
-            className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-lg"
+            className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center text-lg"
             title={a.name}
           >
             {a.icon}
@@ -368,7 +392,7 @@ export function BadgeSummary({ userId }: BadgeCollectionProps) {
       
       {/* Points */}
       <div className="text-xs text-muted-foreground">
-        <Star className="w-3 h-3 inline mr-1 text-yellow-500" />
+        <Star className="w-3 h-3 inline mr-1 fill-amber-400 text-amber-500" />
         {data.totalPoints} points • {data.level}
       </div>
     </div>
