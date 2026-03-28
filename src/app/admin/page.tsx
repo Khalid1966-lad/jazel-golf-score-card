@@ -1883,6 +1883,57 @@ export default function AdminPage() {
     }
   };
 
+  // Delete an entire group - moves all players to unassigned
+  const deleteGroup = async (groupLetter: string) => {
+    if (!selectedTournament) return;
+    
+    const groupParticipants = groupsData.groups[groupLetter] || [];
+    if (groupParticipants.length === 0) {
+      // Empty group - just remove from local state
+      setGroupsData(prev => {
+        const newGroups = { ...prev.groups };
+        delete newGroups[groupLetter];
+        return { groups: newGroups, unassigned: prev.unassigned };
+      });
+      return;
+    }
+    
+    try {
+      // Remove all players from this group one by one
+      const removePromises = groupParticipants.map(p => 
+        fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&userId=${p.userId}`, {
+          method: 'DELETE',
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+      );
+      
+      await Promise.all(removePromises);
+      
+      toast({ title: 'Success', description: `Group ${groupLetter} deleted. ${groupParticipants.length} players moved to unassigned.` });
+      
+      // Refresh groups data with cache-busting
+      const groupsResponse = await fetch(`/api/tournaments/groups?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (groupsResponse.ok) {
+        const data = await groupsResponse.json();
+        setGroupsData({ groups: data.groups, unassigned: data.unassigned });
+      }
+      // Refresh tournament data with cache-busting
+      const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (tournResponse.ok) {
+        const tournData = await tournResponse.json();
+        setSelectedTournament(tournData.tournament);
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete group', variant: 'destructive' });
+    }
+  };
+
   // Get unassigned participants for dropdown
   const getUnassignedParticipants = () => {
     return groupsData.unassigned;
@@ -2869,7 +2920,18 @@ export default function AdminPage() {
                                 <div key={letter} className="border rounded-lg overflow-hidden">
                                   <div className="bg-primary/10 px-3 py-2 flex items-center justify-between">
                                     <span className="font-semibold">Group {letter}</span>
-                                    {teeTime && <span className="text-sm text-muted-foreground">{teeTime}</span>}
+                                    <div className="flex items-center gap-2">
+                                      {teeTime && <span className="text-sm text-muted-foreground">{teeTime}</span>}
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={() => deleteGroup(letter)}
+                                        title="Delete group"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
                                   <div className="p-2 space-y-1">
                                     {[1, 2, 3, 4].map((position) => {
