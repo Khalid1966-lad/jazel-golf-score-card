@@ -45,7 +45,7 @@ const ACHIEVEMENT_DEFINITIONS = [
   { code: 'group_leader', name: 'Group Captain', description: 'Create a golfer group', icon: '👨‍✈️', category: 'social', points: 30, threshold: 1, sortOrder: 61 },
   
   // ==================== SPECIAL BADGES ====================
-  { code: 'early_bird', name: 'Early Bird', description: 'Complete a round before 10 AM', icon: '🌅', category: 'special', points: 20, sortOrder: 70 },
+  { code: 'early_bird', name: 'Early Bird', description: 'Complete a round before 11 AM', icon: '🌅', category: 'special', points: 20, sortOrder: 70 },
   { code: 'sunset_golfer', name: 'Sunset Golfer', description: 'Complete a round after 6 PM', icon: '🌇', category: 'special', points: 20, sortOrder: 71 },
 ];
 
@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
       const timeToCheck = round.completedAt || round.date;
       if (timeToCheck) {
         const hour = new Date(timeToCheck).getHours();
-        if (hour < 10 && await awardAchievement(userId, 'early_bird')) awardedBadges.push('early_bird');
+        if (hour < 11 && await awardAchievement(userId, 'early_bird')) awardedBadges.push('early_bird');
         if (hour >= 18 && await awardAchievement(userId, 'sunset_golfer')) awardedBadges.push('sunset_golfer');
       }
     }

@@ -296,7 +296,7 @@ const achievements = [
   {
     code: 'early_bird',
     name: 'Early Bird',
-    description: 'Complete a round before 7 AM',
+    description: 'Complete a round before 11 AM',
     icon: '🌅',
     category: 'special',
     points: 20,

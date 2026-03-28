@@ -114,8 +114,14 @@ export default function GuidePage() {
       content: <TournamentsSection />
     },
     {
+      id: 'achievements',
+      title: 'Achievements',
+      icon: <Star className="w-4 h-4" />,
+      content: <AchievementsSection />
+    },
+    {
       id: 'weather',
-      title: 'Weather & Compass',
+      title: 'Weather',
       icon: <Cloud className="w-4 h-4" />,
       content: <WeatherSection />
     },
@@ -280,11 +286,11 @@ function WelcomeSection() {
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
               <h3 className="font-semibold flex items-center gap-2 mb-2">
-                <Compass className="w-4 h-4" style={{ color: '#39638b' }} />
-                Wind & Flag Compass
+                <Trophy className="w-4 h-4" style={{ color: '#39638b' }} />
+                Achievements & Badges
               </h3>
               <p className="text-sm text-muted-foreground">
-                Know exactly which way the wind blows and where the flag is.
+                Earn badges and level up as you complete rounds and hit milestones.
               </p>
             </div>
           </div>
@@ -775,52 +781,6 @@ function MapsSection() {
               based on your bag setup. Just tap the target point and see the recommendation instantly.
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Compass className="w-5 h-5" style={{ color: '#39638b' }} />
-            Built-in Compass
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Tap the compass button in the map to see a full-screen compass showing wind direction and flag location:
-          </p>
-          
-          {/* Compass Screenshot */}
-          <div className="rounded-lg overflow-hidden border shadow-md">
-            <img 
-              src="/compass.jpeg" 
-              alt="Compass showing wind and flag direction" 
-              className="w-full h-auto object-cover"
-            />
-            <div className="p-3 bg-muted/50 text-center text-sm text-muted-foreground">
-              Compass showing wind direction (blue) and flag direction (red)
-            </div>
-          </div>
-          
-          <div className="grid gap-3">
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="w-4 h-4 bg-red-600" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
-              <div>
-                <span className="font-medium">Red Arrow - Flag Direction</span>
-                <p className="text-sm text-muted-foreground">Points to the green - know exactly where to aim</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="w-4 h-4" style={{ backgroundColor: '#1e3a5f', clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
-              <div>
-                <span className="font-medium">Blue Arrow - Wind Direction</span>
-                <p className="text-sm text-muted-foreground">Shows where the wind is coming from</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            The compass rotates as you turn your phone, so you always know which way to face.
-          </p>
         </CardContent>
       </Card>
 
@@ -1364,6 +1324,119 @@ function TournamentsSection() {
   );
 }
 
+// Achievements Section
+function AchievementsSection() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-3">
+            <Star className="w-5 h-5" style={{ color: '#39638b' }} />
+            Achievements & Badges
+          </CardTitle>
+          <CardDescription>
+            Earn badges and level up as you play
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Jazel Golf rewards your progress with achievements and badges. Complete challenges to earn points, 
+            unlock new badges, and climb the levels from Beginner to Legend!
+          </p>
+          
+          {/* Badges Screenshot */}
+          <div className="rounded-lg overflow-hidden border shadow-md">
+            <img 
+              src="/badges.jpeg" 
+              alt="Achievements and badges collection" 
+              className="w-full h-auto object-cover"
+            />
+            <div className="p-3 bg-muted/50 text-center text-sm text-muted-foreground">
+              Your badge collection showing earned and locked achievements
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Badge Categories</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3">
+            {[
+              { icon: '📅', name: 'Rounds Badges', desc: 'Complete your first round, 5 rounds, 10, 25, 50, or 100 rounds' },
+              { icon: '🎯', name: 'Scoring Badges', desc: 'Break 100, 90, 80, or shoot par on 18 or 9 holes' },
+              { icon: '🗺️', name: 'Courses Badges', desc: 'Play at 3, 5, or 10 different courses' },
+              { icon: '🏟️', name: 'Tournament Badges', desc: 'Enter tournaments, finish on the podium, or win' },
+              { icon: '📈', name: 'Handicap Badges', desc: 'Improve your handicap or reach single digits' },
+              { icon: '👥', name: 'Social Badges', desc: 'Join or create golfer groups' },
+              { icon: '🌅', name: 'Special Badges', desc: 'Complete rounds at special times (Early Bird, Sunset Golfer)' }
+            ].map((category) => (
+              <div key={category.name} className="flex items-center gap-4 p-3 border rounded-lg">
+                <span className="text-2xl">{category.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium">{category.name}</span>
+                  <p className="text-sm text-muted-foreground">{category.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Level System</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            As you earn badges, you accumulate points and advance through levels:
+          </p>
+          <div className="grid gap-2">
+            {[
+              { level: 'Beginner', points: '0 pts', color: 'bg-gray-100 text-gray-700' },
+              { level: 'Amateur', points: '100 pts', color: 'bg-green-100 text-green-700' },
+              { level: 'Intermediate', points: '250 pts', color: 'bg-blue-100 text-blue-700' },
+              { level: 'Advanced', points: '450 pts', color: 'bg-amber-100 text-amber-700' },
+              { level: 'Expert', points: '700 pts', color: 'bg-purple-100 text-purple-700' },
+              { level: 'Master', points: '1000 pts', color: 'bg-pink-100 text-pink-700' },
+              { level: 'Legend', points: '1500 pts', color: 'bg-amber-50 text-amber-800 border border-amber-300' },
+              { level: 'Immortal', points: '2000 pts', color: 'bg-gradient-to-r from-amber-400 to-amber-600 text-white' }
+            ].map((item) => (
+              <div key={item.level} className="flex items-center justify-between p-2 border rounded-lg">
+                <span className="font-medium">{item.level}</span>
+                <Badge variant="outline" className={item.color}>{item.points}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <RefreshCw className="w-5 h-5" style={{ color: '#39638b' }} />
+            Checking Achievements
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Achievements are automatically checked when you complete a round. You can also tap the refresh 
+            button in the badges section to re-check for any newly earned achievements.
+          </p>
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-700">
+              <strong>Tip:</strong> Some achievements like scoring badges require completing rounds with 
+              a total score entered. Make sure to fill in all your hole scores to qualify!
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // Weather Section
 function WeatherSection() {
   return (
@@ -1431,45 +1504,7 @@ function WeatherSection() {
           </p>
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-700">
-              <strong>Tip:</strong> Wind direction is crucial for club selection. Check weather before each shot on windy days.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Compass className="w-5 h-5" style={{ color: '#39638b' }} />
-            Wind Compass
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            The built-in compass shows wind direction relative to where you're facing. 
-            Available in both the Weather tab and the Course Map.
-          </p>
-          
-          {/* Compass Screenshot */}
-          <div className="rounded-lg overflow-hidden border shadow-md">
-            <img 
-              src="/compass.jpeg" 
-              alt="Wind compass showing direction" 
-              className="w-full h-auto object-cover"
-            />
-            <div className="p-3 bg-muted/50 text-center text-sm text-muted-foreground">
-              Live compass: red arrow points to the flag, blue arrow shows wind direction
-            </div>
-          </div>
-          
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-800 flex items-center gap-2 mb-2">
-              <span>💡</span>
-              Pro Tip
-            </h4>
-            <p className="text-sm text-blue-700">
-              Hold your phone flat and away from metal objects for accurate compass readings. 
-              Wave your phone in a figure-8 pattern if the compass seems stuck.
+              <strong>Tip:</strong> Check weather conditions before your round to plan your strategy.
             </p>
           </div>
         </CardContent>
