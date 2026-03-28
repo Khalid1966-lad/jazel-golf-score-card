@@ -10,6 +10,7 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   golf_courses: [],
   settings: [],
   golfer_groups: [],
+  achievements: [],  // System-wide achievement definitions
   
   // Tables depending on users
   admin_permissions: ['users'],
@@ -19,6 +20,7 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   user_clubs: ['users'],
   favorites: ['users', 'golf_courses'],
   user_groups: ['users', 'golfer_groups'],
+  user_achievements: ['users', 'achievements'],  // User's earned achievements
   
   // Tables depending on golf_courses
   course_holes: ['golf_courses'],
@@ -251,6 +253,26 @@ async function fetchAllData() {
     errors.push(`tournament_participants: ${e instanceof Error ? e.message : 'Unknown error'}`);
     data.tournament_participants = [];
     statistics.tournament_participants = 0;
+  }
+
+  // Fetch achievements (system-wide definitions)
+  try {
+    data.achievements = await db.achievement.findMany();
+    statistics.achievements = data.achievements.length;
+  } catch (e) {
+    errors.push(`achievements: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.achievements = [];
+    statistics.achievements = 0;
+  }
+
+  // Fetch user achievements (user's earned achievements)
+  try {
+    data.user_achievements = await db.userAchievement.findMany();
+    statistics.user_achievements = data.user_achievements.length;
+  } catch (e) {
+    errors.push(`user_achievements: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.user_achievements = [];
+    statistics.user_achievements = 0;
   }
 
   return { data, statistics, errors };

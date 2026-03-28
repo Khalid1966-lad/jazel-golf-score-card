@@ -8,6 +8,7 @@ const TABLE_TO_MODEL: Record<string, string> = {
   golf_courses: 'golfCourse',
   settings: 'setting',
   golfer_groups: 'golferGroup',
+  achievements: 'achievement',
   admin_permissions: 'adminPermission',
   admin_sessions: 'adminSession',
   password_reset_tokens: 'passwordResetToken',
@@ -15,6 +16,7 @@ const TABLE_TO_MODEL: Record<string, string> = {
   user_clubs: 'userClub',
   favorites: 'favorite',
   user_groups: 'userGroup',
+  user_achievements: 'userAchievement',
   course_holes: 'courseHole',
   course_tees: 'courseTee',
   tournaments: 'tournament',
@@ -32,6 +34,7 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   golf_courses: [],
   settings: [],
   golfer_groups: [],
+  achievements: [],  // System-wide achievement definitions
   admin_permissions: ['users'],
   admin_sessions: ['users'],
   password_reset_tokens: ['users'],
@@ -39,6 +42,7 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   user_clubs: ['users'],
   favorites: ['users', 'golf_courses'],
   user_groups: ['users', 'golfer_groups'],
+  user_achievements: ['users', 'achievements'],  // User's earned achievements
   course_holes: ['golf_courses'],
   course_tees: ['golf_courses'],
   tournaments: ['golf_courses'],
@@ -128,6 +132,7 @@ async function clearAllTables(): Promise<{ cleared: string[]; errors: string[] }
         case 'golfCourse': await db.golfCourse.deleteMany(); break;
         case 'setting': await db.setting.deleteMany(); break;
         case 'golferGroup': await db.golferGroup.deleteMany(); break;
+        case 'achievement': await db.achievement.deleteMany(); break;
         case 'adminPermission': await db.adminPermission.deleteMany(); break;
         case 'adminSession': await db.adminSession.deleteMany(); break;
         case 'passwordResetToken': await db.passwordResetToken.deleteMany(); break;
@@ -135,6 +140,7 @@ async function clearAllTables(): Promise<{ cleared: string[]; errors: string[] }
         case 'userClub': await db.userClub.deleteMany(); break;
         case 'favorite': await db.favorite.deleteMany(); break;
         case 'userGroup': await db.userGroup.deleteMany(); break;
+        case 'userAchievement': await db.userAchievement.deleteMany(); break;
         case 'courseHole': await db.courseHole.deleteMany(); break;
         case 'courseTee': await db.courseTee.deleteMany(); break;
         case 'tournament': await db.tournament.deleteMany(); break;
@@ -217,6 +223,13 @@ async function insertRecords(
             create: filteredRecord as Parameters<typeof db.golferGroup.create>[0]['data']
           }); 
           break;
+        case 'achievement': 
+          await db.achievement.upsert({ 
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.achievement.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.achievement.create>[0]['data']
+          }); 
+          break;
         case 'adminPermission': 
           await db.adminPermission.upsert({ 
             where: { id },
@@ -264,6 +277,13 @@ async function insertRecords(
             where: { id },
             update: filteredRecord as Parameters<typeof db.userGroup.update>[0]['data'],
             create: filteredRecord as Parameters<typeof db.userGroup.create>[0]['data']
+          }); 
+          break;
+        case 'userAchievement': 
+          await db.userAchievement.upsert({ 
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.userAchievement.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.userAchievement.create>[0]['data']
           }); 
           break;
         case 'courseHole': 
