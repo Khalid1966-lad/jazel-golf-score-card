@@ -1,6 +1,75 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAllRoundAchievements } from '@/lib/achievements';
+
+// Helper to award achievements inline
+async function awardAchievement(userId: string, code: string): Promise<boolean> {
+  try {
+    const achievement = await db.achievement.findUnique({ where: { code } });
+    if (!achievement) return false;
+    
+    const existing = await db.userAchievement.findUnique({
+      where: { userId_achievementId: { userId, achievementId: achievement.id } }
+    });
+    if (existing) return false;
+    
+    await db.userAchievement.create({
+      data: { userId, achievementId: achievement.id }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Check achievements after round completion
+async function checkRoundAchievements(userId: string, score: number, holesPlayed: number) {
+  try {
+    // Get round count
+    const roundCount = await db.round.count({ where: { userId, completed: true } });
+    
+    // Award round achievements
+    if (roundCount >= 1) await awardAchievement(userId, 'first_round');
+    if (roundCount >= 5) await awardAchievement(userId, 'rounds_5');
+    if (roundCount >= 10) await awardAchievement(userId, 'rounds_10');
+    if (roundCount >= 25) await awardAchievement(userId, 'rounds_25');
+    if (roundCount >= 50) await awardAchievement(userId, 'rounds_50');
+    if (roundCount >= 100) await awardAchievement(userId, 'rounds_100');
+    
+    // Award score achievements
+    if (holesPlayed === 18) {
+      if (score < 100) await awardAchievement(userId, 'under_100_18');
+      if (score < 90) await awardAchievement(userId, 'under_90_18');
+      if (score < 80) await awardAchievement(userId, 'under_80_18');
+      if (score <= 72) await awardAchievement(userId, 'par_18');
+    } else if (holesPlayed === 9) {
+      if (score < 50) await awardAchievement(userId, 'under_50_9');
+      if (score < 45) await awardAchievement(userId, 'under_45_9');
+      if (score < 40) await awardAchievement(userId, 'under_40_9');
+    }
+    
+    // Check course achievements
+    const uniqueCourses = await db.round.findMany({
+      where: { userId, completed: true },
+      select: { courseId: true },
+      distinct: ['courseId'],
+    });
+    if (uniqueCourses.length >= 3) await awardAchievement(userId, 'courses_3');
+    if (uniqueCourses.length >= 5) await awardAchievement(userId, 'courses_5');
+    if (uniqueCourses.length >= 10) await awardAchievement(userId, 'courses_10');
+    
+    // Check home course
+    const roundsPerCourse = await db.round.groupBy({
+      by: ['courseId'],
+      where: { userId, completed: true },
+      _count: { id: true },
+    });
+    if (roundsPerCourse.some(r => r._count.id >= 5)) {
+      await awardAchievement(userId, 'home_course');
+    }
+  } catch (err) {
+    console.error('Error checking achievements:', err);
+  }
+}
 
 // GET /api/rounds - Get user's rounds
 export async function GET(request: NextRequest) {
@@ -174,7 +243,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Check and award achievements (non-blocking)
-    checkAllRoundAchievements(userId, totalStrokes, holesPlayed, round.date)
+    checkRoundAchievements(userId, totalStrokes, holesPlayed)
       .catch(err => console.error('Error checking achievements:', err));
 
     return NextResponse.json({ round });
@@ -363,7 +432,7 @@ export async function PUT(request: NextRequest) {
     });
 
     // Check and award achievements (non-blocking)
-    checkAllRoundAchievements(existingRound.userId, totalStrokes, holesPlayed || existingRound.holesPlayed, updatedRound.date)
+    checkRoundAchievements(existingRound.userId, totalStrokes, holesPlayed || existingRound.holesPlayed)
       .catch(err => console.error('Error checking achievements:', err));
 
     return NextResponse.json({ round: updatedRound });

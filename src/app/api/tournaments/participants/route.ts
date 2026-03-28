@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { checkTournamentAchievements } from '@/lib/achievements';
+
+// Helper to award tournament achievements inline
+async function awardTournamentAchievements(userId: string, tournamentCount: number) {
+  try {
+    const awardAchievement = async (code: string) => {
+      const achievement = await db.achievement.findUnique({ where: { code } });
+      if (!achievement) return;
+      
+      const existing = await db.userAchievement.findUnique({
+        where: { userId_achievementId: { userId, achievementId: achievement.id } }
+      });
+      if (existing) return;
+      
+      await db.userAchievement.create({
+        data: { userId, achievementId: achievement.id }
+      });
+    };
+    
+    if (tournamentCount >= 1) await awardAchievement('first_tournament');
+    if (tournamentCount >= 3) await awardAchievement('tournaments_3');
+    if (tournamentCount >= 5) await awardAchievement('tournaments_5');
+  } catch (err) {
+    console.error('Error awarding tournament achievements:', err);
+  }
+}
 
 // POST add a participant to a tournament
 export async function POST(request: NextRequest) {
@@ -78,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // Check and award tournament achievements (non-blocking)
     const tournamentCount = await db.tournamentParticipant.count({ where: { userId } });
-    checkTournamentAchievements(userId, tournamentCount)
+    awardTournamentAchievements(userId, tournamentCount)
       .catch(err => console.error('Error checking tournament achievements:', err));
 
     console.log('Participant added successfully:', participant);
