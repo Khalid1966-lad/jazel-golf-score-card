@@ -235,3 +235,121 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// Helper to award an achievement
+async function awardAchievement(userId: string, code: string): Promise<boolean> {
+  try {
+    const achievement = await db.achievement.findUnique({ where: { code } });
+    if (!achievement) return false;
+    
+    const existing = await db.userAchievement.findUnique({
+      where: { userId_achievementId: { userId, achievementId: achievement.id } }
+    });
+    if (existing) return false;
+    
+    await db.userAchievement.create({
+      data: { userId, achievementId: achievement.id }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// POST - Re-check and award all eligible achievements for a user
+export async function POST(request: NextRequest) {
+  try {
+    const { userId } = await request.json();
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+    }
+    
+    // Ensure achievements are seeded
+    await ensureAchievementsSeeded();
+    
+    const awardedBadges: string[] = [];
+    
+    // Get all completed rounds for the user
+    const rounds = await db.round.findMany({
+      where: { userId, completed: true },
+      select: { totalStrokes: true, holesPlayed: true, courseId: true, date: true },
+    });
+    
+    const roundCount = rounds.length;
+    
+    // Award round achievements
+    if (roundCount >= 1 && await awardAchievement(userId, 'first_round')) awardedBadges.push('first_round');
+    if (roundCount >= 5 && await awardAchievement(userId, 'rounds_5')) awardedBadges.push('rounds_5');
+    if (roundCount >= 10 && await awardAchievement(userId, 'rounds_10')) awardedBadges.push('rounds_10');
+    if (roundCount >= 25 && await awardAchievement(userId, 'rounds_25')) awardedBadges.push('rounds_25');
+    if (roundCount >= 50 && await awardAchievement(userId, 'rounds_50')) awardedBadges.push('rounds_50');
+    if (roundCount >= 100 && await awardAchievement(userId, 'rounds_100')) awardedBadges.push('rounds_100');
+    
+    // Get best scores per holes played
+    const rounds9 = rounds.filter(r => r.holesPlayed === 9 && r.totalStrokes);
+    const rounds18 = rounds.filter(r => r.holesPlayed === 18 && r.totalStrokes);
+    
+    const best9 = rounds9.length > 0 ? Math.min(...rounds9.map(r => r.totalStrokes!)) : null;
+    const best18 = rounds18.length > 0 ? Math.min(...rounds18.map(r => r.totalStrokes!)) : null;
+    
+    // Award 18-hole scoring achievements
+    if (best18 !== null) {
+      if (best18 < 100 && await awardAchievement(userId, 'under_100_18')) awardedBadges.push('under_100_18');
+      if (best18 < 90 && await awardAchievement(userId, 'under_90_18')) awardedBadges.push('under_90_18');
+      if (best18 < 80 && await awardAchievement(userId, 'under_80_18')) awardedBadges.push('under_80_18');
+      if (best18 <= 72 && await awardAchievement(userId, 'par_18')) awardedBadges.push('par_18');
+    }
+    
+    // Award 9-hole scoring achievements
+    if (best9 !== null) {
+      if (best9 < 50 && await awardAchievement(userId, 'under_50_9')) awardedBadges.push('under_50_9');
+      if (best9 < 45 && await awardAchievement(userId, 'under_45_9')) awardedBadges.push('under_45_9');
+      if (best9 < 40 && await awardAchievement(userId, 'under_40_9')) awardedBadges.push('under_40_9');
+    }
+    
+    // Course achievements
+    const uniqueCourses = [...new Set(rounds.map(r => r.courseId))];
+    if (uniqueCourses.length >= 3 && await awardAchievement(userId, 'courses_3')) awardedBadges.push('courses_3');
+    if (uniqueCourses.length >= 5 && await awardAchievement(userId, 'courses_5')) awardedBadges.push('courses_5');
+    if (uniqueCourses.length >= 10 && await awardAchievement(userId, 'courses_10')) awardedBadges.push('courses_10');
+    
+    // Home course achievement
+    const courseCounts: Record<string, number> = {};
+    rounds.forEach(r => {
+      courseCounts[r.courseId] = (courseCounts[r.courseId] || 0) + 1;
+    });
+    if (Object.values(courseCounts).some(count => count >= 5)) {
+      if (await awardAchievement(userId, 'home_course')) awardedBadges.push('home_course');
+    }
+    
+    // Tournament achievements
+    const tournamentCount = await db.tournamentParticipant.count({ where: { userId } });
+    if (tournamentCount >= 1 && await awardAchievement(userId, 'first_tournament')) awardedBadges.push('first_tournament');
+    if (tournamentCount >= 3 && await awardAchievement(userId, 'tournaments_3')) awardedBadges.push('tournaments_3');
+    if (tournamentCount >= 5 && await awardAchievement(userId, 'tournaments_5')) awardedBadges.push('tournaments_5');
+    
+    // Special achievements - check round times
+    for (const round of rounds) {
+      if (round.date) {
+        const hour = new Date(round.date).getHours();
+        if (hour < 7 && await awardAchievement(userId, 'early_bird')) awardedBadges.push('early_bird');
+        if (hour >= 18 && await awardAchievement(userId, 'sunset_golfer')) awardedBadges.push('sunset_golfer');
+      }
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      awardedBadges,
+      message: awardedBadges.length > 0 
+        ? `Awarded ${awardedBadges.length} new achievement(s)!` 
+        : 'No new achievements to award'
+    });
+  } catch (error) {
+    console.error('Error rechecking achievements:', error);
+    return NextResponse.json(
+      { error: 'Failed to recheck achievements', details: String(error) },
+      { status: 500 }
+    );
+  }
+}

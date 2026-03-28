@@ -13,7 +13,8 @@ import {
   Lock,
   Sparkles,
   ChevronRight,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 interface Achievement {
@@ -68,6 +69,7 @@ interface BadgeCollectionProps {
 export function BadgeCollection({ userId }: BadgeCollectionProps) {
   const [data, setData] = useState<AchievementProgress | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
@@ -89,6 +91,30 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
       console.error('Error fetching achievements:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshAchievements = async () => {
+    try {
+      setRefreshing(true);
+      // First, re-check all achievements
+      const checkResponse = await fetch('/api/achievements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      
+      if (checkResponse.ok) {
+        const result = await checkResponse.json();
+        console.log('Achievement check result:', result);
+      }
+      
+      // Then refresh the data
+      await fetchAchievements();
+    } catch (error) {
+      console.error('Error refreshing achievements:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -127,22 +153,30 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
     <div className="flex flex-col h-[85vh] max-h-[700px] w-full overflow-hidden">
       {/* HEADER - Fixed height, contained */}
       <div className="flex-shrink-0 p-4 border-b bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
-        {/* Title row with badge count */}
+        {/* Title row */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
             <span className="font-bold text-base">My Badges</span>
           </div>
-          <Badge className="text-xs flex-shrink-0 bg-blue-500 hover:bg-blue-600">
-            {data.earnedCount}/{data.totalCount}
-          </Badge>
+          <button
+            onClick={refreshAchievements}
+            disabled={refreshing}
+            className="p-1.5 rounded hover:bg-white/50 dark:hover:bg-black/20 transition-colors"
+            title="Refresh achievements"
+          >
+            <RefreshCw className={`w-4 h-4 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
-        
-        {/* Level row */}
+
+        {/* Level row with badge count */}
         <div className="flex items-center justify-between text-sm mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-400 flex-shrink-0" />
             <span className="font-semibold truncate">{currentLevelData?.level}</span>
+            <Badge className="text-xs flex-shrink-0 bg-blue-500 hover:bg-blue-600">
+              {data.earnedCount}/{data.totalCount}
+            </Badge>
           </div>
           <span className="text-muted-foreground flex-shrink-0 font-medium">{data.totalPoints} pts</span>
         </div>
@@ -221,15 +255,15 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   );
 }
 
-// Category colors for badges
+// Category colors for badges - matching the tab button colors
 const categoryColors: Record<string, string> = {
-  rounds: 'border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20',
-  scoring: 'border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20',
-  courses: 'border-l-sky-500 bg-sky-50/50 dark:bg-sky-950/20',
-  tournaments: 'border-l-purple-500 bg-purple-50/50 dark:bg-purple-950/20',
-  handicap: 'border-l-rose-500 bg-rose-50/50 dark:bg-rose-950/20',
-  social: 'border-l-teal-500 bg-teal-50/50 dark:bg-teal-950/20',
-  special: 'border-l-pink-500 bg-pink-50/50 dark:bg-pink-950/20',
+  rounds: 'border-l-emerald-500 bg-emerald-100/80 dark:bg-emerald-900/30',
+  scoring: 'border-l-amber-500 bg-amber-100/80 dark:bg-amber-900/30',
+  courses: 'border-l-sky-500 bg-sky-100/80 dark:bg-sky-900/30',
+  tournaments: 'border-l-purple-500 bg-purple-100/80 dark:bg-purple-900/30',
+  handicap: 'border-l-rose-500 bg-rose-100/80 dark:bg-rose-900/30',
+  social: 'border-l-teal-500 bg-teal-100/80 dark:bg-teal-900/30',
+  special: 'border-l-pink-500 bg-pink-100/80 dark:bg-pink-900/30',
 };
 
 // Achievement Badge - Compact
