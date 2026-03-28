@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -15,7 +14,7 @@ import {
   Sparkles,
   ChevronRight,
   Loader2,
-  X
+  Info
 } from 'lucide-react';
 
 interface Achievement {
@@ -62,17 +61,6 @@ const categoryLabels: Record<string, string> = {
   special: 'Special',
 };
 
-// Category colors
-const categoryColors: Record<string, string> = {
-  rounds: 'bg-emerald-500',
-  scoring: 'bg-amber-500',
-  courses: 'bg-sky-500',
-  tournaments: 'bg-purple-500',
-  handicap: 'bg-rose-500',
-  social: 'bg-teal-500',
-  special: 'bg-gradient-to-r from-pink-500 to-violet-500',
-};
-
 interface BadgeCollectionProps {
   userId: string;
 }
@@ -107,7 +95,7 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -120,15 +108,12 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
     );
   }
 
-  // Group achievements by category
   const categories = ['rounds', 'scoring', 'courses', 'tournaments', 'handicap', 'social', 'special'];
 
-  // Filter by selected category
   const filteredAchievements = selectedCategory === 'all' 
     ? data.achievements 
     : data.achievements.filter(a => a.category === selectedCategory);
 
-  // Calculate level progress
   const levelThresholds = [
     { level: 'Beginner', points: 0 },
     { level: 'Amateur', points: 20 },
@@ -144,47 +129,47 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
   const levelProgress = ((data.totalPoints - prevThreshold) / (nextThreshold - prevThreshold)) * 100;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with Level Progress - Fixed */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-yellow-950/30 p-4 border-b">
+    <div className="flex flex-col h-[85vh] sm:h-[80vh] max-h-[600px]">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 bg-card p-4 border-b">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <Trophy className="w-5 h-5 text-amber-500 flex-shrink-0" />
-            <h2 className="font-bold text-base sm:text-lg truncate">My Badges</h2>
+            <Trophy className="w-5 h-5 text-primary flex-shrink-0" />
+            <h2 className="font-bold text-lg truncate">My Badges</h2>
           </div>
-          <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs flex-shrink-0">
+          <Badge variant="secondary" className="text-xs flex-shrink-0 font-mono">
             {data.earnedCount}/{data.totalCount}
           </Badge>
         </div>
         
         {/* Level Progress */}
-        <div className="mt-3 space-y-1.5">
-          <div className="flex items-center justify-between text-xs sm:text-sm">
-            <span className="font-semibold flex items-center gap-1 text-amber-700 dark:text-amber-400">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-              <span className="truncate">{data.level}</span>
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium flex items-center gap-1.5">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-500" />
+              {data.level}
             </span>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground font-mono text-sm">
               {data.totalPoints} pts
             </span>
           </div>
-          <Progress value={Math.min(100, levelProgress)} className="h-2 bg-amber-100 dark:bg-amber-900/30" />
+          <Progress value={Math.min(100, levelProgress)} className="h-2" />
           {data.pointsToNext > 0 && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
-              {data.pointsToNext} pts to <span className="font-medium">{data.nextLevel}</span>
+            <p className="text-xs text-muted-foreground text-center">
+              {data.pointsToNext} pts to {data.nextLevel}
             </p>
           )}
         </div>
       </div>
 
-      {/* Category Tabs - Scrollable */}
+      {/* Category Tabs - Fixed */}
       <div className="flex-shrink-0 border-b bg-muted/30 overflow-x-auto">
         <div className="flex gap-1 p-2 min-w-max">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
               selectedCategory === 'all'
-                ? 'bg-amber-500 text-white shadow-sm'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-background hover:bg-muted text-muted-foreground border'
             }`}
           >
@@ -193,31 +178,28 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
           {categories.map(cat => {
             const count = data.achievements.filter(a => a.category === cat).length;
             const earned = data.achievements.filter(a => a.category === cat && a.earned).length;
-            const isActive = selectedCategory === cat;
             return (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 whitespace-nowrap ${
-                  isActive
-                    ? 'bg-amber-500 text-white shadow-sm'
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  selectedCategory === cat
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-background hover:bg-muted text-muted-foreground border'
                 }`}
               >
-                <span className={isActive ? 'text-white' : categoryColors[cat].replace('bg-', 'text-')}>
-                  {categoryIcons[cat]}
-                </span>
-                <span className="hidden sm:inline">{categoryLabels[cat]}</span>
-                <span className="text-[10px] opacity-80">({earned}/{count})</span>
+                {categoryIcons[cat]}
+                {categoryLabels[cat]}
+                <span className="opacity-70">({earned}/{count})</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Achievements Grid - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+      {/* Achievements Grid - SCROLLABLE */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filteredAchievements.map(achievement => (
             <AchievementBadge key={achievement.id} achievement={achievement} />
           ))}
@@ -240,89 +222,88 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
   const isEarned = achievement.earned;
   const progressPercent = Math.min(100, achievement.progress);
   
-  // Category colors for badge borders
-  const categoryBorderColors: Record<string, string> = {
-    rounds: 'border-l-emerald-500',
-    scoring: 'border-l-amber-500',
-    courses: 'border-l-sky-500',
-    tournaments: 'border-l-purple-500',
-    handicap: 'border-l-rose-500',
-    social: 'border-l-teal-500',
-    special: 'border-l-pink-500',
-  };
-  
   return (
     <div
       className={`
-        relative rounded-lg p-2.5 sm:p-3 transition-all duration-300 cursor-pointer border-l-4
+        relative rounded-xl p-3 transition-all duration-300 cursor-pointer border
         ${isEarned 
-          ? `bg-gradient-to-br from-white to-amber-50 dark:from-card dark:to-amber-950/20 shadow-sm hover:shadow-md ${categoryBorderColors[achievement.category]}` 
-          : `bg-muted/30 hover:bg-muted/50 border-l-gray-300 dark:border-l-gray-600`
+          ? 'bg-card border-primary/30 hover:shadow-md' 
+          : 'bg-muted/50 border-border hover:bg-muted'
         }
       `}
       onClick={() => setShowDetails(!showDetails)}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-3">
         {/* Icon */}
         <div className={`
-          flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-xl sm:text-2xl
+          flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl
           ${isEarned 
-            ? 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 shadow-sm' 
+            ? 'bg-primary/10' 
             : 'bg-muted grayscale opacity-50'
           }
         `}>
-          {isEarned ? achievement.icon : <Lock className="w-4 h-4 text-muted-foreground" />}
+          {isEarned ? achievement.icon : <Lock className="w-5 h-5 text-muted-foreground" />}
         </div>
         
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h4 className={`font-semibold text-xs sm:text-sm truncate ${!isEarned && 'text-muted-foreground'}`}>
+          <div className="flex items-center gap-2">
+            <h4 className={`font-semibold text-sm truncate ${!isEarned && 'text-muted-foreground'}`}>
               {achievement.name}
             </h4>
             {isEarned && (
-              <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-500 text-white border-0">
-                +{achievement.points}
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 border-primary/20">
+                +{achievement.points} pts
               </Badge>
             )}
           </div>
           
-          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">
+          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
             {achievement.description}
           </p>
           
-          {/* Progress for locked achievements */}
+          {/* Points indicator for locked */}
           {!isEarned && (
-            <div className="mt-1.5">
-              <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground mb-0.5">
-                <span>{achievement.progressText}</span>
-                {progressPercent > 0 && <span>{Math.round(progressPercent)}%</span>}
-              </div>
-              {progressPercent > 0 && (
-                <Progress value={progressPercent} className="h-1" />
-              )}
+            <div className="flex items-center gap-2 mt-1.5">
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                {achievement.points} pts
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">{achievement.progressText}</span>
             </div>
           )}
           
           {/* Earned date */}
           {isEarned && achievement.earnedAt && (
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">
+            <p className="text-[10px] text-muted-foreground mt-1">
               Earned {new Date(achievement.earnedAt).toLocaleDateString()}
             </p>
           )}
         </div>
         
-        <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform flex-shrink-0 ${showDetails ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${showDetails ? 'rotate-90' : ''}`} />
       </div>
       
       {/* Expanded Details */}
       {showDetails && (
-        <div className="mt-2 pt-2 border-t border-border/50 text-[10px] sm:text-xs text-muted-foreground">
+        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground space-y-2">
           <p>{achievement.description}</p>
-          {!isEarned && (
-            <p className="mt-1 font-medium text-amber-600 dark:text-amber-400">
-              {achievement.progressText}
-            </p>
+          <div className="flex items-center gap-2 text-primary font-medium">
+            <Info className="w-3.5 h-3.5" />
+            <span>
+              {isEarned 
+                ? `You earned ${achievement.points} points!` 
+                : `Complete this to earn ${achievement.points} points`
+              }
+            </span>
+          </div>
+          {!isEarned && progressPercent > 0 && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-[10px] mb-1">
+                <span>Progress</span>
+                <span>{Math.round(progressPercent)}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-1.5" />
+            </div>
           )}
         </div>
       )}
@@ -361,13 +342,13 @@ export function BadgeSummary({ userId }: BadgeCollectionProps) {
     .slice(0, 5);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-amber-500" />
+          <Trophy className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">Badges</span>
         </div>
-        <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
+        <Badge variant="secondary" className="text-xs">
           {data.earnedCount}/{data.totalCount}
         </Badge>
       </div>
@@ -377,7 +358,7 @@ export function BadgeSummary({ userId }: BadgeCollectionProps) {
         {recentAchievements.map(a => (
           <div
             key={a.id}
-            className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center text-lg"
+            className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-lg"
             title={a.name}
           >
             {a.icon}
@@ -392,7 +373,7 @@ export function BadgeSummary({ userId }: BadgeCollectionProps) {
       
       {/* Points */}
       <div className="text-xs text-muted-foreground">
-        <Star className="w-3 h-3 inline mr-1 fill-amber-400 text-amber-500" />
+        <Star className="w-3 h-3 inline mr-1 fill-yellow-400 text-yellow-500" />
         {data.totalPoints} points • {data.level}
       </div>
     </div>
