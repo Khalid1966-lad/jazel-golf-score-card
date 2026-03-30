@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
 import {
   Trophy,
   Target,
@@ -115,16 +116,25 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       });
-      
+
       if (checkResponse.ok) {
         const result = await checkResponse.json();
         console.log('Achievement check result:', result);
+
+        // Show toast notifications
+        if (result.awardedBadges && result.awardedBadges.length > 0) {
+          toast.success(`Awarded ${result.awardedBadges.length} new badge(s)!`);
+        }
+        if (result.removedBadges && result.removedBadges.length > 0) {
+          toast.info(`Removed ${result.removedBadges.length} incorrect badge(s)`);
+        }
       }
-      
+
       // Then refresh the data
       await fetchAchievements();
     } catch (error) {
       console.error('Error refreshing achievements:', error);
+      toast.error('Failed to refresh achievements');
     } finally {
       setRefreshing(false);
     }

@@ -596,9 +596,8 @@ export async function POST(request: NextRequest) {
     const groupMembership = await db.userGroup.count({ where: { userId } });
     if (groupMembership >= 1 && await awardAchievement(userId, 'group_member')) awardedBadges.push('group_member');
 
-    // Group leadership
-    const groupLeadership = await db.golferGroup.count({ where: { createdById: userId } });
-    if (groupLeadership >= 1 && await awardAchievement(userId, 'group_leader')) awardedBadges.push('group_leader');
+    // Group leadership - skip for now (no createdById field in GolferGroup model)
+    // Users can still get this badge through other means if implemented later
 
     // Friendly Golfer - play with 3 different partners
     const allPlayerNames = new Set<string>();
@@ -729,7 +728,7 @@ export async function POST(request: NextRequest) {
       ...(user && user.name && user.city && user.country ? ['guide_reader'] : []),
       // Social
       ...(groupMembership >= 1 ? ['group_member'] : []),
-      ...(groupLeadership >= 1 ? ['group_leader'] : []),
+      // group_leader - not currently tracked
       ...(allPlayerNames.size >= 3 ? ['friendly_golfer'] : []),
       // Special - Early Bird and Sunset (need to check each round)
     ]);
