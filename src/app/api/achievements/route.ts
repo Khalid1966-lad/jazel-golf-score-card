@@ -291,14 +291,34 @@ async function awardAchievement(userId: string, code: string): Promise<boolean> 
   try {
     const achievement = await db.achievement.findUnique({ where: { code } });
     if (!achievement) return false;
-    
+
     const existing = await db.userAchievement.findUnique({
       where: { userId_achievementId: { userId, achievementId: achievement.id } }
     });
     if (existing) return false;
-    
+
     await db.userAchievement.create({
       data: { userId, achievementId: achievement.id }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Helper to remove an achievement
+async function removeAchievement(userId: string, code: string): Promise<boolean> {
+  try {
+    const achievement = await db.achievement.findUnique({ where: { code } });
+    if (!achievement) return false;
+
+    const existing = await db.userAchievement.findUnique({
+      where: { userId_achievementId: { userId, achievementId: achievement.id } }
+    });
+    if (!existing) return false;
+
+    await db.userAchievement.delete({
+      where: { userId_achievementId: { userId, achievementId: achievement.id } }
     });
     return true;
   } catch {
@@ -403,17 +423,29 @@ export async function POST(request: NextRequest) {
     let hasParStreak5 = false;
     let hasBogeyFree9 = false;
 
-    // Analyze all round scores
+    // Analyze all round scores - ONLY for the connected user (playerIndex === 0)
     for (const round of rounds) {
       if (round.scores && Array.isArray(round.scores)) {
-        const scores = round.scores as Array<{ strokes: number; par?: number; fairwayHit?: boolean; greenInReg?: boolean }>;
+        // Filter to only the connected user's scores (playerIndex === 0)
+        const scores = round.scores as Array<{
+          strokes: number;
+          par?: number;
+          fairwayHit?: boolean;
+          greenInReg?: boolean;
+          playerIndex?: number;
+          holeNumber?: number;
+        }>;
+        const userScores = scores.filter(s => (s.playerIndex ?? 0) === 0);
+
+        // Sort by hole number to maintain order for streaks
+        const sortedScores = [...userScores].sort((a, b) => (a.holeNumber || 0) - (b.holeNumber || 0));
 
         // Count birdies, pars, fairways, greens
         let consecutiveBirdies = 0;
         let consecutivePars = 0;
         let bogeyFreeCount = 0;
 
-        for (const score of scores) {
+        for (const score of sortedScores) {
           const par = score.par || 4;
           const diff = score.strokes - par;
 
@@ -446,7 +478,7 @@ export async function POST(request: NextRequest) {
 
         // Check for bogey-free 9 holes (first 9 or second 9 of 18)
         if (round.holesPlayed === 9 || round.holesPlayed === 18) {
-          const scoresToCheck = round.holesPlayed === 9 ? scores : scores.slice(0, 9);
+          const scoresToCheck = round.holesPlayed === 9 ? sortedScores : sortedScores.slice(0, 9);
           const isBogeyFree = scoresToCheck.every(s => {
             const par = s.par || 4;
             return s.strokes <= par;
@@ -640,12 +672,114 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ==================== VALIDATION: Remove incorrectly awarded badges ====================
+    // Build list of badges the user SHOULD have based on calculations above
+    const validBadgeCodes = new Set<string>([
+      // Rounds
+      ...(roundCount >= 1 ? ['first_round'] : []),
+      ...(roundCount >= 5 ? ['rounds_5'] : []),
+      ...(roundCount >= 10 ? ['rounds_10'] : []),
+      ...(roundCount >= 25 ? ['rounds_25'] : []),
+      ...(roundCount >= 50 ? ['rounds_50'] : []),
+      ...(roundCount >= 100 ? ['rounds_100'] : []),
+      // Scoring 18
+      ...(best18 !== null && best18 < 100 ? ['under_100_18'] : []),
+      ...(best18 !== null && best18 < 90 ? ['under_90_18'] : []),
+      ...(best18 !== null && best18 < 80 ? ['under_80_18'] : []),
+      ...(best18 !== null && best18 <= 72 ? ['par_18'] : []),
+      // Scoring 9
+      ...(best9 !== null && best9 < 50 ? ['under_50_9'] : []),
+      ...(best9 !== null && best9 < 45 ? ['under_45_9'] : []),
+      ...(best9 !== null && best9 < 40 ? ['under_40_9'] : []),
+      // Birdies
+      ...(totalBirdies >= 1 ? ['first_birdie'] : []),
+      ...(totalBirdies >= 5 ? ['birdie_hunter'] : []),
+      ...(totalBirdies >= 10 ? ['birdie_bonanza'] : []),
+      ...(totalBirdies >= 25 ? ['birdie_master'] : []),
+      ...(totalBirdies >= 50 ? ['birdie_king'] : []),
+      ...(hasBirdieStreak ? ['birdie_streak'] : []),
+      // Pars
+      ...(totalPars >= 1 ? ['first_par'] : []),
+      ...(totalPars >= 10 ? ['par_collector'] : []),
+      ...(totalPars >= 25 ? ['par_machine'] : []),
+      ...(hasParStreak3 ? ['par_streak'] : []),
+      ...(hasParStreak5 ? ['par_perfect'] : []),
+      // Courses
+      ...(uniqueCourses.length >= 3 ? ['courses_3'] : []),
+      ...(uniqueCourses.length >= 5 ? ['courses_5'] : []),
+      ...(uniqueCourses.length >= 10 ? ['courses_10'] : []),
+      ...(Object.values(courseCounts).some(count => count >= 5) ? ['home_course'] : []),
+      // Tournaments
+      ...(tournamentCount >= 1 ? ['first_tournament'] : []),
+      ...(tournamentCount >= 3 ? ['tournaments_3'] : []),
+      ...(tournamentCount >= 5 ? ['tournaments_5'] : []),
+      // On-Course
+      ...(totalFairways >= 10 ? ['fairway_finder'] : []),
+      ...(totalGreens >= 10 ? ['green_machine'] : []),
+      ...(hasBogeyFree9 ? ['bogey_free_9'] : []),
+      // Profile
+      ...(user && user.name && user.city && user.country ? ['profile_complete'] : []),
+      ...(user && user.avatar ? ['photo_added'] : []),
+      ...(user && user.handicap !== null && user.handicap !== undefined ? ['handicap_set'] : []),
+      ...(clubCount >= 1 ? ['first_club'] : []),
+      ...(clubCount >= 5 ? ['bag_ready'] : []),
+      // App
+      ...(hasWeatherData ? ['gps_user'] : []),
+      ...(roundCount >= 1 ? ['stat_tracker'] : []),
+      ...(user && user.name && user.city && user.country ? ['guide_reader'] : []),
+      // Social
+      ...(groupMembership >= 1 ? ['group_member'] : []),
+      ...(groupLeadership >= 1 ? ['group_leader'] : []),
+      ...(allPlayerNames.size >= 3 ? ['friendly_golfer'] : []),
+      // Special - Early Bird and Sunset (need to check each round)
+    ]);
+
+    // Check for steady_eddy separately (needs round iteration)
+    for (const round of rounds) {
+      if (round.totalStrokes && round.holesPlayed) {
+        const expectedPar = round.holesPlayed === 9 ? 36 : 72;
+        if (round.totalStrokes === expectedPar) {
+          validBadgeCodes.add('steady_eddy');
+          break;
+        }
+      }
+    }
+
+    // Check for Early Bird and Sunset badges
+    for (const round of rounds) {
+      const timeToCheck = round.completedAt || round.date;
+      if (timeToCheck) {
+        const hour = new Date(timeToCheck).getHours();
+        if (hour < 11) validBadgeCodes.add('early_bird');
+        if (hour >= 18) validBadgeCodes.add('sunset_golfer');
+      }
+    }
+
+    // Get all earned achievements and remove any that shouldn't be there
+    const earnedAchievements = await db.userAchievement.findMany({
+      where: { userId },
+      include: { achievement: { select: { code: true } } }
+    });
+
+    const removedBadges: string[] = [];
+    for (const earned of earnedAchievements) {
+      if (!validBadgeCodes.has(earned.achievement.code)) {
+        // This badge shouldn't be there - remove it
+        if (await removeAchievement(userId, earned.achievement.code)) {
+          removedBadges.push(earned.achievement.code);
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       awardedBadges,
+      removedBadges,
       message: awardedBadges.length > 0
         ? `Awarded ${awardedBadges.length} new achievement(s)!`
-        : 'No new achievements to award'
+        : removedBadges.length > 0
+          ? `Removed ${removedBadges.length} incorrect badge(s)`
+          : 'No new achievements to award'
     });
   } catch (error) {
     console.error('Error rechecking achievements:', error);
