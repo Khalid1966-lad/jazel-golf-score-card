@@ -85,13 +85,25 @@ export async function PUT(
     const body = await request.json();
     const { holes } = body;
 
-    // Update each hole
-    const updatePromises = holes.map((hole: { id: string; par: number; handicap: number }) =>
+    // Update each hole including GPS coordinates
+    const updatePromises = holes.map((hole: {
+      id: string;
+      par: number;
+      handicap: number;
+      greenLatitude?: number | null;
+      greenLongitude?: number | null;
+      teeLatitude?: number | null;
+      teeLongitude?: number | null;
+    }) =>
       db.courseHole.update({
         where: { id: hole.id },
         data: {
           par: hole.par,
-          handicap: hole.handicap
+          handicap: hole.handicap,
+          greenLatitude: hole.greenLatitude ?? null,
+          greenLongitude: hole.greenLongitude ?? null,
+          teeLatitude: hole.teeLatitude ?? null,
+          teeLongitude: hole.teeLongitude ?? null
         }
       })
     );
