@@ -377,6 +377,16 @@ export async function POST(request: NextRequest) {
         playerNames: true,
         weatherTemp: true,
         weatherWind: true,
+        course: {
+          select: {
+            holes: {
+              select: {
+                holeNumber: true,
+                par: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { date: 'asc' }
     });
@@ -424,8 +434,17 @@ export async function POST(request: NextRequest) {
     let hasBogeyFree9 = false;
 
     // Analyze all round scores - ONLY for the connected user (playerIndex === 0)
+    console.log(`[Achievements] Analyzing ${rounds.length} rounds for user ${userId}`);
     for (const round of rounds) {
       if (round.scores && Array.isArray(round.scores)) {
+        // Build a map of hole number to par from the course holes
+        const holeParMap = new Map<number, number>();
+        if (round.course && round.course.holes) {
+          round.course.holes.forEach(h => {
+            holeParMap.set(h.holeNumber, h.par);
+          });
+        }
+
         // Filter to only the connected user's scores (playerIndex === 0)
         const scores = round.scores as Array<{
           strokes: number;
@@ -436,6 +455,7 @@ export async function POST(request: NextRequest) {
           holeNumber?: number;
         }>;
         const userScores = scores.filter(s => (s.playerIndex ?? 0) === 0);
+        console.log(`[Achievements] Round has ${scores.length} total scores, ${userScores.length} for main player (playerIndex=0)`);
 
         // Sort by hole number to maintain order for streaks
         const sortedScores = [...userScores].sort((a, b) => (a.holeNumber || 0) - (b.holeNumber || 0));
@@ -446,7 +466,9 @@ export async function POST(request: NextRequest) {
         let bogeyFreeCount = 0;
 
         for (const score of sortedScores) {
-          const par = score.par || 4;
+          // Get par from course holes, not from score (par is not stored in RoundScore)
+          const holeNumber = score.holeNumber || 1;
+          const par = holeParMap.get(holeNumber) || 4;
           const diff = score.strokes - par;
 
           // Birdie check
@@ -480,13 +502,17 @@ export async function POST(request: NextRequest) {
         if (round.holesPlayed === 9 || round.holesPlayed === 18) {
           const scoresToCheck = round.holesPlayed === 9 ? sortedScores : sortedScores.slice(0, 9);
           const isBogeyFree = scoresToCheck.every(s => {
-            const par = s.par || 4;
+            const holeNum = s.holeNumber || 1;
+            const par = holeParMap.get(holeNum) || 4;
             return s.strokes <= par;
           });
           if (isBogeyFree) hasBogeyFree9 = true;
         }
       }
     }
+
+    console.log(`[Achievements] Total birdies for user: ${totalBirdies}, Total pars: ${totalPars}`);
+    console.log(`[Achievements] Birdie streak: ${hasBirdieStreak}, Par streaks: 3=${hasParStreak3}, 5=${hasParStreak5}`);
 
     // Award birdie badges
     if (totalBirdies >= 1 && await awardAchievement(userId, 'first_birdie')) awardedBadges.push('first_birdie');
@@ -536,12 +562,14 @@ export async function POST(request: NextRequest) {
     }
 
     // ==================== CONSISTENCY BADGES ====================
+    // Initialize consistency tracking variables (needed for both awarding and validation)
+    const roundsByWeek: Record<string, number> = {};
+    const roundsByMonth: Record<string, number> = {};
+    const roundsByDay: Record<string, number> = {};
+    let consecutiveWeeks = 1;
+
     if (rounds.length >= 3) {
       // Check for rounds in same week
-      const roundsByWeek: Record<string, number> = {};
-      const roundsByMonth: Record<string, number> = {};
-      const roundsByDay: Record<string, number> = {};
-
       rounds.forEach(r => {
         const date = new Date(r.date || r.completedAt || new Date());
         const weekKey = `${date.getFullYear()}-W${getWeekNumber(date)}`;
@@ -569,7 +597,6 @@ export async function POST(request: NextRequest) {
 
       // Streak starter - 3 consecutive weeks
       const weeks = Object.keys(roundsByWeek).sort();
-      let consecutiveWeeks = 1;
       for (let i = 1; i < weeks.length; i++) {
         if (isConsecutiveWeek(weeks[i-1], weeks[i])) {
           consecutiveWeeks++;
@@ -673,6 +700,20 @@ export async function POST(request: NextRequest) {
 
     // ==================== VALIDATION: Remove incorrectly awarded badges ====================
     // Build list of badges the user SHOULD have based on calculations above
+    // IMPORTANT: Only include badges that can be validated programmatically
+    // Badges like 'welcoming', 'group_leader', 'podium_finish', 'tournament_winner' cannot be validated here
+    // and should NOT be removed even if not in this set
+
+    const NON_VALIDATABLE_BADGES = new Set([
+      'welcoming',           // Requires tracking first-time user plays - complex validation
+      'group_leader',        // Requires checking GolferGroup.createdById - not implemented
+      'podium_finish',       // Requires tournament results calculation
+      'tournament_winner',   // Requires tournament results calculation
+      'handicap_improve_3',  // Requires historical handicap tracking
+      'handicap_improve_5',  // Requires historical handicap tracking
+      'single_digit',        // Could be validated but handicap may have changed since award
+    ]);
+
     const validBadgeCodes = new Set<string>([
       // Rounds
       ...(roundCount >= 1 ? ['first_round'] : []),
@@ -690,14 +731,14 @@ export async function POST(request: NextRequest) {
       ...(best9 !== null && best9 < 50 ? ['under_50_9'] : []),
       ...(best9 !== null && best9 < 45 ? ['under_45_9'] : []),
       ...(best9 !== null && best9 < 40 ? ['under_40_9'] : []),
-      // Birdies
+      // Birdies - ONLY count connected user's scores (playerIndex === 0)
       ...(totalBirdies >= 1 ? ['first_birdie'] : []),
       ...(totalBirdies >= 5 ? ['birdie_hunter'] : []),
       ...(totalBirdies >= 10 ? ['birdie_bonanza'] : []),
       ...(totalBirdies >= 25 ? ['birdie_master'] : []),
       ...(totalBirdies >= 50 ? ['birdie_king'] : []),
       ...(hasBirdieStreak ? ['birdie_streak'] : []),
-      // Pars
+      // Pars - ONLY count connected user's scores (playerIndex === 0)
       ...(totalPars >= 1 ? ['first_par'] : []),
       ...(totalPars >= 10 ? ['par_collector'] : []),
       ...(totalPars >= 25 ? ['par_machine'] : []),
@@ -728,9 +769,12 @@ export async function POST(request: NextRequest) {
       ...(user && user.name && user.city && user.country ? ['guide_reader'] : []),
       // Social
       ...(groupMembership >= 1 ? ['group_member'] : []),
-      // group_leader - not currently tracked
       ...(allPlayerNames.size >= 3 ? ['friendly_golfer'] : []),
-      // Special - Early Bird and Sunset (need to check each round)
+      // Consistency - calculated above
+      ...(Object.values(roundsByWeek).some(count => count >= 3) ? ['week_warrior'] : []),
+      ...(Object.values(roundsByMonth).some(count => count >= 5) ? ['monthly_regular'] : []),
+      ...(consecutiveWeeks >= 3 ? ['streak_starter'] : []),
+      ...(Object.values(roundsByDay).reduce((sum, count) => sum + count, 0) >= 5 ? ['weekend_golfer'] : []),
     ]);
 
     // Check for steady_eddy separately (needs round iteration)
@@ -754,18 +798,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log(`[Achievements] Valid badge codes for validation: ${JSON.stringify([...validBadgeCodes])}`);
+
     // Get all earned achievements and remove any that shouldn't be there
     const earnedAchievements = await db.userAchievement.findMany({
       where: { userId },
       include: { achievement: { select: { code: true } } }
     });
 
+    console.log(`[Achievements] User has ${earnedAchievements.length} earned achievements`);
+
     const removedBadges: string[] = [];
     for (const earned of earnedAchievements) {
-      if (!validBadgeCodes.has(earned.achievement.code)) {
+      const badgeCode = earned.achievement.code;
+      // Skip validation for non-validatable badges - they should never be removed
+      if (NON_VALIDATABLE_BADGES.has(badgeCode)) {
+        console.log(`[Achievements] Skipping non-validatable badge: ${badgeCode}`);
+        continue;
+      }
+      if (!validBadgeCodes.has(badgeCode)) {
+        console.log(`[Achievements] Badge ${badgeCode} should NOT be earned - removing`);
         // This badge shouldn't be there - remove it
-        if (await removeAchievement(userId, earned.achievement.code)) {
-          removedBadges.push(earned.achievement.code);
+        if (await removeAchievement(userId, badgeCode)) {
+          removedBadges.push(badgeCode);
+          console.log(`[Achievements] Successfully removed badge: ${badgeCode}`);
+        } else {
+          console.log(`[Achievements] Failed to remove badge: ${badgeCode}`);
         }
       }
     }
