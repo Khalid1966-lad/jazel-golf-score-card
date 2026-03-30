@@ -3,18 +3,24 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Trophy, 
-  Target, 
-  MapPin, 
-  Medal, 
-  Users, 
-  Star, 
+import {
+  Trophy,
+  Target,
+  MapPin,
+  Medal,
+  Users,
+  Star,
   Lock,
   Sparkles,
   ChevronRight,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Bird,
+  Flag,
+  User,
+  Calendar,
+  Map,
+  Briefcase
 } from 'lucide-react';
 
 interface Achievement {
@@ -44,9 +50,15 @@ interface AchievementProgress {
 const categoryData = [
   { id: 'rounds', label: 'Rounds', icon: Target },
   { id: 'scoring', label: 'Score', icon: Medal },
+  { id: 'birdies', label: 'Birdies', icon: Bird },
+  { id: 'pars', label: 'Pars', icon: Flag },
   { id: 'courses', label: 'Courses', icon: MapPin },
   { id: 'tournaments', label: 'Tourn', icon: Trophy },
   { id: 'handicap', label: 'Hcp', icon: Star },
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'oncourse', label: 'OnCourse', icon: Target },
+  { id: 'consistency', label: 'Streak', icon: Calendar },
+  { id: 'app', label: 'App', icon: Map },
   { id: 'social', label: 'Social', icon: Users },
   { id: 'special', label: 'Special', icon: Sparkles },
 ];
@@ -210,9 +222,15 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
             const colors = [
               'bg-emerald-500 text-white',
               'bg-amber-500 text-white',
+              'bg-yellow-500 text-white',
+              'bg-green-500 text-white',
               'bg-sky-500 text-white',
               'bg-purple-500 text-white',
               'bg-rose-500 text-white',
+              'bg-indigo-500 text-white',
+              'bg-lime-500 text-white',
+              'bg-orange-500 text-white',
+              'bg-cyan-500 text-white',
               'bg-teal-500 text-white',
               'bg-pink-500 text-white',
             ];
@@ -257,9 +275,15 @@ export function BadgeCollection({ userId }: BadgeCollectionProps) {
 const categoryColors: Record<string, string> = {
   rounds: 'border-l-emerald-500 bg-emerald-100/80 dark:bg-emerald-900/30',
   scoring: 'border-l-amber-500 bg-amber-100/80 dark:bg-amber-900/30',
+  birdies: 'border-l-yellow-500 bg-yellow-100/80 dark:bg-yellow-900/30',
+  pars: 'border-l-green-500 bg-green-100/80 dark:bg-green-900/30',
   courses: 'border-l-sky-500 bg-sky-100/80 dark:bg-sky-900/30',
   tournaments: 'border-l-purple-500 bg-purple-100/80 dark:bg-purple-900/30',
   handicap: 'border-l-rose-500 bg-rose-100/80 dark:bg-rose-900/30',
+  profile: 'border-l-indigo-500 bg-indigo-100/80 dark:bg-indigo-900/30',
+  oncourse: 'border-l-lime-500 bg-lime-100/80 dark:bg-lime-900/30',
+  consistency: 'border-l-orange-500 bg-orange-100/80 dark:bg-orange-900/30',
+  app: 'border-l-cyan-500 bg-cyan-100/80 dark:bg-cyan-900/30',
   social: 'border-l-teal-500 bg-teal-100/80 dark:bg-teal-900/30',
   special: 'border-l-pink-500 bg-pink-100/80 dark:bg-pink-900/30',
 };
