@@ -3064,20 +3064,6 @@ export default function JazelApp() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {/* Course Map Screen - GPS Range Finder */}
-                {showMapScreen && (
-                  <CourseMap
-                    course={selectedCourse}
-                    currentHole={selectedGPSHole}
-                    onHoleChange={setSelectedGPSHole}
-                    distanceUnit={distanceUnit}
-                    onClose={() => setShowMapScreen(false)}
-                    userClubs={userClubs}
-                    weatherData={weatherData}
-                    onRefreshWeather={() => fetchWeather(undefined, true)}
-                    userId={user?.id}
-                  />
-                )}
                 {/* Course Info Header - Compact name and city */}
                 <div className="px-3 py-2 rounded-t-lg text-white flex items-center justify-center"
                   style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
@@ -6142,7 +6128,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.90</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.91</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
@@ -6150,6 +6136,21 @@ export default function JazelApp() {
           </div>
         </div>
       </footer>
+
+      {/* Course Map Screen */}
+      {showMapScreen && showScorecard && selectedCourse && (
+        <CourseMap
+          course={selectedCourse}
+          currentHole={selectedGPSHole}
+          onHoleChange={setSelectedGPSHole}
+          distanceUnit={distanceUnit}
+          onClose={() => setShowMapScreen(false)}
+          userClubs={userClubs}
+          weatherData={weatherData}
+          onRefreshWeather={() => fetchWeather(undefined, true)}
+          userId={user?.id}
+        />
+      )}
 
       {/* Badges Dialog */}
       <Dialog open={showBadgesDialog} onOpenChange={setShowBadgesDialog}>
