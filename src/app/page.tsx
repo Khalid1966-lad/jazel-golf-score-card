@@ -4433,6 +4433,17 @@ export default function JazelApp() {
                               <Badge variant="secondary">{tournament.format}</Badge>
                               <Badge variant="outline">{tournament._count?.participants || 0}/{tournament.maxPlayers} players</Badge>
                             </div>
+                            {(tournament.admin || tournament.adminPhone) && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <User className="w-4 h-4" />
+                                <span>{tournament.admin?.name || 'Unknown'}</span>
+                                {tournament.adminPhone && (
+                                  <a href={`tel:${tournament.adminPhone}`} className="hover:underline" style={{color: '#39638b'}}>
+                                    {tournament.adminPhone}
+                                  </a>
+                                )}
+                              </div>
+                            )}
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <MapPin className="w-4 h-4" />
                               <span>{tournament.course.city}</span>
@@ -6095,7 +6106,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.84</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.85</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

@@ -41,7 +41,8 @@ import {
   Upload,
   AlertTriangle,
   UserCog,
-  RefreshCw
+  RefreshCw,
+  User
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -3401,6 +3402,17 @@ export default function AdminPage() {
                             <Badge variant="secondary">{tournament.format}</Badge>
                             <Badge variant="outline">{tournament._count?.participants || 0}/{tournament.maxPlayers} players</Badge>
                           </div>
+                          {(tournament.admin || tournament.adminPhone) && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <User className="w-4 h-4" />
+                              <span>{tournament.admin?.name || 'Unknown Admin'}</span>
+                              {tournament.adminPhone && (
+                                <a href={`tel:${tournament.adminPhone}`} className="hover:underline" style={{color: '#39638b'}}>
+                                  {tournament.adminPhone}
+                                </a>
+                              )}
+                            </div>
+                          )}
                           <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
                             <Button
                               size="sm"
