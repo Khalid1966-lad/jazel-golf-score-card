@@ -394,6 +394,177 @@ function renderItalic(text: string): React.ReactNode {
   return parts.length > 0 ? parts : text;
 }
 
+// Round History Card Component - Expandable
+function RoundHistoryCard({ 
+  round,
+  index,
+  playerNames,
+  additionalPlayerTotals,
+  holesPlayedCount,
+  holesInfo,
+  displayTotalStrokes,
+  vsPar,
+  coursePar,
+  relevantHoles,
+  setRoundToView,
+  downloadRoundAsXlsx,
+  loadRoundForEditing,
+  setRoundToDelete
+}: { 
+  round: SavedRound;
+  index: number;
+  playerNames: (string | { name: string })[];
+  additionalPlayerTotals: Map<number, number>;
+  holesPlayedCount: number;
+  holesInfo: string;
+  displayTotalStrokes: number;
+  vsPar: number;
+  coursePar: number;
+  relevantHoles: { holeNumber: number; par: number }[];
+  setRoundToView: (round: SavedRound) => void;
+  downloadRoundAsXlsx: (round: SavedRound) => void;
+  loadRoundForEditing: (round: SavedRound) => void;
+  setRoundToDelete: (round: SavedRound) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      <Card 
+        className="transition-colors cursor-pointer" 
+        style={{
+          borderColor: round.completed ? '#8ab0d1' : '#f59e0b',
+          backgroundColor: round.completed ? 'white' : 'rgba(251, 191, 36, 0.1)'
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+        onMouseEnter={(e) => e.currentTarget.style.borderColor = round.completed ? '#5d8cb8' : '#d97706'}
+        onMouseLeave={(e) => e.currentTarget.style.borderColor = round.completed ? '#8ab0d1' : '#f59e0b'}>
+        <CardContent className="p-4">
+          {/* Main row - always visible */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">{round.course?.name || 'Unknown Course'}</h4>
+                {!round.completed && (
+                  <Badge className="bg-amber-500 text-white text-xs">Draft</Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {new Date(round.date).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+                <span className="mx-2">•</span>
+                <span className="text-xs" style={{color: '#39638b'}}>{holesInfo}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
+                <p className="text-xs text-muted-foreground">strokes</p>
+              </div>
+              <div className="text-center">
+                <p className={`text-xl font-bold ${
+                  vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'
+                }`}>
+                  {(vsPar > 0 ? '+' : '') + vsPar}
+                </p>
+                <p className="text-xs text-muted-foreground">+/-</p>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+
+          {/* Expanded content */}
+          {isExpanded && (
+            <>
+              {/* Tee info */}
+              {round.teeId && round.course?.tees && (
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
+                  <p className="text-xs text-muted-foreground">
+                    Tee: {round.course.tees.find(t => t.id === round.teeId)?.name || round.teeId}
+                  </p>
+                </div>
+              )}
+
+              {/* Action buttons row */}
+              <div className="flex items-center gap-1 mt-3 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRoundToView(round)}
+                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
+                  title="View scorecard summary"
+                >
+                  <BookOpen className="w-3 h-3 mr-1" />
+                  Scorecard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadRoundAsXlsx(round)}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                  title="Download as Excel"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadRoundForEditing(round)}
+                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                  title="Edit round"
+                >
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRoundToDelete(round)}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  title="Delete round"
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Delete
+                </Button>
+              </div>
+
+              {/* Show additional players if any */}
+              {playerNames.length > 0 && (
+                <div className="mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
+                  <p className="text-xs text-muted-foreground mb-2">Other Players:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {playerNames.map((playerInfo, idx) => {
+                      const playerName = typeof playerInfo === 'string' ? playerInfo : playerInfo.name;
+                      const playerTotal = additionalPlayerTotals.get(idx + 1) || 0;
+                      // Calculate player's +/- vs par
+                      const playerVsPar = playerTotal - coursePar;
+                      const vsParDisplay = playerTotal > 0 ? ` (${playerVsPar > 0 ? '+' : ''}${playerVsPar})` : '';
+                      return (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {playerName}: {playerTotal}{vsParDisplay}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 // AI Caddie Component
 function AICaddieDialog({ 
   open,  onOpenChange, 
@@ -3548,8 +3719,21 @@ export default function JazelApp() {
           <TabsContent value="history" className="space-y-4">
             <Card className="bg-white/80 backdrop-blur">
               <CardHeader>
-                <CardTitle>Round History</CardTitle>
-                <CardDescription>Your past golf rounds and performance</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Round History</CardTitle>
+                    <CardDescription>
+                      {roundHistory.length > 0 
+                        ? `${roundHistory.length} round${roundHistory.length !== 1 ? 's' : ''} recorded`
+                        : 'Your past golf rounds and performance'}
+                    </CardDescription>
+                  </div>
+                  {roundHistory.length > 0 && (
+                    <Badge variant="secondary" className="text-sm">
+                      {roundHistory.filter(r => r.completed).length} completed
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {roundHistory.length === 0 ? (
@@ -3613,131 +3797,23 @@ export default function JazelApp() {
                           : 'Front 9 (1-9)';
                       
                       return (
-                      <motion.div
+                      <RoundHistoryCard 
                         key={round.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                        <Card 
-                          className="transition-colors" 
-                          style={{
-                            borderColor: round.completed ? '#8ab0d1' : '#f59e0b',
-                            backgroundColor: round.completed ? 'white' : 'rgba(251, 191, 36, 0.1)'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = round.completed ? '#5d8cb8' : '#d97706'}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = round.completed ? '#8ab0d1' : '#f59e0b'}>
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-medium">{round.course?.name || 'Unknown Course'}</h4>
-                                  {!round.completed && (
-                                    <Badge className="bg-amber-500 text-white text-xs">Draft</Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {new Date(round.date).toLocaleDateString('en-US', {
-                                    weekday: 'short',
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric'
-                                  })}
-                                  <span className="mx-2">•</span>
-                                  <span className="text-xs" style={{color: '#39638b'}}>{holesInfo}</span>
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-6">
-                                <div className="text-center">
-                                  <p className="text-2xl font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
-                                  <p className="text-xs text-muted-foreground">strokes</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className={`text-xl font-bold ${
-                                    vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'
-                                  }`}>
-                                    {(vsPar > 0 ? '+' : '') + vsPar}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">+/-</p>
-                                </div>
-                              </div>
-                            </div>
-                            {/* Bottom row: Tee info */}
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
-                              <div className="flex items-center gap-2">
-                                {round.teeId && round.course?.tees && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Tee: {round.course.tees.find(t => t.id === round.teeId)?.name || round.teeId}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            {/* Action buttons row - separate line for better mobile display */}
-                            <div className="flex items-center gap-1 mt-2 flex-wrap">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setRoundToView(round)}
-                                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
-                                title="View scorecard summary"
-                              >
-                                <BookOpen className="w-3 h-3 mr-1" />
-                                Scorecard
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => downloadRoundAsXlsx(round)}
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
-                                title="Download as Excel"
-                              >
-                                <Download className="w-3 h-3 mr-1" />
-                                Excel
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => loadRoundForEditing(round)}
-                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                                title="Edit round"
-                              >
-                                <Edit2 className="w-3 h-3 mr-1" />
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setRoundToDelete(round)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                title="Delete round"
-                              >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Delete
-                              </Button>
-                            </div>
-                            {/* Show additional players if any */}
-                            {playerNames.length > 0 && (
-                              <div className="mt-3 pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
-                                <p className="text-xs text-muted-foreground mb-2">Other Players:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {playerNames.map((playerInfo, idx) => {
-                                    const playerName = typeof playerInfo === 'string' ? playerInfo : playerInfo.name;
-                                    const playerTotal = additionalPlayerTotals.get(idx + 1) || 0;
-                                    // Calculate player's +/- vs par
-                                    const playerVsPar = playerTotal - coursePar;
-                                    const vsParDisplay = playerTotal > 0 ? ` (${playerVsPar > 0 ? '+' : ''}${playerVsPar})` : '';
-                                    return (
-                                      <Badge key={idx} variant="secondary" className="text-xs">
-                                        {playerName}: {playerTotal}{vsParDisplay}
-                                      </Badge>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </motion.div>
+                        round={round}
+                        index={index}
+                        playerNames={playerNames}
+                        additionalPlayerTotals={additionalPlayerTotals}
+                        holesPlayedCount={holesPlayedCount}
+                        holesInfo={holesInfo}
+                        displayTotalStrokes={displayTotalStrokes}
+                        vsPar={vsPar}
+                        coursePar={coursePar}
+                        relevantHoles={relevantHoles}
+                        setRoundToView={setRoundToView}
+                        downloadRoundAsXlsx={downloadRoundAsXlsx}
+                        loadRoundForEditing={loadRoundForEditing}
+                        setRoundToDelete={setRoundToDelete}
+                      />
                     );})}
                   </div>
                 )}
