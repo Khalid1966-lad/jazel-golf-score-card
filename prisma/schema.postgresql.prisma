@@ -41,7 +41,7 @@ model User {
   assignedCourses      GolfCourse[]        @relation("CourseAdmin")
   adminPermission      AdminPermission?
   achievements         UserAchievement[]
-  administeredTournaments Tournament[]
+  administeredTournaments Tournament[]  @relation("TournamentAdmin")
 
   @@map("users")
 }
@@ -359,7 +359,7 @@ model Tournament {
   updatedAt       DateTime @updatedAt
   
   course          GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  admin           User?     @relation(fields: [adminId], references: [id])
+  admin           User?     @relation("TournamentAdmin", fields: [adminId], references: [id])
   participants    TournamentParticipant[]
   
   @@map("tournaments")

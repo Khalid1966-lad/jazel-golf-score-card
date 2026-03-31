@@ -1,11 +1,11 @@
-// This is your Prisma schema file for SQLite (SANDBOX/LOCAL)
+// This is your Prisma schema file for PostgreSQL (VERCEL/PRODUCTION)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -41,7 +41,7 @@ model User {
   assignedCourses      GolfCourse[]        @relation("CourseAdmin")
   adminPermission      AdminPermission?
   achievements         UserAchievement[]
-  administeredTournaments Tournament[]
+  administeredTournaments Tournament[]  @relation("TournamentAdmin")
 
   @@map("users")
 }
@@ -261,10 +261,10 @@ model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
   value     String
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("settings")
 }
 
@@ -348,7 +348,7 @@ model Tournament {
   courseId        String
   date            DateTime
   startTime       String
-  teeTimeInterval Int      @default(10)
+  teeTimeInterval Int      @default(10)  // Minutes between group tee times
   format          String
   maxPlayers      Int      @default(144)
   notes           String?
@@ -359,7 +359,7 @@ model Tournament {
   updatedAt       DateTime @updatedAt
   
   course          GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  admin           User?     @relation(fields: [adminId], references: [id])
+  admin           User?     @relation("TournamentAdmin", fields: [adminId], references: [id])
   participants    TournamentParticipant[]
   
   @@map("tournaments")
@@ -372,9 +372,9 @@ model TournamentParticipant {
   registeredAt    DateTime @default(now())
   grossScore      Int?
   netScore        Int?
-  groupLetter     String?
-  positionInGroup Int?
-  teeTime         String?
+  groupLetter     String?  // "A", "B", "C", etc.
+  positionInGroup Int?     // 1, 2, 3, or 4 (position within the group)
+  teeTime         String?  // "08:00", "08:10", etc.
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -398,7 +398,7 @@ model Achievement {
   createdAt     DateTime @default(now())
   
   userAchievements UserAchievement[]
-  
+
   @@map("achievements")
 }
 
