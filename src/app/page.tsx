@@ -147,6 +147,9 @@ interface Golfer {
   _count: {
     rounds: number;
   };
+  achievementPoints?: number;
+  achievementLevel?: string;
+  achievementColor?: string;
 }
 
 interface GolferGroup {
@@ -392,6 +395,22 @@ function renderItalic(text: string): React.ReactNode {
   if (remaining) parts.push(<span key={key++}>{remaining}</span>);
   
   return parts.length > 0 ? parts : text;
+}
+
+// Achievement level colors and styling
+const LEVEL_STYLES: Record<string, { bg: string; text: string; border: string; gradient?: string }> = {
+  'Beginner': { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
+  'Amateur': { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  'Intermediate': { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-300' },
+  'Advanced': { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  'Expert': { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+  'Master': { bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-300' },
+  'Legend': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  'Immortal': { bg: 'bg-gradient-to-r from-amber-200 to-yellow-200', text: 'text-amber-800', border: 'border-amber-400', gradient: 'from-amber-400 to-yellow-400' },
+};
+
+function getLevelStyle(level: string) {
+  return LEVEL_STYLES[level] || LEVEL_STYLES['Beginner'];
 }
 
 // Round History Card Component - Expandable
@@ -1077,6 +1096,7 @@ export default function JazelApp() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [golfers, setGolfers] = useState<Golfer[]>([]);
   const [golferSearch, setGolferSearch] = useState('');
+  const [golferSort, setGolferSort] = useState<'date' | 'rounds' | 'achievements'>('date');
   const [groups, setGroups] = useState<GolferGroup[]>([]);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
   const [showAICaddie, setShowAICaddie] = useState(false);
@@ -4145,7 +4165,7 @@ export default function JazelApp() {
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   {/* Group Filter */}
                   <Select value={selectedGroupFilter} onValueChange={setSelectedGroupFilter}>
-                    <SelectTrigger className="w-full sm:w-64 h-12 bg-white" style={{borderColor: '#a3c4e0'}}>
+                    <SelectTrigger className="w-full sm:w-48 h-12 bg-white" style={{borderColor: '#a3c4e0'}}>
                       <SelectValue placeholder="Filter by group" />
                     </SelectTrigger>
                     <SelectContent>
@@ -4155,6 +4175,18 @@ export default function JazelApp() {
                           {group.name} ({group._count.members})
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Sort By */}
+                  <Select value={golferSort} onValueChange={(v) => setGolferSort(v as 'date' | 'rounds' | 'achievements')}>
+                    <SelectTrigger className="w-full sm:w-44 h-12 bg-white" style={{borderColor: '#a3c4e0'}}>
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Newest First</SelectItem>
+                      <SelectItem value="rounds">Most Rounds</SelectItem>
+                      <SelectItem value="achievements">Top Achievers</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -4191,17 +4223,39 @@ export default function JazelApp() {
                         golfer.city?.toLowerCase().includes(golferSearch.toLowerCase()) ||
                         golfer.country?.toLowerCase().includes(golferSearch.toLowerCase())
                       )
-                      .map((golfer, index) => (
+                      .sort((a, b) => {
+                        if (golferSort === 'rounds') {
+                          return (b._count?.rounds || 0) - (a._count?.rounds || 0);
+                        }
+                        if (golferSort === 'achievements') {
+                          return (b.achievementPoints || 0) - (a.achievementPoints || 0);
+                        }
+                        return 0; // Default order (by date from API)
+                      })
+                      .map((golfer, index) => {
+                        const levelStyle = getLevelStyle(golfer.achievementLevel || 'Beginner');
+                        return (
                       <motion.div
                         key={golfer.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.03 }}
                       >
-                        <Card className="transition-colors overflow-hidden"
-                          style={{borderColor: '#8ab0d1'}}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#5d8cb8'}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}>
+                        <Card className={`transition-all overflow-hidden border-l-4 ${levelStyle.border}`}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                          {/* Achievement Level Banner */}
+                          <div className={`px-3 py-1.5 ${levelStyle.bg} flex items-center justify-between`}>
+                            <div className="flex items-center gap-1.5">
+                              <Star className={`w-4 h-4 ${levelStyle.text} ${golfer.achievementLevel === 'Immortal' ? 'fill-amber-500' : ''}`} />
+                              <span className={`text-xs font-semibold ${levelStyle.text}`}>
+                                {golfer.achievementLevel || 'Beginner'}
+                              </span>
+                            </div>
+                            <span className={`text-xs font-medium ${levelStyle.text}`}>
+                              {golfer.achievementPoints || 0} pts
+                            </span>
+                          </div>
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -4231,20 +4285,20 @@ export default function JazelApp() {
                               <div className="flex items-center gap-1">
                                 <Trophy className="w-4 h-4" style={{color: '#39638b'}} />
                                 <span className="text-sm font-medium">
-                                  Handicap: {golfer.handicap !== null ? golfer.handicap : '-'}
+                                  Hcp: {golfer.handicap !== null ? golfer.handicap : '-'}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Target className="w-4 h-4" style={{color: '#4a7aa8'}} />
                                 <span className="text-sm text-muted-foreground">
-                                  {golfer._count.rounds} rounds
+                                  {golfer._count?.rounds || 0} rounds
                                 </span>
                               </div>
                             </div>
                           </CardContent>
                         </Card>
                       </motion.div>
-                    ))}
+                    );})}
                   </div>
                 )}
               </CardContent>
@@ -6306,7 +6360,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.99</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.0</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

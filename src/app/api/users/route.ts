@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Level definitions - matching the achievement system
+const LEVELS = [
+  { level: 'Beginner', minPoints: 0, color: 'gray' },
+  { level: 'Amateur', minPoints: 100, color: 'green' },
+  { level: 'Intermediate', minPoints: 250, color: 'blue' },
+  { level: 'Advanced', minPoints: 450, color: 'amber' },
+  { level: 'Expert', minPoints: 700, color: 'purple' },
+  { level: 'Master', minPoints: 1000, color: 'pink' },
+  { level: 'Legend', minPoints: 1500, color: 'orange' },
+  { level: 'Immortal', minPoints: 2000, color: 'gold' },
+];
+
+// Calculate level from points
+function getLevelFromPoints(points: number): { level: string; color: string } {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (points >= LEVELS[i].minPoints) {
+      return { level: LEVELS[i].level, color: LEVELS[i].color };
+    }
+  }
+  return { level: 'Beginner', color: 'gray' };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -39,13 +61,40 @@ export async function GET(request: NextRequest) {
             rounds: true,
           },
         },
+        achievements: {
+          include: {
+            achievement: {
+              select: { points: true },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    return NextResponse.json({ users });
+    // Calculate achievement points and level for each user
+    const usersWithAchievements = users.map(user => {
+      const totalPoints = user.achievements.reduce((sum, a) => sum + a.achievement.points, 0);
+      const { level, color } = getLevelFromPoints(totalPoints);
+      
+      return {
+        id: user.id,
+        name: user.name,
+        handicap: user.handicap,
+        avatar: user.avatar,
+        city: user.city,
+        country: user.country,
+        createdAt: user.createdAt,
+        _count: user._count,
+        achievementPoints: totalPoints,
+        achievementLevel: level,
+        achievementColor: color,
+      };
+    });
+
+    return NextResponse.json({ users: usersWithAchievements });
   } catch (error) {
     console.error('Fetch users error:', error);
     return NextResponse.json(
