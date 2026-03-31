@@ -4241,17 +4241,44 @@ export default function JazelApp() {
                           return a[0].localeCompare(b[0]);
                         });
 
+                        // Color palette for groups (excluding blue/indigo as per requirements)
+                        const getGroupColor = (letter: string): { bg: string; border: string; headerBg: string; headerText: string } => {
+                          const colors = [
+                            { bg: 'bg-emerald-50', border: 'border-emerald-200', headerBg: 'bg-emerald-100', headerText: 'text-emerald-700' },
+                            { bg: 'bg-amber-50', border: 'border-amber-200', headerBg: 'bg-amber-100', headerText: 'text-amber-700' },
+                            { bg: 'bg-rose-50', border: 'border-rose-200', headerBg: 'bg-rose-100', headerText: 'text-rose-700' },
+                            { bg: 'bg-teal-50', border: 'border-teal-200', headerBg: 'bg-teal-100', headerText: 'text-teal-700' },
+                            { bg: 'bg-orange-50', border: 'border-orange-200', headerBg: 'bg-orange-100', headerText: 'text-orange-700' },
+                            { bg: 'bg-cyan-50', border: 'border-cyan-200', headerBg: 'bg-cyan-100', headerText: 'text-cyan-700' },
+                            { bg: 'bg-pink-50', border: 'border-pink-200', headerBg: 'bg-pink-100', headerText: 'text-pink-700' },
+                            { bg: 'bg-lime-50', border: 'border-lime-200', headerBg: 'bg-lime-100', headerText: 'text-lime-700' },
+                            { bg: 'bg-violet-50', border: 'border-violet-200', headerBg: 'bg-violet-100', headerText: 'text-violet-700' },
+                            { bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', headerBg: 'bg-fuchsia-100', headerText: 'text-fuchsia-700' },
+                            { bg: 'bg-sky-50', border: 'border-sky-200', headerBg: 'bg-sky-100', headerText: 'text-sky-700' },
+                            { bg: 'bg-green-50', border: 'border-green-200', headerBg: 'bg-green-100', headerText: 'text-green-700' },
+                          ];
+                          
+                          if (letter === 'U') {
+                            return { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
+                          }
+                          
+                          const index = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+                          return colors[index % colors.length];
+                        };
+
                         return (
                           <div className="grid gap-4 md:grid-cols-2">
-                            {sortedGroups.map(([letter, participants]) => (
-                              <div key={letter} className="border rounded-lg overflow-hidden">
-                                <div className="bg-muted/50 p-3 flex items-center justify-between">
-                                  <span className="font-medium">
+                            {sortedGroups.map(([letter, participants]) => {
+                              const color = getGroupColor(letter);
+                              return (
+                              <div key={letter} className={`border rounded-lg overflow-hidden ${color.border} ${color.bg}`}>
+                                <div className={`${color.headerBg} p-3 flex items-center justify-between`}>
+                                  <span className={`font-medium ${color.headerText}`}>
                                     {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
                                   </span>
-                                  <Badge variant="outline">{participants.length} players</Badge>
+                                  <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
                                 </div>
-                                <div className="divide-y">
+                                <div className="divide-y divide-white/50">
                                   {participants
                                     .sort((a, b) => {
                                       // Sort by tee time, then by position
@@ -4263,7 +4290,7 @@ export default function JazelApp() {
                                     .map((p, idx) => (
                                       <div key={p.userId} className="p-3 flex items-center justify-between text-sm">
                                         <div className="flex items-center gap-2">
-                                          <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                                          <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-xs font-medium">
                                             {idx + 1}
                                           </span>
                                           <span>{p.user.name || 'Unnamed'}</span>
@@ -4275,7 +4302,7 @@ export default function JazelApp() {
                                               {p.teeTime}
                                             </span>
                                           )}
-                                          <Badge variant="outline" className="text-xs">
+                                          <Badge variant="outline" className="text-xs bg-white/50">
                                             Hcp {p.user.handicap?.toFixed(1) || '-'}
                                           </Badge>
                                         </div>
@@ -4283,7 +4310,8 @@ export default function JazelApp() {
                                     ))}
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         );
                       })()}
@@ -6106,7 +6134,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.85</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.86</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
