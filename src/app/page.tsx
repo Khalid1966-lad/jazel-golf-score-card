@@ -3597,12 +3597,12 @@ export default function JazelApp() {
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   {/* City Filter */}
-                  <Select value={partnerFilterCity} onValueChange={setPartnerFilterCity}>
+                  <Select value={partnerFilterCity} onValueChange={(v) => setPartnerFilterCity(v === 'all' ? '' : v)}>
                     <SelectTrigger className="w-full sm:w-40 h-10 bg-white" style={{borderColor: '#a3c4e0'}}>
                       <SelectValue placeholder="Filter by city" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Cities</SelectItem>
+                      <SelectItem value="all">All Cities</SelectItem>
                       {partnerRequestCities.map(city => (
                         <SelectItem key={city} value={city}>{city}</SelectItem>
                       ))}
@@ -3610,12 +3610,12 @@ export default function JazelApp() {
                   </Select>
 
                   {/* Course Filter */}
-                  <Select value={partnerFilterCourse} onValueChange={setPartnerFilterCourse}>
+                  <Select value={partnerFilterCourse} onValueChange={(v) => setPartnerFilterCourse(v === 'all' ? '' : v)}>
                     <SelectTrigger className="w-full sm:w-48 h-10 bg-white" style={{borderColor: '#a3c4e0'}}>
                       <SelectValue placeholder="Filter by course" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Courses</SelectItem>
+                      <SelectItem value="all">All Courses</SelectItem>
                       {courses.map(course => (
                         <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
                       ))}
@@ -7162,7 +7162,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.5</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.6</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
