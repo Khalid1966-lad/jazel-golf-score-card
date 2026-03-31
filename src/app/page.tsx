@@ -264,6 +264,9 @@ interface TournamentParticipant {
   userId: string;
   grossScore: number | null;
   netScore: number | null;
+  groupLetter: string | null;
+  positionInGroup: number | null;
+  teeTime: string | null;
   user: {
     id: string;
     name: string | null;
@@ -277,15 +280,23 @@ interface Tournament {
   courseId: string;
   date: string;
   startTime: string;
+  teeTimeInterval?: number;
   format: string;
   maxPlayers: number;
   notes: string | null;
   status: string;
+  adminId: string | null;
+  adminPhone: string | null;
   course: {
     id: string;
     name: string;
     city: string;
   };
+  admin?: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+  } | null;
   _count?: {
     participants: number;
   };
@@ -4182,6 +4193,104 @@ export default function JazelApp() {
                     </div>
                   </div>
 
+                  {/* Tournament Admin Info */}
+                  {(selectedTournament.admin || selectedTournament.adminPhone) && (
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <User className="w-4 h-4" style={{color: '#39638b'}} />
+                        Tournament Contact
+                      </h4>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        {selectedTournament.admin?.name && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Admin:</span>
+                            <span className="font-medium">{selectedTournament.admin.name}</span>
+                          </div>
+                        )}
+                        {selectedTournament.adminPhone && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Phone:</span>
+                            <a href={`tel:${selectedTournament.adminPhone}`} className="font-medium hover:underline" style={{color: '#39638b'}}>
+                              {selectedTournament.adminPhone}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Groups & Tee Times */}
+                  {selectedTournament.participants && selectedTournament.participants.some(p => p.groupLetter) && (
+                    <div>
+                      <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <Users className="w-4 h-4" style={{color: '#39638b'}} />
+                        Groups & Tee Times
+                      </h3>
+                      {(() => {
+                        // Group participants by groupLetter
+                        const groups = new Map<string, typeof selectedTournament.participants>();
+                        selectedTournament.participants?.forEach(p => {
+                          const letter = p.groupLetter || 'U';
+                          if (!groups.has(letter)) groups.set(letter, []);
+                          groups.get(letter)!.push(p);
+                        });
+
+                        // Sort groups alphabetically
+                        const sortedGroups = Array.from(groups.entries()).sort((a, b) => {
+                          if (a[0] === 'U') return 1;
+                          if (b[0] === 'U') return -1;
+                          return a[0].localeCompare(b[0]);
+                        });
+
+                        return (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {sortedGroups.map(([letter, participants]) => (
+                              <div key={letter} className="border rounded-lg overflow-hidden">
+                                <div className="bg-muted/50 p-3 flex items-center justify-between">
+                                  <span className="font-medium">
+                                    {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
+                                  </span>
+                                  <Badge variant="outline">{participants.length} players</Badge>
+                                </div>
+                                <div className="divide-y">
+                                  {participants
+                                    .sort((a, b) => {
+                                      // Sort by tee time, then by position
+                                      if (a.teeTime && b.teeTime) return a.teeTime.localeCompare(b.teeTime);
+                                      if (a.teeTime) return -1;
+                                      if (b.teeTime) return 1;
+                                      return (a.positionInGroup || 0) - (b.positionInGroup || 0);
+                                    })
+                                    .map((p, idx) => (
+                                      <div key={p.userId} className="p-3 flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                          <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                                            {idx + 1}
+                                          </span>
+                                          <span>{p.user.name || 'Unnamed'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                          {p.teeTime && (
+                                            <span className="flex items-center gap-1">
+                                              <Clock className="w-3 h-3" />
+                                              {p.teeTime}
+                                            </span>
+                                          )}
+                                          <Badge variant="outline" className="text-xs">
+                                            Hcp {p.user.handicap?.toFixed(1) || '-'}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {/* Participants Leaderboard */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -5987,7 +6096,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.81</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.82</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

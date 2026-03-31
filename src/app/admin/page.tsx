@@ -124,12 +124,19 @@ interface Tournament {
   maxPlayers: number;
   notes: string | null;
   status: string;
+  adminId: string | null;
+  adminPhone: string | null;
   createdAt: string;
   course: {
     id: string;
     name: string;
     city: string;
   };
+  admin?: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+  } | null;
   _count?: {
     participants: number;
   };
@@ -222,7 +229,9 @@ export default function AdminPage() {
     teeTimeInterval: 10,
     format: 'Stroke Play',
     maxPlayers: 144,
-    notes: ''
+    notes: '',
+    adminId: '',
+    adminPhone: '',
   });
   const [editTournamentForm, setEditTournamentForm] = useState({
     name: '',
@@ -233,7 +242,9 @@ export default function AdminPage() {
     format: 'Stroke Play',
     maxPlayers: 144,
     notes: '',
-    status: 'upcoming'
+    status: 'upcoming',
+    adminId: '',
+    adminPhone: '',
   });
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('handicap');
   const [addParticipantDialogOpen, setAddParticipantDialogOpen] = useState(false);
@@ -1555,7 +1566,9 @@ export default function AdminPage() {
           teeTimeInterval: newTournamentForm.teeTimeInterval,
           format: newTournamentForm.format,
           maxPlayers: newTournamentForm.maxPlayers,
-          notes: newTournamentForm.notes || null
+          notes: newTournamentForm.notes || null,
+          adminId: newTournamentForm.adminId || null,
+          adminPhone: newTournamentForm.adminPhone || null,
         })
       });
 
@@ -1571,7 +1584,9 @@ export default function AdminPage() {
           teeTimeInterval: 10,
           format: 'Stroke Play',
           maxPlayers: 144,
-          notes: ''
+          notes: '',
+          adminId: '',
+          adminPhone: '',
         });
       } else {
         throw new Error('Failed to create tournament');
@@ -1601,7 +1616,9 @@ export default function AdminPage() {
           format: editTournamentForm.format,
           maxPlayers: editTournamentForm.maxPlayers,
           notes: editTournamentForm.notes || null,
-          status: editTournamentForm.status
+          status: editTournamentForm.status,
+          adminId: editTournamentForm.adminId || null,
+          adminPhone: editTournamentForm.adminPhone || null,
         })
       });
 
@@ -2071,7 +2088,9 @@ export default function AdminPage() {
       format: tournament.format,
       maxPlayers: tournament.maxPlayers,
       notes: tournament.notes || '',
-      status: tournament.status
+      status: tournament.status,
+      adminId: tournament.adminId || '',
+      adminPhone: tournament.adminPhone || '',
     });
     setSelectedTournament(tournament);
     setEditTournamentDialogOpen(true);
@@ -3290,6 +3309,36 @@ export default function AdminPage() {
                             placeholder="Additional tournament details..."
                             rows={3}
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="adminId">Tournament Admin</Label>
+                            <Select
+                              value={newTournamentForm.adminId}
+                              onValueChange={(value) => setNewTournamentForm({ ...newTournamentForm, adminId: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select admin (optional)..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {users.filter(u => u.isAdmin || u.isSuperAdmin).map((admin) => (
+                                  <SelectItem key={admin.id} value={admin.id}>
+                                    {admin.name || admin.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="adminPhone">Admin Phone (optional)</Label>
+                            <Input
+                              id="adminPhone"
+                              value={newTournamentForm.adminPhone}
+                              onChange={(e) => setNewTournamentForm({ ...newTournamentForm, adminPhone: e.target.value })}
+                              placeholder="+212 6XX XXX XXX"
+                            />
+                          </div>
                         </div>
                       </div>
                       <DialogFooter>
@@ -4553,6 +4602,35 @@ export default function AdminPage() {
                 onChange={(e) => setEditTournamentForm({ ...editTournamentForm, notes: e.target.value })}
                 rows={3}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tournament Admin</Label>
+                <Select
+                  value={editTournamentForm.adminId || ''}
+                  onValueChange={(value) => setEditTournamentForm({ ...editTournamentForm, adminId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select admin (optional)..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {users.filter(u => u.isAdmin || u.isSuperAdmin).map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.name || admin.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Admin Phone (optional)</Label>
+                <Input
+                  value={editTournamentForm.adminPhone || ''}
+                  onChange={(e) => setEditTournamentForm({ ...editTournamentForm, adminPhone: e.target.value })}
+                  placeholder="+212 6XX XXX XXX"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
