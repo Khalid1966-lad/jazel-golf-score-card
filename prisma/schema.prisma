@@ -452,3 +452,22 @@ model GolfPartnerRequestParticipant {
   @@unique([requestId, userId])
   @@map("golf_partner_request_participants")
 }
+
+// Golf Repair Shop - for golfers to find repair services
+model RepairShop {
+  id          String   @id @default(cuid())
+  name        String
+  manager     String?
+  city        String
+  country     String
+  phone       String?
+  email       String?
+  description String?
+  imageUrl    String?
+  activeSince DateTime?  // Date since the shop has been operating
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("repair_shops")
+}

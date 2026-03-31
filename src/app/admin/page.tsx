@@ -42,7 +42,8 @@ import {
   AlertTriangle,
   UserCog,
   RefreshCw,
-  User
+  User,
+  Wrench
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -352,6 +353,38 @@ export default function AdminPage() {
   const [courseRestoreLoading, setCourseRestoreLoading] = useState(false);
   const [selectedCourseBackupFile, setSelectedCourseBackupFile] = useState<File | null>(null);
 
+  // Repair Shops state
+  const [repairShops, setRepairShops] = useState<any[]>([]);
+  const [repairShopsLoading, setRepairShopsLoading] = useState(false);
+  const [addRepairShopDialogOpen, setAddRepairShopDialogOpen] = useState(false);
+  const [editRepairShopDialogOpen, setEditRepairShopDialogOpen] = useState(false);
+  const [selectedRepairShop, setSelectedRepairShop] = useState<any | null>(null);
+  const [newRepairShopForm, setNewRepairShopForm] = useState({
+    name: '',
+    manager: '',
+    city: '',
+    country: 'Morocco',
+    phone: '',
+    email: '',
+    description: '',
+    imageUrl: '',
+    activeSince: '',
+    isActive: true
+  });
+  const [editRepairShopForm, setEditRepairShopForm] = useState({
+    id: '',
+    name: '',
+    manager: '',
+    city: '',
+    country: 'Morocco',
+    phone: '',
+    email: '',
+    description: '',
+    imageUrl: '',
+    activeSince: '',
+    isActive: true
+  });
+
   // Admin permissions state
   const [adminPermissions, setAdminPermissions] = useState<{
     isSuperAdmin: boolean;
@@ -454,6 +487,164 @@ export default function AdminPage() {
     }
   };
 
+  // Fetch repair shops
+  const fetchRepairShops = async () => {
+    try {
+      setRepairShopsLoading(true);
+      const response = await fetch('/api/repair-shops?search=');
+      const data = await response.json();
+      setRepairShops(data.shops || []);
+    } catch (error) {
+      console.error('Error fetching repair shops:', error);
+    } finally {
+      setRepairShopsLoading(false);
+    }
+  };
+
+  // Create repair shop
+  const createRepairShop = async () => {
+    if (!newRepairShopForm.name || !newRepairShopForm.city || !newRepairShopForm.country) {
+      toast({ title: 'Error', description: 'Name, city, and country are required', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch('/api/repair-shops', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newRepairShopForm.name,
+          manager: newRepairShopForm.manager || null,
+          city: newRepairShopForm.city,
+          country: newRepairShopForm.country,
+          phone: newRepairShopForm.phone || null,
+          email: newRepairShopForm.email || null,
+          description: newRepairShopForm.description || null,
+          imageUrl: newRepairShopForm.imageUrl || null,
+          activeSince: newRepairShopForm.activeSince || null,
+          isActive: newRepairShopForm.isActive
+        })
+      });
+
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Repair shop created successfully' });
+        fetchRepairShops();
+        setAddRepairShopDialogOpen(false);
+        setNewRepairShopForm({
+          name: '',
+          manager: '',
+          city: '',
+          country: 'Morocco',
+          phone: '',
+          email: '',
+          description: '',
+          imageUrl: '',
+          activeSince: '',
+          isActive: true
+        });
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create repair shop');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message || 'Failed to create repair shop', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update repair shop
+  const updateRepairShop = async () => {
+    if (!editRepairShopForm.name || !editRepairShopForm.city || !editRepairShopForm.country) {
+      toast({ title: 'Error', description: 'Name, city, and country are required', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch('/api/repair-shops', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editRepairShopForm.id,
+          name: editRepairShopForm.name,
+          manager: editRepairShopForm.manager || null,
+          city: editRepairShopForm.city,
+          country: editRepairShopForm.country,
+          phone: editRepairShopForm.phone || null,
+          email: editRepairShopForm.email || null,
+          description: editRepairShopForm.description || null,
+          imageUrl: editRepairShopForm.imageUrl || null,
+          activeSince: editRepairShopForm.activeSince || null,
+          isActive: editRepairShopForm.isActive
+        })
+      });
+
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Repair shop updated successfully' });
+        fetchRepairShops();
+        setEditRepairShopDialogOpen(false);
+        setEditRepairShopForm({
+          id: '',
+          name: '',
+          manager: '',
+          city: '',
+          country: 'Morocco',
+          phone: '',
+          email: '',
+          description: '',
+          imageUrl: '',
+          activeSince: '',
+          isActive: true
+        });
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update repair shop');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message || 'Failed to update repair shop', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete repair shop
+  const deleteRepairShop = async (shopId: string) => {
+    if (!confirm('Are you sure you want to delete this repair shop?')) return;
+
+    try {
+      const response = await fetch(`/api/repair-shops?id=${shopId}`, { method: 'DELETE' });
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Repair shop deleted successfully' });
+        fetchRepairShops();
+      } else {
+        throw new Error('Failed to delete repair shop');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete repair shop', variant: 'destructive' });
+    }
+  };
+
+  // Open edit repair shop dialog
+  const openRepairShopEditDialog = (shop: any) => {
+    setEditRepairShopForm({
+      id: shop.id,
+      name: shop.name,
+      manager: shop.manager || '',
+      city: shop.city,
+      country: shop.country,
+      phone: shop.phone || '',
+      email: shop.email || '',
+      description: shop.description || '',
+      imageUrl: shop.imageUrl || '',
+      activeSince: shop.activeSince ? new Date(shop.activeSince).toISOString().split('T')[0] : '',
+      isActive: shop.isActive
+    });
+    setSelectedRepairShop(shop);
+    setEditRepairShopDialogOpen(true);
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchCourses();
@@ -462,6 +653,7 @@ export default function AdminPage() {
       fetchMessages();
       fetchTournaments();
       fetchGroups();
+      fetchRepairShops();
       fetchAdminPermissions();
     }
   }, [isAuthenticated]);
@@ -2247,6 +2439,15 @@ export default function AdminPage() {
                 className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
               >Messages</TabsTrigger>
             )}
+            {adminPermissions?.isSuperAdmin && (
+              <TabsTrigger
+                value="repair-shops"
+                className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
+              >
+                <Wrench className="w-4 h-4" />
+                Repair Shops
+              </TabsTrigger>
+            )}
             {(adminPermissions?.isSuperAdmin || adminPermissions?.permissions?.canViewSettings) && (
               <TabsTrigger
                 value="settings"
@@ -3905,6 +4106,210 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="repair-shops" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wrench className="w-5 h-5" />
+                      Repair Shops
+                    </CardTitle>
+                    <CardDescription>Manage golf club repair shops ({repairShops.length} total)</CardDescription>
+                  </div>
+                  <Dialog open={addRepairShopDialogOpen} onOpenChange={setAddRepairShopDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button><Plus className="mr-2 h-4 w-4" />Add Shop</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Repair Shop</DialogTitle>
+                        <DialogDescription>Add a new golf club repair shop</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="shopName">Shop Name *</Label>
+                            <Input id="shopName" value={newRepairShopForm.name} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, name: e.target.value })} placeholder="e.g., Pro Golf Repair" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="shopManager">Manager</Label>
+                            <Input id="shopManager" value={newRepairShopForm.manager} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, manager: e.target.value })} placeholder="e.g., John Smith" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="shopCity">City *</Label>
+                            <Input id="shopCity" value={newRepairShopForm.city} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, city: e.target.value })} placeholder="e.g., Casablanca" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="shopCountry">Country *</Label>
+                            <Input id="shopCountry" value={newRepairShopForm.country} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, country: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="shopPhone">Phone</Label>
+                            <Input id="shopPhone" value={newRepairShopForm.phone} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, phone: e.target.value })} placeholder="e.g., +212 5XX XXX XXX" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="shopEmail">Email</Label>
+                            <Input id="shopEmail" type="email" value={newRepairShopForm.email} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, email: e.target.value })} placeholder="e.g., contact@shop.com" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="shopDescription">Description</Label>
+                          <Textarea id="shopDescription" value={newRepairShopForm.description} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, description: e.target.value })} rows={3} placeholder="Shop description..." />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="shopImageUrl">Image URL</Label>
+                          <Input id="shopImageUrl" value={newRepairShopForm.imageUrl} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, imageUrl: e.target.value })} placeholder="https://..." />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="shopActiveSince">Active Since</Label>
+                            <Input id="shopActiveSince" type="date" value={newRepairShopForm.activeSince} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, activeSince: e.target.value })} />
+                          </div>
+                          <div className="space-y-2 flex items-center gap-3 pt-6">
+                            <Switch
+                              id="shopIsActive"
+                              checked={newRepairShopForm.isActive}
+                              onCheckedChange={(checked) => setNewRepairShopForm({ ...newRepairShopForm, isActive: checked })}
+                            />
+                            <Label htmlFor="shopIsActive">Active</Label>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setAddRepairShopDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={createRepairShop} disabled={saving || !newRepairShopForm.name || !newRepairShopForm.city}>
+                          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Add Shop
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {repairShopsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : repairShops.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm">
+                      <div className="col-span-3">Name</div>
+                      <div className="col-span-2">City</div>
+                      <div className="col-span-2">Country</div>
+                      <div className="col-span-2">Manager</div>
+                      <div className="col-span-1">Phone</div>
+                      <div className="col-span-1">Status</div>
+                      <div className="col-span-1"></div>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {repairShops.map((shop) => (
+                        <div key={shop.id} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
+                          <div className="col-span-3 font-medium truncate">{shop.name}</div>
+                          <div className="col-span-2 text-muted-foreground">{shop.city}</div>
+                          <div className="col-span-2 text-muted-foreground">{shop.country}</div>
+                          <div className="col-span-2 text-muted-foreground truncate">{shop.manager || '-'}</div>
+                          <div className="col-span-1 text-muted-foreground text-sm truncate">{shop.phone || '-'}</div>
+                          <div className="col-span-1">
+                            <Badge variant={shop.isActive ? 'default' : 'secondary'} className={shop.isActive ? 'bg-green-600' : ''}>
+                              {shop.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <div className="col-span-1 flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => openRepairShopEditDialog(shop)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => deleteRepairShop(shop.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">No repair shops found. Click "Add Shop" to create one.</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit Repair Shop Dialog */}
+            <Dialog open={editRepairShopDialogOpen} onOpenChange={setEditRepairShopDialogOpen}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Repair Shop</DialogTitle>
+                  <DialogDescription>Update repair shop information</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopName">Shop Name *</Label>
+                      <Input id="editShopName" value={editRepairShopForm.name} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, name: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopManager">Manager</Label>
+                      <Input id="editShopManager" value={editRepairShopForm.manager} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, manager: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopCity">City *</Label>
+                      <Input id="editShopCity" value={editRepairShopForm.city} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, city: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopCountry">Country *</Label>
+                      <Input id="editShopCountry" value={editRepairShopForm.country} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, country: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopPhone">Phone</Label>
+                      <Input id="editShopPhone" value={editRepairShopForm.phone} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, phone: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopEmail">Email</Label>
+                      <Input id="editShopEmail" type="email" value={editRepairShopForm.email} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, email: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editShopDescription">Description</Label>
+                    <Textarea id="editShopDescription" value={editRepairShopForm.description} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, description: e.target.value })} rows={3} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editShopImageUrl">Image URL</Label>
+                    <Input id="editShopImageUrl" value={editRepairShopForm.imageUrl} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, imageUrl: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editShopActiveSince">Active Since</Label>
+                      <Input id="editShopActiveSince" type="date" value={editRepairShopForm.activeSince} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, activeSince: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 flex items-center gap-3 pt-6">
+                      <Switch
+                        id="editShopIsActive"
+                        checked={editRepairShopForm.isActive}
+                        onCheckedChange={(checked) => setEditRepairShopForm({ ...editRepairShopForm, isActive: checked })}
+                      />
+                      <Label htmlFor="editShopIsActive">Active</Label>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditRepairShopDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={updateRepairShop} disabled={saving || !editRepairShopForm.name || !editRepairShopForm.city}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">

@@ -46,6 +46,9 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   // Tables depending on users and golf_courses (partner requests)
   golf_partner_requests: ['users', 'golf_courses'],
   golf_partner_request_participants: ['golf_partner_requests', 'users'],
+
+  // Tables with no dependencies
+  repair_shops: [],
 };
 
 // Get table names in correct restore order (topological sort)
@@ -297,6 +300,16 @@ async function fetchAllData() {
     errors.push(`golf_partner_request_participants: ${e instanceof Error ? e.message : 'Unknown error'}`);
     data.golf_partner_request_participants = [];
     statistics.golf_partner_request_participants = 0;
+  }
+
+  // Fetch repair shops
+  try {
+    data.repair_shops = await db.repairShop.findMany();
+    statistics.repair_shops = data.repair_shops.length;
+  } catch (e) {
+    errors.push(`repair_shops: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.repair_shops = [];
+    statistics.repair_shops = 0;
   }
 
   return { data, statistics, errors };

@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal, CheckCircle
+  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { 
   formatTemperature, 
   convertWindSpeed, 
@@ -1227,6 +1228,20 @@ export default function JazelApp() {
   const [showMessageDetailDialog, setShowMessageDetailDialog] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
+  // Side menu state
+  const [showSideMenu, setShowSideMenu] = useState(false);
+  const [showRepairShopsDialog, setShowRepairShopsDialog] = useState(false);
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
+
+  // Repair shops state
+  const [repairShops, setRepairShops] = useState<any[]>([]);
+  const [repairShopFilters, setRepairShopFilters] = useState<{countries: string[], cities: string[]}>({ countries: [], cities: [] });
+  const [selectedShopCountry, setSelectedShopCountry] = useState('all');
+  const [selectedShopCity, setSelectedShopCity] = useState('all');
+  const [shopSearchQuery, setShopSearchQuery] = useState('');
+  const [selectedRepairShop, setSelectedRepairShop] = useState<any | null>(null);
+  const [showRepairShopDetail, setShowRepairShopDetail] = useState(false);
+
   // User clubs state
   const [showBagDialog, setShowBagDialog] = useState(false);
   const [userClubs, setUserClubs] = useState<{ id: string; clubName: string; estimatedDistance: number | null; sortOrder: number }[]>([]);
@@ -1393,6 +1408,30 @@ export default function JazelApp() {
       );
     }
   }, []);
+
+  // Fetch repair shops
+  const fetchRepairShops = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (selectedShopCountry !== 'all') params.append('country', selectedShopCountry);
+      if (selectedShopCity !== 'all') params.append('city', selectedShopCity);
+      if (shopSearchQuery) params.append('search', shopSearchQuery);
+      
+      const response = await fetch(`/api/repair-shops?${params.toString()}`);
+      const data = await response.json();
+      setRepairShops(data.shops || []);
+      setRepairShopFilters(data.filters || { countries: [], cities: [] });
+    } catch (error) {
+      console.error('Error fetching repair shops:', error);
+    }
+  }, [selectedShopCountry, selectedShopCity, shopSearchQuery]);
+
+  // Fetch repair shops when dialog opens
+  useEffect(() => {
+    if (showRepairShopsDialog) {
+      fetchRepairShops();
+    }
+  }, [showRepairShopsDialog, fetchRepairShops]);
 
   // Calculate distance between two coordinates
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -3135,7 +3174,10 @@ export default function JazelApp() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link href="/guide" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <button 
+              onClick={() => setShowSideMenu(true)} 
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <img src="/golf-ball-logo.png" alt="Jazel" className="w-16 h-16 object-contain" />
               <div>
                 <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)', WebkitBackgroundClip: 'text', backgroundClip: 'text'}}>
@@ -3143,7 +3185,7 @@ export default function JazelApp() {
                 </h1>
                 <p className="text-xs text-muted-foreground">Golf Scorecard</p>
               </div>
-            </Link>
+            </button>
             
             <div className="flex items-center gap-3">
               {user?.isAdmin && (
@@ -7207,6 +7249,345 @@ export default function JazelApp() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Side Menu Sheet */}
+      <Sheet open={showSideMenu} onOpenChange={setShowSideMenu}>
+        <SheetContent side="left" className="w-80">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <img src="/golf-ball-logo.png" alt="Jazel" className="w-8 h-8 object-contain" />
+              <span className="bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
+                Jazel Golf
+              </span>
+            </SheetTitle>
+            <SheetDescription>
+              Golf Scorecard Application
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 flex flex-col gap-2">
+            {/* Repair Shops */}
+            <button
+              onClick={() => {
+                setShowSideMenu(false);
+                setShowRepairShopsDialog(true);
+              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 transition-colors text-left"
+            >
+              <Wrench className="w-5 h-5" style={{color: '#39638b'}} />
+              <span className="font-medium">Repair Shops</span>
+            </button>
+            
+            {/* User Guide */}
+            <Link href="/guide" onClick={() => setShowSideMenu(false)}>
+              <button className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 transition-colors text-left w-full">
+                <BookOpen className="w-5 h-5" style={{color: '#39638b'}} />
+                <span className="font-medium">User Guide</span>
+              </button>
+            </Link>
+            
+            {/* About */}
+            <button
+              onClick={() => {
+                setShowSideMenu(false);
+                setShowAboutDialog(true);
+              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 transition-colors text-left"
+            >
+              <Info className="w-5 h-5" style={{color: '#39638b'}} />
+              <span className="font-medium">About</span>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Repair Shops Dialog */}
+      <Dialog open={showRepairShopsDialog} onOpenChange={setShowRepairShopsDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="w-5 h-5" style={{color: '#39638b'}} />
+              Repair Shops
+            </DialogTitle>
+            <DialogDescription>
+              Find golf equipment repair shops near you
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Search and Filters */}
+            <div className="space-y-3">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search shops by name, manager..."
+                  value={shopSearchQuery}
+                  onChange={(e) => setShopSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              {/* Country and City Filters */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm text-muted-foreground">Country</Label>
+                  <Select value={selectedShopCountry} onValueChange={setSelectedShopCountry}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="All Countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      {repairShopFilters.countries.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">City</Label>
+                  <Select value={selectedShopCity} onValueChange={setSelectedShopCity}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="All Cities" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Cities</SelectItem>
+                      {repairShopFilters.cities.map((city) => (
+                        <SelectItem key={city} value={city}>
+                          {city}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            {/* Repair Shops List */}
+            <ScrollArea className="h-[400px] pr-4">
+              {repairShops.length === 0 ? (
+                <div className="text-center py-8">
+                  <Wrench className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-lg font-medium text-muted-foreground">No repair shops found</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Try adjusting your search or filters
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {repairShops.map((shop) => (
+                    <Card
+                      key={shop.id}
+                      className="cursor-pointer transition-all hover:shadow-md"
+                      style={{borderColor: '#8ab0d1'}}
+                      onClick={() => {
+                        setSelectedRepairShop(shop);
+                        setShowRepairShopDetail(true);
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#4a7aa8'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex gap-4">
+                          {/* Shop Image */}
+                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 flex items-center justify-center">
+                            {shop.imageUrl ? (
+                              <img
+                                src={shop.imageUrl}
+                                alt={shop.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Wrench className="w-8 h-8 text-muted-foreground" style={{color: '#8ab0d1'}} />
+                            )}
+                          </div>
+                          
+                          {/* Shop Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold truncate" style={{color: '#39638b'}}>{shop.name}</h4>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {shop.city}, {shop.country}
+                            </p>
+                            {shop.manager && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                <User className="w-3 h-3" />
+                                {shop.manager}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <ChevronRight className="w-5 h-5 text-muted-foreground self-center flex-shrink-0" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+            
+            {/* Add Shop Button (Super Admin only) */}
+            {(user as any)?.isSuperAdmin && (
+              <div className="pt-2 border-t" style={{borderColor: '#d6e4ef'}}>
+                <Button
+                  className="w-full text-white"
+                  style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                  onClick={() => toast.info('Add Shop functionality coming soon')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Repair Shop
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Repair Shop Detail Dialog */}
+      <Dialog open={showRepairShopDetail} onOpenChange={setShowRepairShopDetail}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="w-5 h-5" style={{color: '#39638b'}} />
+              {selectedRepairShop?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedRepairShop && (
+            <div className="space-y-4">
+              {/* Shop Image */}
+              {selectedRepairShop.imageUrl && (
+                <div className="w-full h-48 rounded-lg overflow-hidden">
+                  <img
+                    src={selectedRepairShop.imageUrl}
+                    alt={selectedRepairShop.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
+              {/* Basic Info */}
+              <div className="space-y-3">
+                {selectedRepairShop.manager && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" style={{color: '#39638b'}} />
+                    <span className="text-sm">{selectedRepairShop.manager}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
+                  <span className="text-sm">{selectedRepairShop.city}, {selectedRepairShop.country}</span>
+                </div>
+                
+                {selectedRepairShop.activeSince && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" style={{color: '#39638b'}} />
+                    <span className="text-sm">Active since {new Date(selectedRepairShop.activeSince).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Description */}
+              {selectedRepairShop.description && (
+                <div className="p-3 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+                  <p className="text-sm">{selectedRepairShop.description}</p>
+                </div>
+              )}
+              
+              {/* Contact Info */}
+              <div className="space-y-2">
+                {selectedRepairShop.phone && (
+                  <a
+                    href={`tel:${selectedRepairShop.phone}`}
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <Phone className="w-4 h-4" style={{color: '#39638b'}} />
+                    <span className="text-sm" style={{color: '#39638b'}}>{selectedRepairShop.phone}</span>
+                  </a>
+                )}
+                
+                {selectedRepairShop.email && (
+                  <a
+                    href={`mailto:${selectedRepairShop.email}`}
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <Mail className="w-4 h-4" style={{color: '#39638b'}} />
+                    <span className="text-sm" style={{color: '#39638b'}}>{selectedRepairShop.email}</span>
+                  </a>
+                )}
+              </div>
+              
+              {/* Close Button */}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowRepairShopDetail(false)}
+                style={{borderColor: '#8ab0d1'}}
+              >
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* About Dialog */}
+      <Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <img src="/golf-ball-logo.png" alt="Jazel" className="w-8 h-8 object-contain" />
+              Jazel Golf Scorecard
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* App Info */}
+            <div className="text-center pb-4 border-b" style={{borderColor: '#d6e4ef'}}>
+              <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
+                Jazel Golf Scorecard
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.2</p>
+            </div>
+            
+            {/* Description */}
+            <p className="text-sm text-muted-foreground">
+              A comprehensive golf scorecard application for tracking rounds, finding courses, and connecting with golfers.
+            </p>
+            
+            {/* Features */}
+            <div>
+              <p className="text-sm font-medium mb-2" style={{color: '#39638b'}}>Features:</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li className="flex items-center gap-2">
+                  <Navigation className="w-4 h-4" style={{color: '#39638b'}} />
+                  GPS Range Finder
+                </li>
+                <li className="flex items-center gap-2">
+                  <Target className="w-4 h-4" style={{color: '#39638b'}} />
+                  Score Tracking
+                </li>
+                <li className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4" style={{color: '#39638b'}} />
+                  Tournament Management
+                </li>
+                <li className="flex items-center gap-2">
+                  <Users className="w-4 h-4" style={{color: '#39638b'}} />
+                  Partner Finder
+                </li>
+              </ul>
+            </div>
+            
+            {/* Copyright */}
+            <div className="text-center pt-4 border-t" style={{borderColor: '#d6e4ef'}}>
+              <p className="text-xs text-muted-foreground">© 2025 Jazel Golf</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Footer */}
       <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -7214,7 +7595,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.1</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.2</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
