@@ -375,8 +375,6 @@ export async function POST(request: NextRequest) {
         completedAt: true,
         scores: true,
         playerNames: true,
-        weatherTemp: true,
-        weatherWind: true,
         course: {
           select: {
             holes: {
@@ -677,9 +675,7 @@ export async function POST(request: NextRequest) {
     // For now, we check if the user has any activity that suggests app usage
 
     // GPS User - check if user has any round with weather data (implies GPS was used)
-    const hasWeatherData = rounds.some(r => r.weatherTemp || r.weatherWind);
-    if (hasWeatherData && await awardAchievement(userId, 'gps_user')) awardedBadges.push('gps_user');
-
+    // GPS User badge is awarded when user opens the course map (handled in CourseMap component)
     // Stat Tracker - check if user has completed rounds (implies stats viewed)
     if (roundCount >= 1 && await awardAchievement(userId, 'stat_tracker')) awardedBadges.push('stat_tracker');
 
@@ -712,6 +708,7 @@ export async function POST(request: NextRequest) {
       'handicap_improve_3',  // Requires historical handicap tracking
       'handicap_improve_5',  // Requires historical handicap tracking
       'single_digit',        // Could be validated but handicap may have changed since award
+      'gps_user',            // Awarded when user opens course map - not round-based
     ]);
 
     const validBadgeCodes = new Set<string>([
@@ -764,7 +761,7 @@ export async function POST(request: NextRequest) {
       ...(clubCount >= 1 ? ['first_club'] : []),
       ...(clubCount >= 5 ? ['bag_ready'] : []),
       // App
-      ...(hasWeatherData ? ['gps_user'] : []),
+      // gps_user is awarded when map is opened - not validated here
       ...(roundCount >= 1 ? ['stat_tracker'] : []),
       ...(user && user.name && user.city && user.country ? ['guide_reader'] : []),
       // Social

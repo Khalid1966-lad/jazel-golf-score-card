@@ -53,6 +53,7 @@ interface CourseMapProps {
   userClubs?: UserClub[];
   weatherData?: WeatherData | null;
   onRefreshWeather?: () => void;
+  userId?: string; // For awarding GPS User badge
 }
 
 // Calculate distance between two coordinates using Haversine formula
@@ -130,7 +131,8 @@ export default function CourseMap({
   onClose,
   userClubs = [],
   weatherData,
-  onRefreshWeather
+  onRefreshWeather,
+  userId,
 }: CourseMapProps) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -154,6 +156,20 @@ export default function CourseMap({
   const watchIdRef = useRef<number | null>(null);
   const userZoomRef = useRef<number | null>(null); // Track user's manual zoom level
   const isFirstHoleLoadRef = useRef(true); // Track if this is the first hole load
+  const gpsBadgeAwardedRef = useRef(false); // Track if GPS badge was already attempted
+
+  // Award GPS User badge when map is opened (only once)
+  useEffect(() => {
+    if (userId && !gpsBadgeAwardedRef.current) {
+      gpsBadgeAwardedRef.current = true;
+      // Award the GPS User badge
+      fetch('/api/achievements/gps-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      }).catch(err => console.error('Failed to award GPS User badge:', err));
+    }
+  }, [userId]);
 
   // Memoize green location to prevent recalculation
   const greenLocation = useMemo(() => getHoleGreenLocation(currentHole, course), [currentHole, course]);
