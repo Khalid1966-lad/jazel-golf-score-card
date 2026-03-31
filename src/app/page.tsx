@@ -7995,7 +7995,7 @@ export default function JazelApp() {
             
             {/* Copyright */}
             <div className="text-center pt-4 border-t" style={{borderColor: '#d6e4ef'}}>
-              <p className="text-xs text-muted-foreground">© 2025 Jazel Golf</p>
+              <p className="text-xs text-muted-foreground">© 2026 Jazel Golf</p>
             </div>
           </div>
         </DialogContent>
