@@ -68,6 +68,53 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        rounds: {
+          where: {
+            isShared: true,
+            completed: true,
+          },
+          select: {
+            id: true,
+            date: true,
+            totalStrokes: true,
+            totalPutts: true,
+            fairwaysHit: true,
+            fairwaysTotal: true,
+            greensInReg: true,
+            penalties: true,
+            holesPlayed: true,
+            holesType: true,
+            course: {
+              select: {
+                id: true,
+                name: true,
+                city: true,
+                totalHoles: true,
+                holes: {
+                  select: {
+                    holeNumber: true,
+                    par: true,
+                    handicap: true,
+                  },
+                  orderBy: { holeNumber: 'asc' },
+                },
+              },
+            },
+            scores: {
+              select: {
+                holeNumber: true,
+                strokes: true,
+                putts: true,
+                fairwayHit: true,
+                greenInReg: true,
+                penalties: true,
+              },
+              orderBy: { holeNumber: 'asc' },
+            },
+          },
+          orderBy: { date: 'desc' },
+          take: 1, // Only get the most recent shared round
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -91,6 +138,7 @@ export async function GET(request: NextRequest) {
         achievementPoints: totalPoints,
         achievementLevel: level,
         achievementColor: color,
+        lastSharedRound: user.rounds[0] || null,
       };
     });
 

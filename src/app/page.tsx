@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe
+  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -126,6 +126,7 @@ interface SavedRound {
   playerNames?: string;
   holesPlayed?: number; // 9 or 18
   holesType?: string | null; // "front" or "back" for 9-hole rounds
+  isShared?: boolean; // Whether the round is shared publicly
   course: {
     id?: string;
     name: string;
@@ -151,6 +152,26 @@ interface Golfer {
   achievementPoints?: number;
   achievementLevel?: string;
   achievementColor?: string;
+  lastSharedRound?: {
+    id: string;
+    date: string;
+    totalStrokes: number | null;
+    totalPutts: number | null;
+    fairwaysHit: number | null;
+    fairwaysTotal: number | null;
+    greensInReg: number | null;
+    penalties: number | null;
+    holesPlayed: number;
+    holesType: string | null;
+    course: {
+      id: string;
+      name: string;
+      city: string;
+      totalHoles: number;
+      holes: { holeNumber: number; par: number; handicap: number | null }[];
+    };
+    scores: { holeNumber: number; strokes: number; putts: number | null; fairwayHit: boolean | null; greenInReg: boolean; penalties: number }[];
+  } | null;
 }
 
 interface GolferGroup {
@@ -474,7 +495,8 @@ function RoundHistoryCard({
   downloadRoundAsXlsx,
   loadRoundForEditing,
   setRoundToDelete,
-  onViewPlayerProfile
+  onViewPlayerProfile,
+  onToggleShare
 }: { 
   round: SavedRound;
   index: number;
@@ -491,6 +513,7 @@ function RoundHistoryCard({
   loadRoundForEditing: (round: SavedRound) => void;
   setRoundToDelete: (round: SavedRound) => void;
   onViewPlayerProfile?: (player: { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null }) => void;
+  onToggleShare?: (roundId: string, isShared: boolean) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -600,6 +623,20 @@ function RoundHistoryCard({
                   <Trash2 className="w-3 h-3 mr-1" />
                   Delete
                 </Button>
+                {round.completed && onToggleShare && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onToggleShare(round.id, !round.isShared)}
+                    className={round.isShared 
+                      ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200" 
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-slate-200"}
+                    title={round.isShared ? "Unshare scorecard" : "Share scorecard with golfers"}
+                  >
+                    <Share2 className="w-3 h-3 mr-1" />
+                    {round.isShared ? 'Shared' : 'Share'}
+                  </Button>
+                )}
               </div>
 
               {/* Show additional players if any */}
@@ -1144,6 +1181,7 @@ export default function JazelApp() {
   const [golferSort, setGolferSort] = useState<'date' | 'rounds' | 'achievements'>('date');
   const [groups, setGroups] = useState<GolferGroup[]>([]);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
+  const [viewingSharedScorecard, setViewingSharedScorecard] = useState<Golfer | null>(null);
   const [showAICaddie, setShowAICaddie] = useState(false);
   const [currentHoleInfo, setCurrentHoleInfo] = useState<{ par: number; distance: number } | null>(null);
   const [showMapScreen, setShowMapScreen] = useState(false);
@@ -2923,6 +2961,32 @@ export default function JazelApp() {
     }
   };
 
+  // Toggle share status of a round
+  const toggleRoundShare = async (roundId: string, isShared: boolean) => {
+    try {
+      const response = await fetch('/api/rounds/share', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roundId, isShared }),
+      });
+      
+      if (!response.ok) {
+        toast.error('Failed to update share status');
+        return;
+      }
+      
+      // Update the round in the local state
+      setRoundHistory(prev => prev.map(r => 
+        r.id === roundId ? { ...r, isShared } : r
+      ));
+      
+      toast.success(isShared ? 'Scorecard shared! Golfers can now see it.' : 'Scorecard unshared');
+    } catch (error) {
+      console.error('Failed to toggle share:', error);
+      toast.error('Failed to update share status');
+    }
+  };
+
   // Load a round for editing - extracted to useCallback for better reactivity
   const loadRoundForEditing = useCallback(async (round: SavedRound) => {
     // Get the course ID - try both locations
@@ -4515,6 +4579,7 @@ export default function JazelApp() {
                         loadRoundForEditing={loadRoundForEditing}
                         setRoundToDelete={setRoundToDelete}
                         onViewPlayerProfile={setPlayerToView}
+                        onToggleShare={toggleRoundShare}
                       />
                     );})}
                   </div>
@@ -4934,6 +4999,22 @@ export default function JazelApp() {
                                 </span>
                               </div>
                             </div>
+                            {/* Shared Scorecard Button */}
+                            {golfer.lastSharedRound && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-3 text-xs"
+                                style={{borderColor: '#8ab0d1', color: '#39638b'}}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingSharedScorecard(golfer);
+                                }}
+                              >
+                                <BookOpen className="w-3 h-3 mr-1" />
+                                View Shared Scorecard
+                              </Button>
+                            )}
                           </CardContent>
                         </Card>
                       </motion.div>
@@ -7653,6 +7734,216 @@ export default function JazelApp() {
         </DialogContent>
       </Dialog>
 
+      {/* Shared Scorecard Dialog */}
+      <Dialog open={!!viewingSharedScorecard} onOpenChange={(open) => !open && setViewingSharedScorecard(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0">
+          {viewingSharedScorecard?.lastSharedRound && (
+            <>
+              <DialogHeader className="p-4 border-b" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-white/20">
+                      {viewingSharedScorecard.avatar ? (
+                        <img src={viewingSharedScorecard.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-white">
+                          {viewingSharedScorecard.name?.charAt(0).toUpperCase() || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <DialogTitle className="text-white text-lg">{viewingSharedScorecard.name}'s Scorecard</DialogTitle>
+                      <DialogDescription className="text-white/80 text-sm">
+                        {viewingSharedScorecard.lastSharedRound.course.name} • {new Date(viewingSharedScorecard.lastSharedRound.date).toLocaleDateString()}
+                      </DialogDescription>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                    {viewingSharedScorecard.lastSharedRound.holesPlayed} Holes
+                  </Badge>
+                </div>
+              </DialogHeader>
+              
+              <ScrollArea className="flex-1 h-[calc(90vh-100px)]">
+                <div className="p-4 space-y-4">
+                  {/* Stats Summary */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="text-center p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                      <p className="text-xs text-muted-foreground">Total</p>
+                      <p className="text-xl font-bold" style={{color: '#39638b'}}>{viewingSharedScorecard.lastSharedRound.totalStrokes || '-'}</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                      <p className="text-xs text-muted-foreground">Putts</p>
+                      <p className="text-xl font-bold" style={{color: '#39638b'}}>{viewingSharedScorecard.lastSharedRound.totalPutts || '-'}</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                      <p className="text-xs text-muted-foreground">FWY</p>
+                      <p className="text-xl font-bold" style={{color: '#39638b'}}>
+                        {viewingSharedScorecard.lastSharedRound.fairwaysHit && viewingSharedScorecard.lastSharedRound.fairwaysTotal
+                          ? `${viewingSharedScorecard.lastSharedRound.fairwaysHit}/${viewingSharedScorecard.lastSharedRound.fairwaysTotal}`
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                      <p className="text-xs text-muted-foreground">GIR</p>
+                      <p className="text-xl font-bold" style={{color: '#39638b'}}>{viewingSharedScorecard.lastSharedRound.greensInReg || '-'}</p>
+                    </div>
+                  </div>
+
+                  {/* Scorecard Table */}
+                  <div className="rounded-xl border overflow-hidden" style={{borderColor: '#d6e4ef'}}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                            <th className="px-2 py-2 text-white text-center font-medium">Hole</th>
+                            {viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'front' 
+                              ? [1,2,3,4,5,6,7,8,9].map(h => (
+                                  <th key={h} className="px-2 py-2 text-white text-center font-medium min-w-[32px]">{h}</th>
+                                ))
+                              : viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'back'
+                              ? [10,11,12,13,14,15,16,17,18].map(h => (
+                                  <th key={h} className="px-2 py-2 text-white text-center font-medium min-w-[32px]">{h}</th>
+                                ))
+                              : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].map(h => (
+                                  <th key={h} className="px-2 py-2 text-white text-center font-medium min-w-[32px]">{h}</th>
+                                ))
+                            }
+                            <th className="px-2 py-2 text-white text-center font-medium bg-white/10">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Par Row */}
+                          <tr className="bg-slate-50">
+                            <td className="px-2 py-2 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#39638b'}}>Par</td>
+                            {(() => {
+                              const holes = viewingSharedScorecard.lastSharedRound.course.holes;
+                              const holesToShow = viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'front'
+                                ? holes.filter(h => h.holeNumber <= 9)
+                                : viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'back'
+                                ? holes.filter(h => h.holeNumber >= 10)
+                                : holes;
+                              return holesToShow.map(hole => (
+                                <td key={hole.holeNumber} className="px-2 py-2 text-center border-r" style={{borderColor: '#d6e4ef'}}>{hole.par}</td>
+                              ));
+                            })()}
+                            <td className="px-2 py-2 text-center font-bold" style={{color: '#39638b'}}>
+                              {(() => {
+                                const holes = viewingSharedScorecard.lastSharedRound.course.holes;
+                                const holesToShow = viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'front'
+                                  ? holes.filter(h => h.holeNumber <= 9)
+                                  : viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'back'
+                                  ? holes.filter(h => h.holeNumber >= 10)
+                                  : holes;
+                                return holesToShow.reduce((sum, h) => sum + h.par, 0);
+                              })()}
+                            </td>
+                          </tr>
+                          {/* Strokes Row */}
+                          <tr>
+                            <td className="px-2 py-2 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#39638b'}}>Score</td>
+                            {(() => {
+                              const scores = viewingSharedScorecard.lastSharedRound.scores;
+                              const holes = viewingSharedScorecard.lastSharedRound.course.holes;
+                              const holesToShow = viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'front'
+                                ? holes.filter(h => h.holeNumber <= 9)
+                                : viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'back'
+                                ? holes.filter(h => h.holeNumber >= 10)
+                                : holes;
+                              return holesToShow.map(hole => {
+                                const score = scores.find(s => s.holeNumber === hole.holeNumber);
+                                const par = hole.par;
+                                const strokes = score?.strokes || 0;
+                                let bgColor = '';
+                                let textColor = '#39638b';
+                                if (strokes > 0) {
+                                  if (strokes === 1) { bgColor = '#fef3c7'; textColor = '#d97706'; } // Hole in one
+                                  else if (strokes <= par - 2) { bgColor = '#fef3c7'; textColor = '#d97706'; } // Eagle
+                                  else if (strokes === par - 1) { bgColor = '#dbeafe'; textColor = '#2563eb'; } // Birdie
+                                  else if (strokes === par) { bgColor = ''; textColor = '#39638b'; } // Par
+                                  else if (strokes === par + 1) { bgColor = '#fef2f2'; textColor = '#dc2626'; } // Bogey
+                                  else if (strokes >= par + 2) { bgColor = '#f3e8ff'; textColor = '#9333ea'; } // Double+
+                                }
+                                return (
+                                  <td key={hole.holeNumber} className="px-2 py-2 text-center border-r font-medium" style={{borderColor: '#d6e4ef', background: bgColor, color: textColor}}>
+                                    {strokes || '-'}
+                                  </td>
+                                );
+                              });
+                            })()}
+                            <td className="px-2 py-2 text-center font-bold" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)', color: 'white'}}>
+                              {viewingSharedScorecard.lastSharedRound.totalStrokes || '-'}
+                            </td>
+                          </tr>
+                          {/* Putts Row */}
+                          <tr className="bg-slate-50">
+                            <td className="px-2 py-2 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#39638b'}}>Putts</td>
+                            {(() => {
+                              const scores = viewingSharedScorecard.lastSharedRound.scores;
+                              const holes = viewingSharedScorecard.lastSharedRound.course.holes;
+                              const holesToShow = viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'front'
+                                ? holes.filter(h => h.holeNumber <= 9)
+                                : viewingSharedScorecard.lastSharedRound.holesPlayed === 9 && viewingSharedScorecard.lastSharedRound.holesType === 'back'
+                                ? holes.filter(h => h.holeNumber >= 10)
+                                : holes;
+                              return holesToShow.map(hole => {
+                                const score = scores.find(s => s.holeNumber === hole.holeNumber);
+                                return (
+                                  <td key={hole.holeNumber} className="px-2 py-2 text-center border-r" style={{borderColor: '#d6e4ef'}}>
+                                    {score?.putts || '-'}
+                                  </td>
+                                );
+                              });
+                            })()}
+                            <td className="px-2 py-2 text-center font-bold" style={{color: '#39638b'}}>
+                              {viewingSharedScorecard.lastSharedRound.totalPutts || '-'}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex flex-wrap gap-3 justify-center text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded" style={{background: '#fef3c7'}}></div>
+                      <span>Eagle / Hole in One</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded" style={{background: '#dbeafe'}}></div>
+                      <span>Birdie</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded" style={{background: 'white', border: '1px solid #d6e4ef'}}></div>
+                      <span>Par</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded" style={{background: '#fef2f2'}}></div>
+                      <span>Bogey</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded" style={{background: '#f3e8ff'}}></div>
+                      <span>Double Bogey+</span>
+                    </div>
+                  </div>
+
+                  {/* Close Button */}
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setViewingSharedScorecard(null)}
+                    style={{borderColor: '#8ab0d1'}}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </ScrollArea>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* About Dialog */}
       <Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
         <DialogContent className="max-w-md">
@@ -7668,7 +7959,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.5</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.6</p>
             </div>
             
             {/* Description */}
