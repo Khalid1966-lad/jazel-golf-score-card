@@ -182,11 +182,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - Update a partner request (status, notes, etc.)
+// PUT - Update a partner request (course, date, time, notes, maxPlayers, status)
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, userId, status, notes } = body;
+    const { id, userId, courseId, date, time, notes, maxPlayers, status } = body;
     
     if (!id || !userId) {
       return NextResponse.json(
@@ -217,8 +217,12 @@ export async function PUT(request: NextRequest) {
     const updatedRequest = await db.golfPartnerRequest.update({
       where: { id },
       data: {
-        status: status || existingRequest.status,
+        courseId: courseId || existingRequest.courseId,
+        date: date ? new Date(date) : existingRequest.date,
+        time: time || existingRequest.time,
         notes: notes !== undefined ? notes : existingRequest.notes,
+        maxPlayers: maxPlayers || existingRequest.maxPlayers,
+        status: status || existingRequest.status,
         updatedAt: new Date()
       },
       include: {

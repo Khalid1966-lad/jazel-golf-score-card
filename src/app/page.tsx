@@ -1244,7 +1244,9 @@ export default function JazelApp() {
   const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>([]);
   const [partnerRequestsLoading, setPartnerRequestsLoading] = useState(false);
   const [showCreatePartnerRequestDialog, setShowCreatePartnerRequestDialog] = useState(false);
+  const [showEditPartnerRequestDialog, setShowEditPartnerRequestDialog] = useState(false);
   const [partnerRequestToDelete, setPartnerRequestToDelete] = useState<PartnerRequest | null>(null);
+  const [partnerRequestToEdit, setPartnerRequestToEdit] = useState<PartnerRequest | null>(null);
   const [newPartnerRequest, setNewPartnerRequest] = useState({
     courseId: '',
     date: '',
@@ -1252,6 +1254,20 @@ export default function JazelApp() {
     notes: '',
     maxPlayers: 4
   });
+  const [editPartnerRequest, setEditPartnerRequest] = useState({
+    courseId: '',
+    date: '',
+    time: '09:00',
+    notes: '',
+    maxPlayers: 4,
+    status: 'open'
+  });
+
+  // Partner Request filters
+  const [partnerFilterCity, setPartnerFilterCity] = useState('');
+  const [partnerFilterCourse, setPartnerFilterCourse] = useState('');
+  const [partnerFilterDate, setPartnerFilterDate] = useState('');
+  const [lastSeenPartnerCount, setLastSeenPartnerCount] = useState(0);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -1580,7 +1596,7 @@ export default function JazelApp() {
     } finally {
       setPartnerRequestsLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   // Create partner request
   const createPartnerRequest = async () => {
@@ -1680,6 +1696,57 @@ export default function JazelApp() {
     }
   };
 
+  // Update partner request
+  const updatePartnerRequest = async () => {
+    if (!user || !partnerRequestToEdit) return;
+    if (!editPartnerRequest.courseId || !editPartnerRequest.date || !editPartnerRequest.time) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    try {
+      const response = await fetch('/api/partner-requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: partnerRequestToEdit.id,
+          userId: user.id,
+          courseId: editPartnerRequest.courseId,
+          date: editPartnerRequest.date,
+          time: editPartnerRequest.time,
+          notes: editPartnerRequest.notes || null,
+          maxPlayers: editPartnerRequest.maxPlayers,
+          status: editPartnerRequest.status
+        })
+      });
+      if (response.ok) {
+        toast.success('Partner request updated successfully!');
+        setShowEditPartnerRequestDialog(false);
+        setPartnerRequestToEdit(null);
+        await fetchPartnerRequests();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to update partner request');
+      }
+    } catch (error) {
+      console.error('Failed to update partner request:', error);
+      toast.error('Failed to update partner request');
+    }
+  };
+
+  // Open edit dialog for a partner request
+  const openEditPartnerRequestDialog = (request: PartnerRequest) => {
+    setPartnerRequestToEdit(request);
+    setEditPartnerRequest({
+      courseId: request.courseId,
+      date: new Date(request.date).toISOString().split('T')[0],
+      time: request.time,
+      notes: request.notes || '',
+      maxPlayers: request.maxPlayers,
+      status: request.status
+    });
+    setShowEditPartnerRequestDialog(true);
+  };
+
   // Mark message as read
   const markMessageAsRead = async (messageId: string) => {
     if (!user) return;
@@ -1741,6 +1808,56 @@ export default function JazelApp() {
   useEffect(() => {
     fetchGolfers(selectedGroupFilter);
   }, [selectedGroupFilter, fetchGolfers]);
+
+  // Track when user views Partners tab to mark current count as "seen"
+  useEffect(() => {
+    if (activeTab === 'partners' && partnerRequests.length > 0) {
+      setLastSeenPartnerCount(partnerRequests.length);
+    }
+  }, [activeTab, partnerRequests.length]);
+
+  // Calculate if there are new participants in user's requests
+  const hasNewPartnerActivity = useMemo(() => {
+    if (!user) return false;
+    // Check if user has any requests where someone else has joined
+    const userRequests = partnerRequests.filter(r => r.isCreator);
+    const hasNewJoins = userRequests.some(request => {
+      const otherParticipants = request.participants?.filter(p => p.userId !== request.creatorId) || [];
+      return otherParticipants.length > 0;
+    });
+    return hasNewJoins;
+  }, [user, partnerRequests]);
+
+  // Filter partner requests
+  const filteredPartnerRequests = useMemo(() => {
+    return partnerRequests.filter(request => {
+      // Filter by city
+      if (partnerFilterCity && !request.course.city.toLowerCase().includes(partnerFilterCity.toLowerCase())) {
+        return false;
+      }
+      // Filter by course
+      if (partnerFilterCourse && request.courseId !== partnerFilterCourse) {
+        return false;
+      }
+      // Filter by date
+      if (partnerFilterDate) {
+        const requestDate = new Date(request.date).toISOString().split('T')[0];
+        if (requestDate !== partnerFilterDate) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [partnerRequests, partnerFilterCity, partnerFilterCourse, partnerFilterDate]);
+
+  // Get unique cities from partner requests for filter dropdown
+  const partnerRequestCities = useMemo(() => {
+    const cities = new Set<string>();
+    partnerRequests.forEach(r => {
+      if (r.course.city) cities.add(r.course.city);
+    });
+    return Array.from(cities).sort();
+  }, [partnerRequests]);
 
   // Device orientation for compass - track which way device is facing
   useEffect(() => {
@@ -3109,9 +3226,12 @@ export default function JazelApp() {
                   <Trophy className="w-4 h-4" />
                   <span className="hidden sm:inline">Tournaments</span>
                 </TabsTrigger>
-                <TabsTrigger value="partners" className="gap-2">
+                <TabsTrigger value="partners" className="gap-2 relative">
                   <Calendar className="w-4 h-4" />
                   <span className="hidden sm:inline">Partners</span>
+                  {hasNewPartnerActivity && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="scorecard" className="gap-2">
                   <Target className="w-4 h-4" />
@@ -3474,20 +3594,84 @@ export default function JazelApp() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  {/* City Filter */}
+                  <Select value={partnerFilterCity} onValueChange={setPartnerFilterCity}>
+                    <SelectTrigger className="w-full sm:w-40 h-10 bg-white" style={{borderColor: '#a3c4e0'}}>
+                      <SelectValue placeholder="Filter by city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Cities</SelectItem>
+                      {partnerRequestCities.map(city => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Course Filter */}
+                  <Select value={partnerFilterCourse} onValueChange={setPartnerFilterCourse}>
+                    <SelectTrigger className="w-full sm:w-48 h-10 bg-white" style={{borderColor: '#a3c4e0'}}>
+                      <SelectValue placeholder="Filter by course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Courses</SelectItem>
+                      {courses.map(course => (
+                        <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Date Filter */}
+                  <Input
+                    type="date"
+                    value={partnerFilterDate}
+                    onChange={(e) => setPartnerFilterDate(e.target.value)}
+                    placeholder="Filter by date"
+                    className="w-full sm:w-40 h-10 bg-white"
+                    style={{borderColor: '#a3c4e0'}}
+                  />
+
+                  {/* Clear Filters */}
+                  {(partnerFilterCity || partnerFilterCourse || partnerFilterDate) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPartnerFilterCity('');
+                        setPartnerFilterCourse('');
+                        setPartnerFilterDate('');
+                      }}
+                      className="h-10"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+
                 {partnerRequestsLoading ? (
                   <div className="text-center py-8">
                     <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{color: '#39638b'}} />
                     <p className="text-muted-foreground mt-2">Loading requests...</p>
                   </div>
-                ) : partnerRequests.length === 0 ? (
+                ) : filteredPartnerRequests.length === 0 ? (
                   <div className="text-center py-8">
                     <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No partner requests available</p>
-                    <p className="text-sm text-muted-foreground">Create a request to find golf partners!</p>
+                    <p className="text-muted-foreground">
+                      {partnerRequests.length === 0 
+                        ? 'No partner requests available' 
+                        : 'No requests match your filters'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {partnerRequests.length === 0 
+                        ? 'Create a request to find golf partners!' 
+                        : 'Try adjusting your filters'}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {partnerRequests.map((request, index) => (
+                    {filteredPartnerRequests.map((request, index) => (
                       <motion.div
                         key={request.id}
                         initial={{ opacity: 0, y: 10 }}
@@ -3585,14 +3769,25 @@ export default function JazelApp() {
                               {/* Action Buttons */}
                               <div className="flex flex-col gap-2 ml-4">
                                 {request.isCreator ? (
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => setPartnerRequestToDelete(request)}
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-1" />
-                                    Delete
-                                  </Button>
+                                  <div className="flex flex-col gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openEditPartnerRequestDialog(request)}
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                                    >
+                                      <Edit2 className="w-4 h-4 mr-1" />
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => setPartnerRequestToDelete(request)}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-1" />
+                                      Delete
+                                    </Button>
+                                  </div>
                                 ) : request.hasJoined ? (
                                   <Button
                                     variant="outline"
@@ -6804,6 +6999,131 @@ export default function JazelApp() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Partner Request Dialog */}
+      <Dialog open={showEditPartnerRequestDialog} onOpenChange={(open) => {
+        setShowEditPartnerRequestDialog(open);
+        if (!open) setPartnerRequestToEdit(null);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="w-5 h-5" style={{color: '#39638b'}} />
+              Edit Partner Request
+            </DialogTitle>
+            <DialogDescription>
+              Update your golf partner request details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Course Selection */}
+            <div className="space-y-2">
+              <Label>Golf Course *</Label>
+              <Select 
+                value={editPartnerRequest.courseId} 
+                onValueChange={(v) => setEditPartnerRequest({...editPartnerRequest, courseId: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name} - {course.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={editPartnerRequest.date}
+                onChange={(e) => setEditPartnerRequest({...editPartnerRequest, date: e.target.value})}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            
+            {/* Time */}
+            <div className="space-y-2">
+              <Label>Tee Time *</Label>
+              <Input
+                type="time"
+                value={editPartnerRequest.time}
+                onChange={(e) => setEditPartnerRequest({...editPartnerRequest, time: e.target.value})}
+              />
+            </div>
+            
+            {/* Max Players */}
+            <div className="space-y-2">
+              <Label>Maximum Players</Label>
+              <Select 
+                value={editPartnerRequest.maxPlayers.toString()} 
+                onValueChange={(v) => setEditPartnerRequest({...editPartnerRequest, maxPlayers: parseInt(v)})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">2 players</SelectItem>
+                  <SelectItem value="3">3 players</SelectItem>
+                  <SelectItem value="4">4 players</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Status */}
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select 
+                value={editPartnerRequest.status} 
+                onValueChange={(v) => setEditPartnerRequest({...editPartnerRequest, status: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Notes (optional)</Label>
+              <Textarea
+                placeholder="Any additional details..."
+                value={editPartnerRequest.notes}
+                onChange={(e) => setEditPartnerRequest({...editPartnerRequest, notes: e.target.value})}
+                rows={2}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowEditPartnerRequestDialog(false);
+              setPartnerRequestToEdit(null);
+            }}>
+              Cancel
+            </Button>
+            <Button
+              className="text-white"
+              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+              onClick={updatePartnerRequest}
+              disabled={!editPartnerRequest.courseId || !editPartnerRequest.date || !editPartnerRequest.time}
+            >
+              Update Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Partner Request Confirmation Dialog */}
       <AlertDialog open={partnerRequestToDelete !== null} onOpenChange={(open) => !open && setPartnerRequestToDelete(null)}>
         <AlertDialogContent>
@@ -6842,7 +7162,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.3</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.5</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
