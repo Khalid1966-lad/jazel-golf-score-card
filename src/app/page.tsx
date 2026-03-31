@@ -1267,7 +1267,7 @@ export default function JazelApp() {
   const [partnerFilterCity, setPartnerFilterCity] = useState('');
   const [partnerFilterCourse, setPartnerFilterCourse] = useState('');
   const [partnerFilterDate, setPartnerFilterDate] = useState('');
-  const [lastSeenPartnerCount, setLastSeenPartnerCount] = useState(0);
+  const [lastSeenPartnerRequestTime, setLastSeenPartnerRequestTime] = useState<string | null>(null);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -1809,24 +1809,42 @@ export default function JazelApp() {
     fetchGolfers(selectedGroupFilter);
   }, [selectedGroupFilter, fetchGolfers]);
 
-  // Track when user views Partners tab to mark current count as "seen"
+  // Load last seen partner request time from localStorage on mount
   useEffect(() => {
-    if (activeTab === 'partners' && partnerRequests.length > 0) {
-      setLastSeenPartnerCount(partnerRequests.length);
+    if (user) {
+      const stored = localStorage.getItem(`jazel_partner_seen_${user.id}`);
+      if (stored) {
+        setLastSeenPartnerRequestTime(stored);
+      }
     }
-  }, [activeTab, partnerRequests.length]);
+  }, [user]);
 
-  // Calculate if there are new participants in user's requests
-  const hasNewPartnerActivity = useMemo(() => {
-    if (!user) return false;
-    // Check if user has any requests where someone else has joined
-    const userRequests = partnerRequests.filter(r => r.isCreator);
-    const hasNewJoins = userRequests.some(request => {
-      const otherParticipants = request.participants?.filter(p => p.userId !== request.creatorId) || [];
-      return otherParticipants.length > 0;
+  // Track when user views Partners tab - save time to localStorage
+  useEffect(() => {
+    if (activeTab === 'partners' && user) {
+      const now = new Date().toISOString();
+      localStorage.setItem(`jazel_partner_seen_${user.id}`, now);
+      setLastSeenPartnerRequestTime(now);
+    }
+  }, [activeTab, user]);
+
+  // Calculate if user should see notification dot
+  // Show dot if: there are requests AND user hasn't visited the tab yet (or new requests appeared)
+  const showPartnerNotificationDot = useMemo(() => {
+    if (!user || partnerRequests.length === 0) return false;
+    
+    // If user has never visited the Partners tab, show dot
+    if (!lastSeenPartnerRequestTime) return true;
+    
+    // Check if any request was created after the last visit
+    const lastSeen = new Date(lastSeenPartnerRequestTime);
+    const hasNewRequests = partnerRequests.some(request => {
+      const requestCreated = new Date(request.createdAt);
+      return requestCreated > lastSeen;
     });
-    return hasNewJoins;
-  }, [user, partnerRequests]);
+    
+    return hasNewRequests;
+  }, [user, partnerRequests, lastSeenPartnerRequestTime]);
 
   // Filter partner requests
   const filteredPartnerRequests = useMemo(() => {
@@ -3229,7 +3247,7 @@ export default function JazelApp() {
                 <TabsTrigger value="partners" className="gap-2 relative">
                   <Calendar className="w-4 h-4" />
                   <span className="hidden sm:inline">Partners</span>
-                  {hasNewPartnerActivity && (
+                  {showPartnerNotificationDot && (
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
                   )}
                 </TabsTrigger>
@@ -7181,7 +7199,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.7</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.8</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
