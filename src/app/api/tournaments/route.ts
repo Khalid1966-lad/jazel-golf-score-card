@@ -22,6 +22,13 @@ export async function GET(request: NextRequest) {
               country: true,
             }
           },
+          admin: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            }
+          },
           participants: {
             include: {
               user: {
@@ -46,7 +53,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ tournament });
     }
 
-    // Fetch all tournaments
+    // Fetch all tournaments - includes admin relation for contact info
     const tournaments = await db.tournament.findMany({
       include: {
         course: {
@@ -56,6 +63,12 @@ export async function GET(request: NextRequest) {
             city: true,
             region: true,
             country: true,
+          }
+        },
+        admin: {
+          select: {
+            id: true,
+            name: true,
           }
         },
         participants: includeParticipants ? {
@@ -89,7 +102,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes } = body;
+    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes, adminId, adminPhone } = body;
 
     if (!name || !courseId || !date) {
       return NextResponse.json({ error: 'Name, course, and date are required' }, { status: 400 });
@@ -104,6 +117,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Golf course not found' }, { status: 404 });
     }
 
+    // Verify admin exists if adminId is provided
+    if (adminId) {
+      const admin = await db.user.findUnique({
+        where: { id: adminId }
+      });
+      if (!admin) {
+        return NextResponse.json({ error: 'Admin user not found' }, { status: 404 });
+      }
+    }
+
     const tournament = await db.tournament.create({
       data: {
         name,
@@ -114,6 +137,8 @@ export async function POST(request: NextRequest) {
         format: format || 'Stroke Play',
         maxPlayers: maxPlayers || 144,
         notes: notes || null,
+        adminId: adminId || null,
+        adminPhone: adminPhone || null,
         status: 'upcoming',
       },
       include: {
@@ -122,6 +147,13 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             city: true,
+          }
+        },
+        admin: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
           }
         }
       }
@@ -145,7 +177,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes, status } = body;
+    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes, status, adminId, adminPhone } = body;
 
     // Verify tournament exists
     const existingTournament = await db.tournament.findUnique({
@@ -167,6 +199,16 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Verify admin exists if adminId is provided
+    if (adminId) {
+      const admin = await db.user.findUnique({
+        where: { id: adminId }
+      });
+      if (!admin) {
+        return NextResponse.json({ error: 'Admin user not found' }, { status: 404 });
+      }
+    }
+
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (courseId !== undefined) updateData.courseId = courseId;
@@ -177,6 +219,8 @@ export async function PUT(request: NextRequest) {
     if (maxPlayers !== undefined) updateData.maxPlayers = maxPlayers;
     if (notes !== undefined) updateData.notes = notes;
     if (status !== undefined) updateData.status = status;
+    if (adminId !== undefined) updateData.adminId = adminId || null;
+    if (adminPhone !== undefined) updateData.adminPhone = adminPhone || null;
 
     const tournament = await db.tournament.update({
       where: { id: tournamentId },
@@ -187,6 +231,12 @@ export async function PUT(request: NextRequest) {
             id: true,
             name: true,
             city: true,
+          }
+        },
+        admin: {
+          select: {
+            id: true,
+            name: true,
           }
         },
         _count: {

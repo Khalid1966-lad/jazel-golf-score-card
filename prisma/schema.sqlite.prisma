@@ -41,6 +41,7 @@ model User {
   assignedCourses      GolfCourse[]        @relation("CourseAdmin")
   adminPermission      AdminPermission?
   achievements         UserAchievement[]
+  administeredTournaments Tournament[]
 
   @@map("users")
 }
@@ -347,14 +348,18 @@ model Tournament {
   courseId        String
   date            DateTime
   startTime       String
+  teeTimeInterval Int      @default(10)
   format          String
   maxPlayers      Int      @default(144)
   notes           String?
   status          String   @default("upcoming")
+  adminId         String?
+  adminPhone      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   course          GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  admin           User?     @relation(fields: [adminId], references: [id])
   participants    TournamentParticipant[]
   
   @@map("tournaments")
@@ -367,6 +372,9 @@ model TournamentParticipant {
   registeredAt    DateTime @default(now())
   grossScore      Int?
   netScore        Int?
+  groupLetter     String?
+  positionInGroup Int?
+  teeTime         String?
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

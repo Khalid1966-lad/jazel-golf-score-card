@@ -103,6 +103,7 @@ interface AppUser {
   city: string | null;
   country: string | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   blocked: boolean;
   hiddenFromGolfers: boolean;
   avatar: string | null;
@@ -135,7 +136,6 @@ interface Tournament {
   admin?: {
     id: string;
     name: string | null;
-    phone: string | null;
   } | null;
   _count?: {
     participants: number;
@@ -2079,11 +2079,20 @@ export default function AdminPage() {
 
   // Open edit tournament dialog
   const openTournamentEditDialog = (tournament: Tournament) => {
+    // Convert date to YYYY-MM-DD format for the date input
+    let dateStr = '';
+    if (tournament.date) {
+      const d = new Date(tournament.date);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toISOString().split('T')[0];
+      }
+    }
+
     setEditTournamentForm({
       name: tournament.name,
       courseId: tournament.courseId,
-      date: tournament.date,
-      startTime: tournament.startTime,
+      date: dateStr,
+      startTime: tournament.startTime || '08:00',
       teeTimeInterval: tournament.teeTimeInterval || 10,
       format: tournament.format,
       maxPlayers: tournament.maxPlayers,

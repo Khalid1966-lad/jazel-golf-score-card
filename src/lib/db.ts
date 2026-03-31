@@ -10,6 +10,7 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 // Use global prisma client in development to avoid multiple instances
+// Updated to force reload after schema changes
 export const db = globalForPrisma.prisma || new PrismaClient({
   log: ['query'],
 })
