@@ -4434,30 +4434,24 @@ export default function JazelApp() {
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card style={{borderColor: '#8ab0d1'}}>
-                        <CardContent className="p-4 text-center">
-                          <Trophy className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
-                          <h4 className="font-medium">{roundHistory.length}</h4>
-                          <p className="text-sm text-muted-foreground">Rounds Played</p>
-                        </CardContent>
-                      </Card>
-                      <Card style={{borderColor: '#8ab0d1'}}>
-                        <CardContent className="p-4 text-center">
-                          <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
-                          <h4 className="font-medium">{favoriteIds.length}</h4>
-                          <p className="text-sm text-muted-foreground">Favorite Courses</p>
-                        </CardContent>
-                      </Card>
-                      <Card style={{borderColor: '#8ab0d1'}}>
-                        <CardContent className="p-4 text-center">
-                          <Target className="w-8 h-8 mx-auto mb-2" style={{color: '#39638b'}} />
-                          <h4 className="font-medium">{user.handicap || '-'}</h4>
-                          <p className="text-sm text-muted-foreground">Handicap</p>
-                        </CardContent>
-                      </Card>
+                    {/* Stats Row - Compact */}
+                    <div className="flex items-center justify-center gap-6 py-2">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4" style={{color: '#39638b'}} />
+                        <span className="text-sm"><strong>{roundHistory.length}</strong> Rounds</span>
+                      </div>
+                      <div className="w-px h-4 bg-gray-300" />
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        <span className="text-sm"><strong>{favoriteIds.length}</strong> Favorites</span>
+                      </div>
+                      <div className="w-px h-4 bg-gray-300" />
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4" style={{color: '#39638b'}} />
+                        <span className="text-sm"><strong>{user.handicap || '-'}</strong> HCP</span>
+                      </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         variant="outline"
@@ -5993,7 +5987,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.80</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.81</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
