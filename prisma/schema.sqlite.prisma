@@ -458,16 +458,18 @@ model RepairShop {
   id          String   @id @default(cuid())
   name        String
   manager     String?
+  address     String?
   city        String
   country     String
   phone       String?
   email       String?
+  website     String?
   description String?
   imageUrl    String?
   activeSince DateTime?  // Date since the shop has been operating
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@map("repair_shops")
 }
