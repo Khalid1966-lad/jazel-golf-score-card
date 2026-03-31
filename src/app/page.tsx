@@ -2182,6 +2182,9 @@ export default function JazelApp() {
             holesPlayed: holesPlayed,
             holesType: holesType,
             completed,
+            // Include weather data for GPS User badge
+            weatherTemp: weatherData?.current?.temperature,
+            weatherWind: weatherData?.current?.windSpeed,
           }),
         });
         
@@ -2226,6 +2229,9 @@ export default function JazelApp() {
             holesPlayed: holesPlayed,
             holesType: holesPlayed === 9 ? holesType : null,
             completed,
+            // Include weather data for GPS User badge
+            weatherTemp: weatherData?.current?.temperature,
+            weatherWind: weatherData?.current?.windSpeed,
           }),
         });
         
