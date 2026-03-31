@@ -409,11 +409,12 @@ function RoundHistoryCard({
   setRoundToView,
   downloadRoundAsXlsx,
   loadRoundForEditing,
-  setRoundToDelete
+  setRoundToDelete,
+  onViewPlayerProfile
 }: { 
   round: SavedRound;
   index: number;
-  playerNames: (string | { name: string })[];
+  playerNames: (string | { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null })[];
   additionalPlayerTotals: Map<number, number>;
   holesPlayedCount: number;
   holesInfo: string;
@@ -425,6 +426,7 @@ function RoundHistoryCard({
   downloadRoundAsXlsx: (round: SavedRound) => void;
   loadRoundForEditing: (round: SavedRound) => void;
   setRoundToDelete: (round: SavedRound) => void;
+  onViewPlayerProfile?: (player: { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null }) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -460,9 +462,8 @@ function RoundHistoryCard({
                   month: 'short',
                   day: 'numeric'
                 })}
-                <span className="mx-2">•</span>
-                <span className="text-xs" style={{color: '#39638b'}}>{holesInfo}</span>
               </p>
+              <p className="text-xs mt-0.5" style={{color: '#39638b'}}>{holesInfo}</p>
             </div>
             <div className="flex items-center gap-6">
               <div className="text-center">
@@ -544,14 +545,46 @@ function RoundHistoryCard({
                   <div className="flex flex-wrap gap-2">
                     {playerNames.map((playerInfo, idx) => {
                       const playerName = typeof playerInfo === 'string' ? playerInfo : playerInfo.name;
+                      const playerAvatar = typeof playerInfo === 'string' ? null : playerInfo.avatar;
+                      const playerHandicap = typeof playerInfo === 'string' ? null : playerInfo.handicap;
+                      const playerUserId = typeof playerInfo === 'string' ? null : playerInfo.userId;
                       const playerTotal = additionalPlayerTotals.get(idx + 1) || 0;
                       // Calculate player's +/- vs par
                       const playerVsPar = playerTotal - coursePar;
                       const vsParDisplay = playerTotal > 0 ? ` (${playerVsPar > 0 ? '+' : ''}${playerVsPar})` : '';
+                      const hasProfile = !!playerUserId;
                       return (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {playerName}: {playerTotal}{vsParDisplay}
-                        </Badge>
+                        <div
+                          key={idx}
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs bg-muted ${hasProfile && onViewPlayerProfile ? 'cursor-pointer hover:bg-muted/80' : ''}`}
+                          onClick={(e) => {
+                            if (hasProfile && onViewPlayerProfile && typeof playerInfo !== 'string') {
+                              e.stopPropagation();
+                              onViewPlayerProfile(playerInfo);
+                            }
+                          }}
+                          title={hasProfile ? 'Click to view profile' : undefined}
+                        >
+                          {/* Player avatar */}
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                            style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                            {playerAvatar ? (
+                              <img
+                                src={playerAvatar}
+                                alt={playerName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[10px] font-bold text-white">
+                                {playerName?.charAt(0).toUpperCase() || '?'}
+                              </span>
+                            )}
+                          </div>
+                          <span>{playerName}: {playerTotal}{vsParDisplay}</span>
+                          {playerHandicap !== null && playerHandicap !== undefined && (
+                            <span className="text-muted-foreground text-[10px]">(hcp {playerHandicap})</span>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -1110,6 +1143,9 @@ export default function JazelApp() {
 
   // Round summary scorecard state
   const [roundToView, setRoundToView] = useState<SavedRound | null>(null);
+
+  // Player profile view state
+  const [playerToView, setPlayerToView] = useState<{ name: string; avatar?: string | null; handicap?: number | null; userId?: string | null } | null>(null);
 
   // Weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -2798,20 +2834,26 @@ export default function JazelApp() {
               )}
               {user ? (
                 <div className="flex items-center gap-2">
-                  {user.avatar ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={user.name || 'User'} 
-                      className="w-8 h-8 rounded-full object-cover border-2"
-                      style={{borderColor: '#a3c4e0'}}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
-                      <span className="text-sm font-bold text-white">
-                        {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    title="View profile"
+                  >
+                    {user.avatar ? (
+                      <img 
+                        src={user.avatar} 
+                        alt={user.name || 'User'} 
+                        className="w-8 h-8 rounded-full object-cover border-2"
+                        style={{borderColor: '#a3c4e0'}}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                        <span className="text-sm font-bold text-white">
+                          {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </button>
                   <div className="hidden sm:block text-right">
                     <p className="text-sm font-medium">{user.name || user.email}</p>
                     {user.handicap && <p className="text-xs text-muted-foreground">Handicap: {user.handicap}</p>}
@@ -3797,7 +3839,7 @@ export default function JazelApp() {
                           : 'Front 9 (1-9)';
                       
                       return (
-                      <RoundHistoryCard 
+                      <RoundHistoryCard
                         key={round.id}
                         round={round}
                         index={index}
@@ -3813,6 +3855,7 @@ export default function JazelApp() {
                         downloadRoundAsXlsx={downloadRoundAsXlsx}
                         loadRoundForEditing={loadRoundForEditing}
                         setRoundToDelete={setRoundToDelete}
+                        onViewPlayerProfile={setPlayerToView}
                       />
                     );})}
                   </div>
@@ -6070,6 +6113,61 @@ export default function JazelApp() {
         </DialogContent>
       </Dialog>
 
+      {/* Player Profile Dialog */}
+      <Dialog open={!!playerToView} onOpenChange={(open) => !open && setPlayerToView(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" style={{color: '#39638b'}} />
+              Player Profile
+            </DialogTitle>
+          </DialogHeader>
+          {playerToView && (
+            <div className="flex flex-col items-center py-4">
+              {/* Avatar */}
+              <div className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden mb-4"
+                style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                {playerToView.avatar ? (
+                  <img
+                    src={playerToView.avatar}
+                    alt={playerToView.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-white">
+                    {playerToView.name?.charAt(0).toUpperCase() || '?'}
+                  </span>
+                )}
+              </div>
+              {/* Name */}
+              <h3 className="text-xl font-semibold mb-2">{playerToView.name}</h3>
+              {/* Handicap */}
+              {playerToView.handicap !== null && playerToView.handicap !== undefined && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Trophy className="w-4 h-4" />
+                  <span>Handicap: {playerToView.handicap}</span>
+                </div>
+              )}
+              {/* Profile link hint */}
+              {playerToView.userId && (
+                <p className="text-xs text-muted-foreground mt-4 text-center">
+                  Find this golfer in the Golfers tab to see their full profile
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              onClick={() => setPlayerToView(null)}
+              className="w-full text-white"
+              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* My Bag Dialog */}
       <Dialog open={showBagDialog} onOpenChange={setShowBagDialog}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -6208,7 +6306,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.91</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.98</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
