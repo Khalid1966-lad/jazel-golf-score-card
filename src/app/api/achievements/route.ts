@@ -503,12 +503,15 @@ export async function POST(request: NextRequest) {
     if (hasParStreak3 && await awardAchievement(userId, 'par_streak')) awardedBadges.push('par_streak');
     if (hasParStreak5 && await awardAchievement(userId, 'par_perfect')) awardedBadges.push('par_perfect');
 
-    // Steady Eddy - round at exactly par (check totalStrokes against course par)
+    // Steady Eddy - round at exactly par (check totalStrokes against ACTUAL course par)
     for (const round of rounds) {
-      if (round.totalStrokes && round.holesPlayed) {
-        // Assume 36 par for 9 holes, 72 for 18 holes
-        const expectedPar = round.holesPlayed === 9 ? 36 : 72;
-        if (round.totalStrokes === expectedPar) {
+      if (round.totalStrokes && round.holesPlayed && round.course?.holes) {
+        // Calculate actual course par from the holes played
+        const coursePar = round.course.holes
+          .slice(0, round.holesPlayed)
+          .reduce((sum, h) => sum + h.par, 0);
+
+        if (round.totalStrokes === coursePar) {
           if (await awardAchievement(userId, 'steady_eddy')) awardedBadges.push('steady_eddy');
           break;
         }
