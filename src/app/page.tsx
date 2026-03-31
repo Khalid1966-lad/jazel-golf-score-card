@@ -7964,7 +7964,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.7</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.8</p>
             </div>
             
             {/* Description */}

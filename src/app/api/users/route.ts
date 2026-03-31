@@ -101,6 +101,9 @@ export async function GET(request: NextRequest) {
               },
             },
             scores: {
+              where: {
+                playerIndex: 0, // Only get the main player's scores (round owner)
+              },
               select: {
                 holeNumber: true,
                 strokes: true,
