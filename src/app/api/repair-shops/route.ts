@@ -1,3 +1,4 @@
+// Repair Shops API - CRUD operations for golf club repair shops
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';

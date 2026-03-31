@@ -5,16 +5,13 @@ import { config } from 'dotenv'
 // Load .env file explicitly (overrides system env)
 config({ override: true })
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+// Create a fresh PrismaClient instance
+// In development, we don't cache to ensure schema changes are picked up
+const createPrismaClient = () => {
+  return new PrismaClient({
+    log: ['query'],
+  })
 }
 
-// Use global prisma client in development to avoid multiple instances
-// Updated to force reload after schema changes
-export const db = globalForPrisma.prisma || new PrismaClient({
-  log: ['query'],
-})
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = db
-}
+// Export the database client
+export const db = createPrismaClient()

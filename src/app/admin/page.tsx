@@ -43,7 +43,10 @@ import {
   UserCog,
   RefreshCw,
   User,
-  Wrench
+  Wrench,
+  Camera,
+  Image as ImageIcon,
+  Phone
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -384,6 +387,12 @@ export default function AdminPage() {
     activeSince: '',
     isActive: true
   });
+  
+  // Photo upload state
+  const [newShopPhotoPreview, setNewShopPhotoPreview] = useState<string | null>(null);
+  const [editShopPhotoPreview, setEditShopPhotoPreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoCompressionInfo, setPhotoCompressionInfo] = useState<string | null>(null);
 
   // Admin permissions state
   const [adminPermissions, setAdminPermissions] = useState<{
@@ -543,6 +552,8 @@ export default function AdminPage() {
           activeSince: '',
           isActive: true
         });
+        setNewShopPhotoPreview(null);
+        setPhotoCompressionInfo(null);
       } else {
         const data = await response.json();
         throw new Error(data.error || 'Failed to create repair shop');
@@ -598,6 +609,8 @@ export default function AdminPage() {
           activeSince: '',
           isActive: true
         });
+        setEditShopPhotoPreview(null);
+        setPhotoCompressionInfo(null);
       } else {
         const data = await response.json();
         throw new Error(data.error || 'Failed to update repair shop');
@@ -626,6 +639,116 @@ export default function AdminPage() {
     }
   };
 
+  // Handle photo compression and upload
+  const handleShopPhotoUpload = async (
+    file: File,
+    setPreview: (url: string | null) => void,
+    setFormImageUrl: (url: string) => void
+  ) => {
+    try {
+      setPhotoUploading(true);
+      setPhotoCompressionInfo(null);
+      
+      // Compress the image
+      const maxSizeKB = 500;
+      const maxWidth = 1200;
+      const maxHeight = 1200;
+      
+      // Create canvas for compression
+      const img = new Image();
+      const reader = new FileReader();
+      
+      const compressionPromise = new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => {
+          img.onload = () => {
+            let { width, height } = img;
+            
+            // Calculate new dimensions
+            if (width > maxWidth || height > maxHeight) {
+              const ratio = Math.min(maxWidth / width, maxHeight / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('Failed to get canvas context'));
+              return;
+            }
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Start with quality 0.8 and reduce if needed
+            let quality = 0.8;
+            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+            let size = Math.round((dataUrl.length - 'data:image/jpeg;base64,'.length) * 0.75);
+            
+            while (size > maxSizeKB * 1024 && quality > 0.1) {
+              quality -= 0.1;
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+              size = Math.round((dataUrl.length - 'data:image/jpeg;base64,'.length) * 0.75);
+            }
+            
+            const originalSizeKB = Math.round(file.size / 1024);
+            const newSizeKB = Math.round(size / 1024);
+            setPhotoCompressionInfo(`Compressed: ${originalSizeKB}KB → ${newSizeKB}KB (${width}×${height})`);
+            
+            resolve(dataUrl);
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+      
+      const compressedDataUrl = await compressionPromise;
+      setPreview(compressedDataUrl);
+      setFormImageUrl(compressedDataUrl);
+      
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      toast({ title: 'Error', description: 'Failed to process photo', variant: 'destructive' });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+  
+  // Handle camera capture
+  const handleCameraCapture = async (
+    setPreview: (url: string | null) => void,
+    setFormImageUrl: (url: string) => void
+  ) => {
+    // Create a file input that opens camera on mobile
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment'; // Use back camera
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        await handleShopPhotoUpload(file, setPreview, setFormImageUrl);
+      }
+    };
+    
+    input.click();
+  };
+  
+  // Clear photo
+  const clearShopPhoto = (
+    setPreview: (url: string | null) => void,
+    setFormImageUrl: (url: string) => void
+  ) => {
+    setPreview(null);
+    setFormImageUrl('');
+    setPhotoCompressionInfo(null);
+  };
+
   // Open edit repair shop dialog
   const openRepairShopEditDialog = (shop: any) => {
     setEditRepairShopForm({
@@ -641,6 +764,7 @@ export default function AdminPage() {
       activeSince: shop.activeSince ? new Date(shop.activeSince).toISOString().split('T')[0] : '',
       isActive: shop.isActive
     });
+    setEditShopPhotoPreview(shop.imageUrl || null);
     setSelectedRepairShop(shop);
     setEditRepairShopDialogOpen(true);
   };
@@ -4129,7 +4253,7 @@ export default function AdminPage() {
                         <DialogDescription>Add a new golf club repair shop</DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="shopName">Shop Name *</Label>
                             <Input id="shopName" value={newRepairShopForm.name} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, name: e.target.value })} placeholder="e.g., Pro Golf Repair" />
@@ -4139,7 +4263,7 @@ export default function AdminPage() {
                             <Input id="shopManager" value={newRepairShopForm.manager} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, manager: e.target.value })} placeholder="e.g., John Smith" />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="shopCity">City *</Label>
                             <Input id="shopCity" value={newRepairShopForm.city} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, city: e.target.value })} placeholder="e.g., Casablanca" />
@@ -4149,7 +4273,7 @@ export default function AdminPage() {
                             <Input id="shopCountry" value={newRepairShopForm.country} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, country: e.target.value })} />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="shopPhone">Phone</Label>
                             <Input id="shopPhone" value={newRepairShopForm.phone} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, phone: e.target.value })} placeholder="e.g., +212 5XX XXX XXX" />
@@ -4163,11 +4287,98 @@ export default function AdminPage() {
                           <Label htmlFor="shopDescription">Description</Label>
                           <Textarea id="shopDescription" value={newRepairShopForm.description} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, description: e.target.value })} rows={3} placeholder="Shop description..." />
                         </div>
+                        
+                        {/* Photo Upload Section */}
                         <div className="space-y-2">
-                          <Label htmlFor="shopImageUrl">Image URL</Label>
-                          <Input id="shopImageUrl" value={newRepairShopForm.imageUrl} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, imageUrl: e.target.value })} placeholder="https://..." />
+                          <Label>Shop Photo</Label>
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            {/* Photo Preview */}
+                            <div className="w-full sm:w-32 h-32 border-2 border-dashed rounded-lg overflow-hidden flex items-center justify-center bg-muted/30">
+                              {newShopPhotoPreview ? (
+                                <img 
+                                  src={newShopPhotoPreview} 
+                                  alt="Shop preview" 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                              )}
+                            </div>
+                            
+                            {/* Upload Buttons */}
+                            <div className="flex flex-col gap-2 flex-1">
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.onchange = async (e) => {
+                                      const file = (e.target as HTMLInputElement).files?.[0];
+                                      if (file) {
+                                        await handleShopPhotoUpload(
+                                          file,
+                                          setNewShopPhotoPreview,
+                                          (url) => setNewRepairShopForm({ ...newRepairShopForm, imageUrl: url })
+                                        );
+                                      }
+                                    };
+                                    input.click();
+                                  }}
+                                  disabled={photoUploading}
+                                  className="flex-1"
+                                >
+                                  {photoUploading ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Upload className="w-4 h-4 mr-2" />
+                                  )}
+                                  Upload
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCameraCapture(
+                                    setNewShopPhotoPreview,
+                                    (url) => setNewRepairShopForm({ ...newRepairShopForm, imageUrl: url })
+                                  )}
+                                  disabled={photoUploading}
+                                  className="flex-1"
+                                >
+                                  <Camera className="w-4 h-4 mr-2" />
+                                  Camera
+                                </Button>
+                              </div>
+                              {newShopPhotoPreview && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => clearShopPhoto(
+                                    setNewShopPhotoPreview,
+                                    (url) => setNewRepairShopForm({ ...newRepairShopForm, imageUrl: url })
+                                  )}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Remove Photo
+                                </Button>
+                              )}
+                              {photoCompressionInfo && (
+                                <p className="text-xs text-muted-foreground">{photoCompressionInfo}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                Max 500KB, auto-compressed. Supported: JPG, PNG
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="shopActiveSince">Active Since</Label>
                             <Input id="shopActiveSince" type="date" value={newRepairShopForm.activeSince} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, activeSince: e.target.value })} />
@@ -4199,34 +4410,96 @@ export default function AdminPage() {
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
                 ) : repairShops.length > 0 ? (
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm">
-                      <div className="col-span-3">Name</div>
-                      <div className="col-span-2">City</div>
-                      <div className="col-span-2">Country</div>
-                      <div className="col-span-2">Manager</div>
-                      <div className="col-span-1">Phone</div>
-                      <div className="col-span-1">Status</div>
-                      <div className="col-span-1"></div>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      {repairShops.map((shop) => (
-                        <div key={shop.id} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
-                          <div className="col-span-3 font-medium truncate">{shop.name}</div>
-                          <div className="col-span-2 text-muted-foreground">{shop.city}</div>
-                          <div className="col-span-2 text-muted-foreground">{shop.country}</div>
-                          <div className="col-span-2 text-muted-foreground truncate">{shop.manager || '-'}</div>
-                          <div className="col-span-1 text-muted-foreground text-sm truncate">{shop.phone || '-'}</div>
-                          <div className="col-span-1">
-                            <Badge variant={shop.isActive ? 'default' : 'secondary'} className={shop.isActive ? 'bg-green-600' : ''}>
-                              {shop.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
+                  <div className="space-y-3">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                      <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm">
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-2">City</div>
+                        <div className="col-span-2">Country</div>
+                        <div className="col-span-2">Manager</div>
+                        <div className="col-span-1">Phone</div>
+                        <div className="col-span-1">Status</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {repairShops.map((shop) => (
+                          <div key={shop.id} className="grid grid-cols-12 gap-2 p-3 items-center border-t hover:bg-muted/30 transition-colors">
+                            <div className="col-span-3 font-medium truncate flex items-center gap-2">
+                              {shop.imageUrl && (
+                                <img src={shop.imageUrl} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                              )}
+                              {shop.name}
+                            </div>
+                            <div className="col-span-2 text-muted-foreground">{shop.city}</div>
+                            <div className="col-span-2 text-muted-foreground">{shop.country}</div>
+                            <div className="col-span-2 text-muted-foreground truncate">{shop.manager || '-'}</div>
+                            <div className="col-span-1 text-muted-foreground text-sm truncate">{shop.phone || '-'}</div>
+                            <div className="col-span-1">
+                              <Badge variant={shop.isActive ? 'default' : 'secondary'} className={shop.isActive ? 'bg-green-600' : ''}>
+                                {shop.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                            <div className="col-span-1 flex gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => openRepairShopEditDialog(shop)}>
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => deleteRepairShop(shop.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="col-span-1 flex gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => openRepairShopEditDialog(shop)}>
-                              <Edit2 className="h-4 w-4" />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                      {repairShops.map((shop) => (
+                        <div key={shop.id} className="border rounded-lg p-4 bg-card">
+                          <div className="flex items-start gap-3">
+                            {shop.imageUrl && (
+                              <img src={shop.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium truncate">{shop.name}</h4>
+                                <Badge variant={shop.isActive ? 'default' : 'secondary'} className={shop.isActive ? 'bg-green-600' : ''}>
+                                  {shop.isActive ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {shop.city}, {shop.country}
+                              </p>
+                              {shop.manager && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Manager: {shop.manager}
+                                </p>
+                              )}
+                              {shop.phone && (
+                                <a href={`tel:${shop.phone}`} className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
+                                  <Phone className="w-3 h-3" />
+                                  {shop.phone}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-3 pt-3 border-t">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => openRepairShopEditDialog(shop)}
+                              className="flex-1"
+                            >
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Edit
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => deleteRepairShop(shop.id)}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => deleteRepairShop(shop.id)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -4248,7 +4521,7 @@ export default function AdminPage() {
                   <DialogDescription>Update repair shop information</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="editShopName">Shop Name *</Label>
                       <Input id="editShopName" value={editRepairShopForm.name} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, name: e.target.value })} />
@@ -4258,7 +4531,7 @@ export default function AdminPage() {
                       <Input id="editShopManager" value={editRepairShopForm.manager} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, manager: e.target.value })} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="editShopCity">City *</Label>
                       <Input id="editShopCity" value={editRepairShopForm.city} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, city: e.target.value })} />
@@ -4268,7 +4541,7 @@ export default function AdminPage() {
                       <Input id="editShopCountry" value={editRepairShopForm.country} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, country: e.target.value })} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="editShopPhone">Phone</Label>
                       <Input id="editShopPhone" value={editRepairShopForm.phone} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, phone: e.target.value })} />
@@ -4282,11 +4555,98 @@ export default function AdminPage() {
                     <Label htmlFor="editShopDescription">Description</Label>
                     <Textarea id="editShopDescription" value={editRepairShopForm.description} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, description: e.target.value })} rows={3} />
                   </div>
+                  
+                  {/* Photo Upload Section */}
                   <div className="space-y-2">
-                    <Label htmlFor="editShopImageUrl">Image URL</Label>
-                    <Input id="editShopImageUrl" value={editRepairShopForm.imageUrl} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, imageUrl: e.target.value })} />
+                    <Label>Shop Photo</Label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      {/* Photo Preview */}
+                      <div className="w-full sm:w-32 h-32 border-2 border-dashed rounded-lg overflow-hidden flex items-center justify-center bg-muted/30">
+                        {editShopPhotoPreview ? (
+                          <img 
+                            src={editShopPhotoPreview} 
+                            alt="Shop preview" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      
+                      {/* Upload Buttons */}
+                      <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = async (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) {
+                                  await handleShopPhotoUpload(
+                                    file,
+                                    setEditShopPhotoPreview,
+                                    (url) => setEditRepairShopForm({ ...editRepairShopForm, imageUrl: url })
+                                  );
+                                }
+                              };
+                              input.click();
+                            }}
+                            disabled={photoUploading}
+                            className="flex-1"
+                          >
+                            {photoUploading ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4 mr-2" />
+                            )}
+                            Upload
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCameraCapture(
+                              setEditShopPhotoPreview,
+                              (url) => setEditRepairShopForm({ ...editRepairShopForm, imageUrl: url })
+                            )}
+                            disabled={photoUploading}
+                            className="flex-1"
+                          >
+                            <Camera className="w-4 h-4 mr-2" />
+                            Camera
+                          </Button>
+                        </div>
+                        {editShopPhotoPreview && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => clearShopPhoto(
+                              setEditShopPhotoPreview,
+                              (url) => setEditRepairShopForm({ ...editRepairShopForm, imageUrl: url })
+                            )}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Remove Photo
+                          </Button>
+                        )}
+                        {photoCompressionInfo && (
+                          <p className="text-xs text-muted-foreground">{photoCompressionInfo}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Max 500KB, auto-compressed. Supported: JPG, PNG
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="editShopActiveSince">Active Since</Label>
                       <Input id="editShopActiveSince" type="date" value={editRepairShopForm.activeSince} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, activeSince: e.target.value })} />
