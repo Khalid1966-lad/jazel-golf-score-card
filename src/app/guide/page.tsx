@@ -33,7 +33,6 @@ import {
   Smartphone,
   Map,
   Briefcase,
-  Bot,
   Compass,
   Camera,
   Upload,
@@ -97,12 +96,6 @@ export default function GuidePage() {
       title: 'My Bag',
       icon: <Briefcase className="w-4 h-4" />,
       content: <BagSection />
-    },
-    {
-      id: 'ai-caddie',
-      title: 'AI Caddie',
-      icon: <Bot className="w-4 h-4" />,
-      content: <AICaddieSection />
     },
     {
       id: 'statistics',
@@ -308,7 +301,7 @@ function AboutSection() {
             <h4 className="font-semibold text-lg">About the App</h4>
             <p className="text-muted-foreground">
               Jazel Golf is a complete golf scorecard application designed for golfers in Morocco.
-              Track your rounds, get smart club recommendations with AI Caddie, discover courses,
+              Track your rounds, get smart club recommendations, discover courses,
               and connect with fellow golfers.
             </p>
             <div className="grid gap-3 md:grid-cols-2">
@@ -317,16 +310,47 @@ function AboutSection() {
                 <p className="text-sm text-muted-foreground">Real-time distances to greens</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <span className="font-medium">🤖 AI Caddie</span>
-                <p className="text-sm text-muted-foreground">Smart club recommendations</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50">
                 <span className="font-medium">🏆 Tournaments</span>
                 <p className="text-sm text-muted-foreground">Organize and compete</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
                 <span className="font-medium">📊 Statistics</span>
                 <p className="text-sm text-muted-foreground">Track your progress</p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Sponsors Section */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-lg">Our Sponsors</h4>
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30">
+              <div className="flex flex-col items-center text-center">
+                <img
+                  src="/logo-bzegolf.jpg"
+                  alt="Broken Zebra Golf"
+                  className="w-20 h-20 object-contain mb-3"
+                />
+                <h5 className="text-lg font-bold mb-1">Broken Zebra Golf</h5>
+              </div>
+              <div className="grid gap-3 mt-4 md:grid-cols-2">
+                <a
+                  href="https://www.bzegolf.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 border rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors flex items-center gap-2"
+                >
+                  <Globe className="w-4 h-4" style={{ color: '#39638b' }} />
+                  <span className="text-sm">bzegolf.com</span>
+                </a>
+                <a
+                  href="mailto:contact@bzegolf.com"
+                  className="p-3 border rounded-lg hover:bg-white/50 dark:hover:bg-black/20 transition-colors flex items-center gap-2"
+                >
+                  <MailOpen className="w-4 h-4" style={{ color: '#39638b' }} />
+                  <span className="text-sm">contact@bzegolf.com</span>
+                </a>
               </div>
             </div>
           </div>
@@ -370,15 +394,6 @@ function WelcomeSection() {
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
               <h3 className="font-semibold flex items-center gap-2 mb-2">
-                <Bot className="w-4 h-4" style={{ color: '#39638b' }} />
-                AI Caddie
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Get smart club recommendations based on distance, wind, and your bag setup.
-              </p>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <h3 className="font-semibold flex items-center gap-2 mb-2">
                 <Navigation className="w-4 h-4" style={{ color: '#39638b' }} />
                 GPS Range Finder
               </h3>
@@ -409,7 +424,7 @@ function WelcomeSection() {
               { step: 1, text: 'Create your free account' },
               { step: 2, text: 'Set up your bag with your clubs and distances' },
               { step: 3, text: 'Choose a course and start your round' },
-              { step: 4, text: 'Use GPS and AI Caddie for smart plays' },
+              { step: 4, text: 'Use GPS for smart distance measurements' },
               { step: 5, text: 'Track your stats and improve your game!' }
             ].map((item) => (
               <div key={item.step} className="flex items-center gap-3">
@@ -929,8 +944,8 @@ function BagSection() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            <strong>My Bag</strong> lets you store every club in your bag with the distance you hit it. 
-            This powers the AI Caddie and GPS recommendations.
+            <strong>My Bag</strong> lets you store every club in your bag with the distance you hit it.
+            This powers the GPS club recommendations.
           </p>
           
           {/* Bag Screenshot */}
@@ -1022,149 +1037,6 @@ function BagSection() {
                 <p className="text-sm text-muted-foreground">{item.tip}</p>
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// AI Caddie Section - NEW
-function AICaddieSection() {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-3">
-            <Bot className="w-5 h-5" style={{ color: '#39638b' }} />
-            AI Caddie - Your Smart Assistant
-          </CardTitle>
-          <CardDescription>
-            Get intelligent club recommendations for every shot
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            The AI Caddie analyzes your position, the conditions, and your bag to suggest the best club for each shot. 
-            It's like having a professional caddie in your pocket.
-          </p>
-          
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 border rounded-lg">
-            <h4 className="font-medium mb-3 flex items-center gap-2">
-              <Bot className="w-5 h-5" style={{ color: '#39638b' }} />
-              What AI Caddie Considers
-            </h4>
-            <div className="grid gap-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4" style={{ color: '#39638b' }} />
-                <span><strong>Distance to target</strong> - How far you need to hit</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Navigation className="w-4 h-4" style={{ color: '#39638b' }} />
-                <span><strong>Wind speed & direction</strong> - Headwind, tailwind, or crosswind</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" style={{ color: '#39638b' }} />
-                <span><strong>Lie position</strong> - Tee, fairway, rough, sand, or hardpan</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4" style={{ color: '#39638b' }} />
-                <span><strong>Your bag</strong> - Which clubs you have and their distances</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">How to Use AI Caddie</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ol className="space-y-3 text-sm">
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0" style={{ backgroundColor: '#16a34a' }}>1</div>
-              <span>During your round, tap the <strong>AI Caddie</strong> button</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0" style={{ backgroundColor: '#16a34a' }}>2</div>
-              <span>Enter the distance to your target (or use GPS distance)</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0" style={{ backgroundColor: '#16a34a' }}>3</div>
-              <span>Add wind speed and direction if there's wind</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0" style={{ backgroundColor: '#16a34a' }}>4</div>
-              <span>Select your lie position (tee, fairway, rough, etc.)</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0" style={{ backgroundColor: '#16a34a' }}>5</div>
-              <span>Tap <strong>Get Recommendation</strong> for your personalized suggestion</span>
-            </li>
-          </ol>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Wind Effects</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Wind can dramatically change club selection. AI Caddie adjusts for:
-          </p>
-          <div className="grid gap-3">
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <span className="text-2xl">💨</span>
-              <div>
-                <span className="font-medium">Headwind</span>
-                <p className="text-sm text-muted-foreground">Ball flies shorter - may need more club</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <span className="text-2xl">🌬️</span>
-              <div>
-                <span className="font-medium">Tailwind</span>
-                <p className="text-sm text-muted-foreground">Ball flies longer - may need less club</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <span className="text-2xl">↔️</span>
-              <div>
-                <span className="font-medium">Crosswind</span>
-                <p className="text-sm text-muted-foreground">Ball drifts sideways - aim accordingly</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Lie Position Matters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Where your ball sits affects how cleanly you can hit it:
-          </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="p-3 border rounded-lg">
-              <span className="font-medium text-green-700">Tee Box</span>
-              <p className="text-sm text-muted-foreground">Perfect lie, ball is teed up</p>
-            </div>
-            <div className="p-3 border rounded-lg">
-              <span className="font-medium text-green-700">Fairway</span>
-              <p className="text-sm text-muted-foreground">Good lie, clean contact expected</p>
-            </div>
-            <div className="p-3 border rounded-lg">
-              <span className="font-medium text-amber-700">Rough</span>
-              <p className="text-sm text-muted-foreground">Grass between club and ball - less control</p>
-            </div>
-            <div className="p-3 border rounded-lg">
-              <span className="font-medium text-amber-700">Sand Bunker</span>
-              <p className="text-sm text-muted-foreground">Special technique needed</p>
-            </div>
           </div>
         </CardContent>
       </Card>
