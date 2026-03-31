@@ -1,11 +1,11 @@
-// This is your Prisma schema file for PostgreSQL (VERCEL/PRODUCTION)
+// This is your Prisma schema file for SQLite (SANDBOX/LOCAL)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -261,10 +261,10 @@ model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
   value     String
-
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   @@map("settings")
 }
 
@@ -348,7 +348,7 @@ model Tournament {
   courseId        String
   date            DateTime
   startTime       String
-  teeTimeInterval Int      @default(10)  // Minutes between group tee times
+  teeTimeInterval Int      @default(10)
   format          String
   maxPlayers      Int      @default(144)
   notes           String?
@@ -372,9 +372,9 @@ model TournamentParticipant {
   registeredAt    DateTime @default(now())
   grossScore      Int?
   netScore        Int?
-  groupLetter     String?  // "A", "B", "C", etc.
-  positionInGroup Int?     // 1, 2, 3, or 4 (position within the group)
-  teeTime         String?  // "08:00", "08:10", etc.
+  groupLetter     String?
+  positionInGroup Int?
+  teeTime         String?
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -398,7 +398,7 @@ model Achievement {
   createdAt     DateTime @default(now())
   
   userAchievements UserAchievement[]
-
+  
   @@map("achievements")
 }
 
