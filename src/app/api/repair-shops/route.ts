@@ -7,14 +7,18 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 // Validation schema for repair shop
 const repairShopSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  manager: z.string().optional(),
+  manager: z.string().optional().nullable(),
   city: z.string().min(1, 'City is required'),
   country: z.string().min(1, 'Country is required'),
-  phone: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
-  activeSince: z.string().optional(),
+  phone: z.string().optional().nullable(),
+  email: z.union([
+    z.string().email('Invalid email'),
+    z.literal(''),
+    z.null()
+  ]).optional(),
+  description: z.string().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
+  activeSince: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
 });
 
