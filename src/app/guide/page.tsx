@@ -1211,11 +1211,44 @@ function TournamentsSection() {
             <Trophy className="w-5 h-5" style={{ color: '#39638b' }} />
             Tournaments
           </CardTitle>
+          <CardDescription>
+            Compete in organized golf events
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Join golf tournaments organized by your club. Track standings and compare scores with other players.
+            Join golf tournaments organized by your club or golf association. Track standings,
+            compare scores with other players, and compete for the top spot!
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Tournament Status Colors</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Tournament cards are color-coded by status:
+          </p>
+          <div className="grid gap-3">
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/30">
+              <Badge className="bg-blue-500">Upcoming</Badge>
+              <span className="text-sm">Tournament has not started yet</span>
+            </div>
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-green-50 dark:bg-green-950/30">
+              <Badge className="bg-green-500">In Progress</Badge>
+              <span className="text-sm">Tournament is currently being played</span>
+            </div>
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200">
+              <Badge className="bg-emerald-500">Completed</Badge>
+              <span className="text-sm">Tournament has finished - see final results</span>
+            </div>
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-red-50 dark:bg-red-950/30 opacity-75">
+              <Badge className="bg-red-500">Cancelled</Badge>
+              <span className="text-sm">Tournament was cancelled</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1231,7 +1264,7 @@ function TournamentsSection() {
                 Date & Time
               </h4>
               <p className="text-sm text-muted-foreground">
-                When the tournament takes place.
+                When the tournament takes place. Arrive early for your tee time!
               </p>
             </div>
             <div className="p-4 border rounded-lg">
@@ -1240,7 +1273,7 @@ function TournamentsSection() {
                 Course
               </h4>
               <p className="text-sm text-muted-foreground">
-                Which golf course hosts the event.
+                Which golf course hosts the event. Tap to see course details.
               </p>
             </div>
             <div className="p-4 border rounded-lg">
@@ -1249,16 +1282,16 @@ function TournamentsSection() {
                 Format
               </h4>
               <p className="text-sm text-muted-foreground">
-                Stroke Play, Match Play, Stableford, etc.
+                Stroke Play, Match Play, Stableford, Scramble, etc.
               </p>
             </div>
             <div className="p-4 border rounded-lg">
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <Badge variant="outline" className="w-4 h-4 p-0 flex items-center justify-center text-xs">N</Badge>
-                Max Players
+                Players
               </h4>
               <p className="text-sm text-muted-foreground">
-                Maximum participants allowed.
+                Current registration vs maximum capacity.
               </p>
             </div>
           </div>
@@ -1267,7 +1300,32 @@ function TournamentsSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Leaderboards</CardTitle>
+          <CardTitle className="text-xl">Tournament Groups</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Players are organized into groups (A, B, C, etc.) with assigned tee times:
+          </p>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              Each group has a different tee time
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              Groups are displayed in different colors for easy viewing
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              See who you're playing with before the round
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Leaderboards & Scoring</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
@@ -1280,17 +1338,42 @@ function TournamentsSection() {
             </li>
             <li className="flex items-center gap-2">
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <strong>Brut Score</strong> - Actual strokes taken
+              <strong>Gross Score</strong> - Actual strokes taken
             </li>
             <li className="flex items-center gap-2">
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <strong>Net Score</strong> - Brut score minus handicap
+              <strong>Net Score</strong> - Gross score minus handicap
             </li>
           </ul>
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mt-4">
             <p className="text-sm text-blue-700">
-              <strong>Sorting:</strong> Tap column headers to sort by handicap, brut score, or net score.
+              <strong>Sorting:</strong> Tap column headers to sort by handicap, gross score, or net score.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Tournament Badges</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Participating in tournaments can earn you special achievement badges:
+          </p>
+          <div className="grid gap-2">
+            <div className="flex items-center gap-3 p-2 border rounded-lg">
+              <span className="text-xl">🏟️</span>
+              <span className="text-sm">Tournament Rookie - Enter your first tournament</span>
+            </div>
+            <div className="flex items-center gap-3 p-2 border rounded-lg">
+              <span className="text-xl">🥉</span>
+              <span className="text-sm">Podium Finish - Finish in top 3</span>
+            </div>
+            <div className="flex items-center gap-3 p-2 border rounded-lg">
+              <span className="text-xl">🏆</span>
+              <span className="text-sm">Champion - Win a tournament!</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1314,15 +1397,15 @@ function AchievementsSection() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Jazel Golf rewards your progress with achievements and badges. Complete challenges to earn points, 
-            unlock new badges, and climb the levels from Beginner to Legend!
+            Jazel Golf rewards your progress with achievements and badges. Complete challenges to earn points,
+            unlock new badges, and climb the levels from Beginner to Immortal!
           </p>
-          
+
           {/* Badges Screenshot */}
           <div className="rounded-lg overflow-hidden border shadow-md">
-            <img 
-              src="/badges.jpeg" 
-              alt="Achievements and badges collection" 
+            <img
+              src="/badges.jpeg"
+              alt="Achievements and badges collection"
               className="w-full h-auto object-cover"
             />
             <div className="p-3 bg-muted/50 text-center text-sm text-muted-foreground">
@@ -1332,33 +1415,408 @@ function AchievementsSection() {
         </CardContent>
       </Card>
 
+      {/* ROUNDS BADGES */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Badge Categories</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🏌️</span> Rounds Badges
+          </CardTitle>
+          <CardDescription>Complete rounds to earn these badges</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3">
+        <CardContent>
+          <div className="grid gap-2">
             {[
-              { icon: '📅', name: 'Rounds Badges', desc: 'Complete your first round, 5 rounds, 10, 25, 50, or 100 rounds' },
-              { icon: '🎯', name: 'Scoring Badges', desc: 'Break 100, 90, 80, or shoot par on 18 or 9 holes' },
-              { icon: '🗺️', name: 'Courses Badges', desc: 'Play at 3, 5, or 10 different courses' },
-              { icon: '🏟️', name: 'Tournament Badges', desc: 'Enter tournaments, finish on the podium, or win' },
-              { icon: '📈', name: 'Handicap Badges', desc: 'Improve your handicap or reach single digits' },
-              { icon: '👥', name: 'Social Badges', desc: 'Join or create golfer groups' },
-              { icon: '🌅', name: 'Special Badges', desc: 'Complete rounds at special times (Early Bird, Sunset Golfer)' }
-            ].map((category) => (
-              <div key={category.name} className="flex items-center gap-4 p-3 border rounded-lg">
-                <span className="text-2xl">{category.icon}</span>
+              { icon: '🏌️', name: 'First Swing', desc: 'Complete your first round', pts: '10 pts' },
+              { icon: '📅', name: 'Getting Started', desc: 'Complete 5 rounds', pts: '20 pts' },
+              { icon: '🥈', name: 'Regular Golfer', desc: 'Complete 10 rounds', pts: '30 pts' },
+              { icon: '🥇', name: 'Dedicated Player', desc: 'Complete 25 rounds', pts: '50 pts' },
+              { icon: '🏆', name: 'Golf Addict', desc: 'Complete 50 rounds', pts: '100 pts' },
+              { icon: '👑', name: 'Golf Legend', desc: 'Complete 100 rounds', pts: '200 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
                 <div className="flex-1">
-                  <span className="font-medium">{category.name}</span>
-                  <p className="text-sm text-muted-foreground">{category.desc}</p>
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
                 </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
+      {/* SCORING BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🎯</span> Scoring Badges
+          </CardTitle>
+          <CardDescription>Achieve great scores to unlock</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase">18-Hole Scoring</p>
+            <div className="grid gap-2">
+              {[
+                { icon: '💯', name: 'Century Breaker', desc: 'Score under 100', pts: '15 pts' },
+                { icon: '🎯', name: 'Breaking 90', desc: 'Score under 90', pts: '30 pts' },
+                { icon: '💎', name: 'Elite Golfer', desc: 'Score under 80', pts: '60 pts' },
+                { icon: '⭐', name: 'Par Master', desc: 'Shoot par or better', pts: '100 pts' },
+              ].map((badge) => (
+                <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                  <span className="text-xl">{badge.icon}</span>
+                  <div className="flex-1">
+                    <span className="font-medium text-sm">{badge.name}</span>
+                    <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs font-medium text-muted-foreground uppercase pt-2">9-Hole Scoring</p>
+            <div className="grid gap-2">
+              {[
+                { icon: '🔥', name: 'Half Century', desc: 'Score under 50', pts: '15 pts' },
+                { icon: '🎯', name: 'Sharp Shooter', desc: 'Score under 45', pts: '30 pts' },
+                { icon: '💎', name: 'Nine Hole Master', desc: 'Score under 40', pts: '60 pts' },
+              ].map((badge) => (
+                <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                  <span className="text-xl">{badge.icon}</span>
+                  <div className="flex-1">
+                    <span className="font-medium text-sm">{badge.name}</span>
+                    <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* BIRDIE BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🐦</span> Birdie Badges
+          </CardTitle>
+          <CardDescription>Score birdies (1 under par) to earn</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🐦', name: 'First Birdie', desc: 'Score your first birdie', pts: '15 pts' },
+              { icon: '🦅', name: 'Birdie Hunter', desc: 'Score 5 birdies total', pts: '25 pts' },
+              { icon: '🦃', name: 'Birdie Bonanza', desc: 'Score 10 birdies total', pts: '30 pts' },
+              { icon: '🦚', name: 'Birdie Master', desc: 'Score 25 birdies total', pts: '50 pts' },
+              { icon: '👑', name: 'Birdie King', desc: 'Score 50 birdies total', pts: '80 pts' },
+              { icon: '🔥', name: 'Birdie Streak', desc: '2 birdies in a row', pts: '25 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PAR BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">⛳</span> Par Badges
+          </CardTitle>
+          <CardDescription>Score pars and show consistency</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '⛳', name: 'First Par', desc: 'Score your first par', pts: '10 pts' },
+              { icon: '📋', name: 'Par Collector', desc: 'Score 10 pars total', pts: '15 pts' },
+              { icon: '⚙️', name: 'Par Machine', desc: 'Score 25 pars total', pts: '25 pts' },
+              { icon: '⚖️', name: 'Steady Eddy', desc: 'Complete a round at exactly par', pts: '40 pts' },
+              { icon: '🔗', name: 'Par Streak', desc: '3 pars in a row', pts: '25 pts' },
+              { icon: '✨', name: 'Par Perfect', desc: '5 pars in a row', pts: '50 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* COURSES BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🗺️</span> Courses Badges
+          </CardTitle>
+          <CardDescription>Explore different golf courses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🗺️', name: 'Explorer', desc: 'Play at 3 different courses', pts: '20 pts' },
+              { icon: '✈️', name: 'Traveler', desc: 'Play at 5 different courses', pts: '40 pts' },
+              { icon: '🇲🇦', name: 'Moroccan Tour', desc: 'Play at 10 different courses', pts: '80 pts' },
+              { icon: '🏠', name: 'Home Course Hero', desc: 'Play 5 rounds at same course', pts: '25 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* TOURNAMENT BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🏆</span> Tournament Badges
+          </CardTitle>
+          <CardDescription>Compete and win in tournaments</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🏟️', name: 'Tournament Rookie', desc: 'Enter your first tournament', pts: '15 pts' },
+              { icon: '🎖️', name: 'Tournament Regular', desc: 'Enter 3 tournaments', pts: '30 pts' },
+              { icon: '🏅', name: 'Competition Lover', desc: 'Enter 5 tournaments', pts: '50 pts' },
+              { icon: '🥉', name: 'Podium Finish', desc: 'Finish in top 3', pts: '60 pts' },
+              { icon: '🏆', name: 'Champion', desc: 'Win a tournament', pts: '100 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* HANDICAP BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">📈</span> Handicap Badges
+          </CardTitle>
+          <CardDescription>Improve your game</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '📈', name: 'On the Rise', desc: 'Lower handicap by 3 strokes', pts: '30 pts' },
+              { icon: '🎯', name: 'Major Improvement', desc: 'Lower handicap by 5 strokes', pts: '50 pts' },
+              { icon: '🌟', name: 'Single Digit', desc: 'Reach single-digit handicap', pts: '80 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PROFILE BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">👤</span> Profile Badges
+          </CardTitle>
+          <CardDescription>Set up your profile</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '📝', name: 'Profile Complete', desc: 'Add name, city, and country', pts: '10 pts' },
+              { icon: '📷', name: 'Photo Added', desc: 'Upload a profile photo', pts: '15 pts' },
+              { icon: '🎯', name: 'Handicap Set', desc: 'Set your handicap', pts: '15 pts' },
+              { icon: '🏌️', name: 'First Club', desc: 'Add first club to My Bag', pts: '10 pts' },
+              { icon: '🎒', name: 'Bag Ready', desc: 'Add 5+ clubs to My Bag', pts: '10 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ON-COURSE BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">⛳</span> On-Course Badges
+          </CardTitle>
+          <CardDescription>Track your accuracy</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🏌️', name: 'Fairway Finder', desc: 'Hit 10 fairways total', pts: '15 pts' },
+              { icon: '🏌️', name: 'Green Machine', desc: 'Hit 10 greens in regulation', pts: '15 pts' },
+              { icon: '🛡️', name: 'Bogey Free 9', desc: '9 holes without a bogey', pts: '25 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CONSISTENCY BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">📅</span> Consistency Badges
+          </CardTitle>
+          <CardDescription>Play regularly to earn</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '📅', name: 'Week Warrior', desc: 'Play 3 rounds in one week', pts: '20 pts' },
+              { icon: '📆', name: 'Monthly Regular', desc: 'Play 5 rounds in one month', pts: '25 pts' },
+              { icon: '🔥', name: 'Streak Starter', desc: 'Play 3 weeks in a row', pts: '25 pts' },
+              { icon: '🌅', name: 'Weekend Golfer', desc: 'Play 5 rounds on weekends', pts: '25 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* APP BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">📱</span> App Feature Badges
+          </CardTitle>
+          <CardDescription>Explore app features</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🗺️', name: 'GPS User', desc: 'Use the course map', pts: '15 pts' },
+              { icon: '📊', name: 'Stat Tracker', desc: 'View your statistics', pts: '10 pts' },
+              { icon: '📖', name: 'Guide Reader', desc: 'Visit the User Guide', pts: '10 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SOCIAL BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">👥</span> Social Badges
+          </CardTitle>
+          <CardDescription>Connect with other golfers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '👥', name: 'Team Player', desc: 'Join a golfer group', pts: '10 pts' },
+              { icon: '👨‍✈️', name: 'Group Captain', desc: 'Create a golfer group', pts: '30 pts' },
+              { icon: '🤝', name: 'Friendly Golfer', desc: 'Play with 3 partners', pts: '15 pts' },
+              { icon: '👥', name: 'Group Player', desc: '3 rounds with group members', pts: '20 pts' },
+              { icon: '🎉', name: 'Welcoming', desc: 'Play with a first-time user', pts: '20 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SPECIAL BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">✨</span> Special Badges
+          </CardTitle>
+          <CardDescription>Unique achievements</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🌅', name: 'Early Bird', desc: 'Complete a round before 11 AM', pts: '20 pts' },
+              { icon: '🌇', name: 'Sunset Golfer', desc: 'Complete a round after 6 PM', pts: '20 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* LEVEL SYSTEM */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Level System</CardTitle>
@@ -1396,13 +1854,13 @@ function AchievementsSection() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Achievements are automatically checked when you complete a round. You can also tap the refresh 
+            Achievements are automatically checked when you complete a round. You can also tap the refresh
             button in the badges section to re-check for any newly earned achievements.
           </p>
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-sm text-green-700">
-              <strong>Tip:</strong> Some achievements like scoring badges require completing rounds with 
-              a total score entered. Make sure to fill in all your hole scores to qualify!
+              <strong>Tip:</strong> Badges are permanent once earned! Even if your stats change later,
+              you keep all your hard-earned achievements.
             </p>
           </div>
         </CardContent>
