@@ -1567,7 +1567,7 @@ export default function AdminPage() {
           format: newTournamentForm.format,
           maxPlayers: newTournamentForm.maxPlayers,
           notes: newTournamentForm.notes || null,
-          adminId: newTournamentForm.adminId || null,
+          adminId: newTournamentForm.adminId === 'none' ? null : newTournamentForm.adminId || null,
           adminPhone: newTournamentForm.adminPhone || null,
         })
       });
@@ -1617,7 +1617,7 @@ export default function AdminPage() {
           maxPlayers: editTournamentForm.maxPlayers,
           notes: editTournamentForm.notes || null,
           status: editTournamentForm.status,
-          adminId: editTournamentForm.adminId || null,
+          adminId: editTournamentForm.adminId === 'none' ? null : editTournamentForm.adminId || null,
           adminPhone: editTournamentForm.adminPhone || null,
         })
       });
@@ -2098,7 +2098,7 @@ export default function AdminPage() {
       maxPlayers: tournament.maxPlayers,
       notes: tournament.notes || '',
       status: tournament.status,
-      adminId: tournament.adminId || '',
+      adminId: tournament.adminId || 'none',
       adminPhone: tournament.adminPhone || '',
     });
     setSelectedTournament(tournament);
@@ -3330,7 +3330,7 @@ export default function AdminPage() {
                                 <SelectValue placeholder="Select admin (optional)..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="none">No admin assigned</SelectItem>
                                 {users.filter(u => u.isAdmin || u.isSuperAdmin).map((admin) => (
                                   <SelectItem key={admin.id} value={admin.id}>
                                     {admin.name || admin.email}
@@ -4623,7 +4623,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select admin (optional)..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">No admin assigned</SelectItem>
                     {users.filter(u => u.isAdmin || u.isSuperAdmin).map((admin) => (
                       <SelectItem key={admin.id} value={admin.id}>
                         {admin.name || admin.email}
