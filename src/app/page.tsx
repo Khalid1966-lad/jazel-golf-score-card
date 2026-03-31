@@ -305,6 +305,50 @@ interface Tournament {
   participants?: TournamentParticipant[];
 }
 
+// Partner Request types
+interface PartnerRequestParticipant {
+  id: string;
+  userId: string;
+  joinedAt: string;
+  user: {
+    id: string;
+    name: string | null;
+    handicap: number | null;
+    avatar: string | null;
+  };
+}
+
+interface PartnerRequest {
+  id: string;
+  creatorId: string;
+  courseId: string;
+  date: Date;
+  time: string;
+  notes: string | null;
+  maxPlayers: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  creator: {
+    id: string;
+    name: string | null;
+    handicap: number | null;
+    avatar: string | null;
+    city?: string | null;
+    country?: string | null;
+  };
+  course: {
+    id: string;
+    name: string;
+    city: string;
+    region: string;
+  };
+  participants: PartnerRequestParticipant[];
+  hasJoined?: boolean;
+  isCreator?: boolean;
+  participantCount?: number;
+}
+
 // Markdown Renderer for AI Caddie
 function renderMarkdown(text: string): React.ReactNode {
   const lines = text.split('\n');
@@ -1196,6 +1240,19 @@ export default function JazelApp() {
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('gross');
 
+  // Partner Requests state
+  const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>([]);
+  const [partnerRequestsLoading, setPartnerRequestsLoading] = useState(false);
+  const [showCreatePartnerRequestDialog, setShowCreatePartnerRequestDialog] = useState(false);
+  const [partnerRequestToDelete, setPartnerRequestToDelete] = useState<PartnerRequest | null>(null);
+  const [newPartnerRequest, setNewPartnerRequest] = useState({
+    courseId: '',
+    date: '',
+    time: '09:00',
+    notes: '',
+    maxPlayers: 4
+  });
+
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -1508,6 +1565,120 @@ export default function JazelApp() {
     }
   }, []);
 
+  // Fetch partner requests
+  const fetchPartnerRequests = useCallback(async () => {
+    if (!user) return;
+    setPartnerRequestsLoading(true);
+    try {
+      const response = await fetch(`/api/partner-requests?userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPartnerRequests(data.requests || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch partner requests:', error);
+    } finally {
+      setPartnerRequestsLoading(false);
+    }
+  }, [user]);
+
+  // Create partner request
+  const createPartnerRequest = async () => {
+    if (!user || !newPartnerRequest.courseId || !newPartnerRequest.date || !newPartnerRequest.time) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    try {
+      const response = await fetch('/api/partner-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorId: user.id,
+          courseId: newPartnerRequest.courseId,
+          date: newPartnerRequest.date,
+          time: newPartnerRequest.time,
+          notes: newPartnerRequest.notes || null,
+          maxPlayers: newPartnerRequest.maxPlayers
+        })
+      });
+      if (response.ok) {
+        toast.success('Partner request created successfully!');
+        setShowCreatePartnerRequestDialog(false);
+        setNewPartnerRequest({ courseId: '', date: '', time: '09:00', notes: '', maxPlayers: 4 });
+        fetchPartnerRequests();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to create partner request');
+      }
+    } catch (error) {
+      console.error('Failed to create partner request:', error);
+      toast.error('Failed to create partner request');
+    }
+  };
+
+  // Join partner request
+  const joinPartnerRequest = async (requestId: string) => {
+    if (!user) return;
+    try {
+      const response = await fetch('/api/partner-requests/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, userId: user.id })
+      });
+      if (response.ok) {
+        toast.success('You have joined the request!');
+        fetchPartnerRequests();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to join partner request');
+      }
+    } catch (error) {
+      console.error('Failed to join partner request:', error);
+      toast.error('Failed to join partner request');
+    }
+  };
+
+  // Leave partner request
+  const leavePartnerRequest = async (requestId: string) => {
+    if (!user) return;
+    try {
+      const response = await fetch(`/api/partner-requests/join?requestId=${requestId}&userId=${user.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        toast.success('You have left the request');
+        fetchPartnerRequests();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to leave partner request');
+      }
+    } catch (error) {
+      console.error('Failed to leave partner request:', error);
+      toast.error('Failed to leave partner request');
+    }
+  };
+
+  // Delete partner request
+  const deletePartnerRequest = async (requestId: string) => {
+    if (!user) return;
+    try {
+      const response = await fetch(`/api/partner-requests?id=${requestId}&userId=${user.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        toast.success('Partner request deleted');
+        setPartnerRequestToDelete(null);
+        fetchPartnerRequests();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to delete partner request');
+      }
+    } catch (error) {
+      console.error('Failed to delete partner request:', error);
+      toast.error('Failed to delete partner request');
+    }
+  };
+
   // Mark message as read
   const markMessageAsRead = async (messageId: string) => {
     if (!user) return;
@@ -1554,8 +1725,9 @@ export default function JazelApp() {
       fetchRounds();
       fetchStats();
       fetchMessages();
+      fetchPartnerRequests();
     }
-  }, [fetchCourses, fetchFavorites, fetchGolfers, fetchGroups, fetchRounds, fetchStats, fetchMessages, fetchTournaments, user]);
+  }, [fetchCourses, fetchFavorites, fetchGolfers, fetchGroups, fetchRounds, fetchStats, fetchMessages, fetchTournaments, fetchPartnerRequests, user]);
 
   // Update weather when user location is acquired (more accurate than default)
   useEffect(() => {
@@ -2936,6 +3108,10 @@ export default function JazelApp() {
                   <Trophy className="w-4 h-4" />
                   <span className="hidden sm:inline">Tournaments</span>
                 </TabsTrigger>
+                <TabsTrigger value="partners" className="gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Partners</span>
+                </TabsTrigger>
                 <TabsTrigger value="scorecard" className="gap-2">
                   <Target className="w-4 h-4" />
                   <span className="hidden sm:inline">Scorecard</span>
@@ -2943,10 +3119,6 @@ export default function JazelApp() {
                 <TabsTrigger value="history" className="gap-2">
                   <Clock className="w-4 h-4" />
                   <span className="hidden sm:inline">History</span>
-                </TabsTrigger>
-                <TabsTrigger value="profile" className="gap-2">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Profile</span>
                 </TabsTrigger>
               </>
             )}
@@ -3274,6 +3446,183 @@ export default function JazelApp() {
                 <p className="text-muted-foreground">No courses found. Try a different search.</p>
               </div>
             )}
+          </TabsContent>
+
+          {/* Partner Requests Tab */}
+          <TabsContent value="partners" className="space-y-4">
+            <Card className="bg-white/80 backdrop-blur">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" style={{color: '#39638b'}} />
+                      Golf Partner Requests
+                    </CardTitle>
+                    <CardDescription>
+                      Find golf partners to play with at your favorite courses
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setShowCreatePartnerRequestDialog(true)}
+                    className="text-white"
+                    style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Request
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {partnerRequestsLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{color: '#39638b'}} />
+                    <p className="text-muted-foreground mt-2">Loading requests...</p>
+                  </div>
+                ) : partnerRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No partner requests available</p>
+                    <p className="text-sm text-muted-foreground">Create a request to find golf partners!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                    {partnerRequests.map((request, index) => (
+                      <motion.div
+                        key={request.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <Card 
+                          className="transition-colors"
+                          style={{borderColor: request.status === 'open' ? '#8ab0d1' : '#9ca3af'}}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                {/* Course and Date */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-medium">{request.course.name}</h4>
+                                  <Badge 
+                                    variant={request.status === 'open' ? 'default' : 'secondary'}
+                                    className={request.status === 'open' ? 'bg-green-500 hover:bg-green-600' : ''}
+                                  >
+                                    {request.status}
+                                  </Badge>
+                                </div>
+                                
+                                {/* Date and Time */}
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    {new Date(request.date).toLocaleDateString('en-US', {
+                                      weekday: 'short',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-4 h-4" />
+                                    {request.time}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Users className="w-4 h-4" />
+                                    {request.participants?.length || 0}/{request.maxPlayers}
+                                  </span>
+                                </div>
+
+                                {/* Creator Info */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden"
+                                    style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                                    {request.creator.avatar ? (
+                                      <img src={request.creator.avatar} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-xs font-bold text-white">
+                                        {request.creator.name?.charAt(0).toUpperCase() || '?'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-sm">{request.creator.name || 'Unknown'}</span>
+                                  {request.creator.handicap !== null && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Hcp: {request.creator.handicap}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Participants */}
+                                {request.participants && request.participants.length > 1 && (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-muted-foreground">Players:</span>
+                                    {request.participants.filter(p => p.userId !== request.creatorId).map(p => (
+                                      <div key={p.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs">
+                                        <div className="w-4 h-4 rounded-full flex items-center justify-center overflow-hidden"
+                                          style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                                          {p.user.avatar ? (
+                                            <img src={p.user.avatar} alt="" className="w-full h-full object-cover" />
+                                          ) : (
+                                            <span className="text-[10px] font-bold text-white">
+                                              {p.user.name?.charAt(0).toUpperCase() || '?'}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span>{p.user.name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Notes */}
+                                {request.notes && (
+                                  <p className="text-xs text-muted-foreground mt-2 italic">
+                                    "{request.notes}"
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-col gap-2 ml-4">
+                                {request.isCreator ? (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setPartnerRequestToDelete(request)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                ) : request.hasJoined ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => leavePartnerRequest(request.id)}
+                                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
+                                  >
+                                    Leave
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => joinPartnerRequest(request.id)}
+                                    disabled={request.status !== 'open' || (request.participants?.length || 0) >= request.maxPlayers}
+                                    className="text-white"
+                                    style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Join
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Scorecard Tab */}
@@ -6353,6 +6702,138 @@ export default function JazelApp() {
         </DialogContent>
       </Dialog>
 
+      {/* Create Partner Request Dialog */}
+      <Dialog open={showCreatePartnerRequestDialog} onOpenChange={setShowCreatePartnerRequestDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" style={{color: '#39638b'}} />
+              Create Partner Request
+            </DialogTitle>
+            <DialogDescription>
+              Find golf partners to play with
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Course Selection */}
+            <div className="space-y-2">
+              <Label>Golf Course *</Label>
+              <Select 
+                value={newPartnerRequest.courseId} 
+                onValueChange={(v) => setNewPartnerRequest({...newPartnerRequest, courseId: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name} - {course.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={newPartnerRequest.date}
+                onChange={(e) => setNewPartnerRequest({...newPartnerRequest, date: e.target.value})}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            
+            {/* Time */}
+            <div className="space-y-2">
+              <Label>Tee Time *</Label>
+              <Input
+                type="time"
+                value={newPartnerRequest.time}
+                onChange={(e) => setNewPartnerRequest({...newPartnerRequest, time: e.target.value})}
+              />
+            </div>
+            
+            {/* Max Players */}
+            <div className="space-y-2">
+              <Label>Maximum Players</Label>
+              <Select 
+                value={newPartnerRequest.maxPlayers.toString()} 
+                onValueChange={(v) => setNewPartnerRequest({...newPartnerRequest, maxPlayers: parseInt(v)})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">2 players</SelectItem>
+                  <SelectItem value="3">3 players</SelectItem>
+                  <SelectItem value="4">4 players</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Notes (optional)</Label>
+              <Textarea
+                placeholder="Any additional details..."
+                value={newPartnerRequest.notes}
+                onChange={(e) => setNewPartnerRequest({...newPartnerRequest, notes: e.target.value})}
+                rows={2}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreatePartnerRequestDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="text-white"
+              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+              onClick={createPartnerRequest}
+              disabled={!newPartnerRequest.courseId || !newPartnerRequest.date || !newPartnerRequest.time}
+            >
+              Create Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Partner Request Confirmation Dialog */}
+      <AlertDialog open={partnerRequestToDelete !== null} onOpenChange={(open) => !open && setPartnerRequestToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              Delete Partner Request
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this partner request at{' '}
+              <strong>{partnerRequestToDelete?.course?.name}</strong>?
+              <br /><br />
+              <span className="text-amber-600">⚠️ All joined players will be notified. This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPartnerRequestToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-500 hover:bg-red-600"
+              onClick={() => {
+                if (partnerRequestToDelete) {
+                  deletePartnerRequest(partnerRequestToDelete.id);
+                }
+              }}
+            >
+              Delete Request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Footer */}
       <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -6360,7 +6841,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.0</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.1</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
