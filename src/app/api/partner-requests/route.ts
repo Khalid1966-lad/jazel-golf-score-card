@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-// Cleanup old requests - delete requests older than 7 days past their date
+// Cleanup old requests - delete requests 24 hours after their due date
 async function cleanupOldRequests() {
   try {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    oneWeekAgo.setHours(0, 0, 0, 0);
+    // Calculate the cutoff: 24 hours ago from now
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     
     // Find and delete old requests (cascade will handle participants)
     const deleted = await db.golfPartnerRequest.deleteMany({
       where: {
         date: {
-          lt: oneWeekAgo
+          lt: yesterday
         }
       }
     });

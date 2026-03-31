@@ -6,7 +6,7 @@ import { Download, X, Share, PlusSquare, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Current app version - should match package.json
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
