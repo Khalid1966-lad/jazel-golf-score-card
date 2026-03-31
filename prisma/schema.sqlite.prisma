@@ -42,6 +42,8 @@ model User {
   adminPermission      AdminPermission?
   achievements         UserAchievement[]
   administeredTournaments Tournament[]  @relation("TournamentAdmin")
+  partnerRequests       GolfPartnerRequest[]
+  partnerParticipations GolfPartnerRequestParticipant[]
 
   @@map("users")
 }
@@ -142,6 +144,7 @@ model GolfCourse {
   rounds          Round[]
   favorites       Favorite[]
   tournaments     Tournament[]
+  partnerRequests GolfPartnerRequest[]
   assignedAdmin   User?    @relation("CourseAdmin", fields: [adminId], references: [id])
   
   @@map("golf_courses")
@@ -414,4 +417,38 @@ model UserAchievement {
   
   @@unique([userId, achievementId]) // User can only earn each achievement once
   @@map("user_achievements")
+}
+
+// Golf Partner Request - find golf partners to play with
+model GolfPartnerRequest {
+  id           String   @id @default(cuid())
+  creatorId    String
+  courseId     String
+  date         DateTime
+  time         String
+  notes        String?
+  maxPlayers   Int      @default(4)
+  status       String   @default("open") // "open", "filled", "cancelled"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  creator      User                        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  course       GolfCourse                  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  participants GolfPartnerRequestParticipant[]
+  
+  @@map("golf_partner_requests")
+}
+
+// Golf Partner Request Participant - users who joined a request
+model GolfPartnerRequestParticipant {
+  id         String   @id @default(cuid())
+  requestId  String
+  userId     String
+  joinedAt   DateTime @default(now())
+  
+  request    GolfPartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([requestId, userId])
+  @@map("golf_partner_request_participants")
 }
