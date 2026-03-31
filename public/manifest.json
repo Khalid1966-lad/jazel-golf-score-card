@@ -2,7 +2,7 @@
   "name": "Jazel Golf Scorecard",
   "short_name": "Jazel",
   "description": "Track your golf rounds, find Morocco golf courses, and improve your game with Jazel - the ultimate golf scorecard app.",
-  "version": "1.4.13",
+  "version": "1.4.14",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
