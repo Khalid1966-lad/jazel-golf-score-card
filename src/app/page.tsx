@@ -4414,7 +4414,11 @@ export default function JazelApp() {
                       {tournaments.map((tournament) => (
                         <Card
                           key={tournament.id}
-                          className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                          className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${
+                            tournament.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' :
+                            tournament.status === 'cancelled' ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 opacity-75' :
+                            ''
+                          }`}
                           onClick={() => {
                             setSelectedTournament(tournament);
                             fetchTournamentWithParticipants(tournament.id);
@@ -4423,19 +4427,19 @@ export default function JazelApp() {
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between">
                               <div>
-                                <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                                <CardTitle className={`text-lg ${tournament.status === 'completed' ? 'text-emerald-800 dark:text-emerald-200' : ''}`}>{tournament.name}</CardTitle>
                                 <CardDescription>{tournament.course.name}</CardDescription>
                               </div>
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={
                                   tournament.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                   tournament.status === 'in_progress' ? 'bg-green-50 text-green-700 border-green-200' :
-                                  tournament.status === 'completed' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                                  tournament.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
                                   'bg-red-50 text-red-700 border-red-200'
                                 }
                               >
-                                {tournament.status === 'in_progress' ? 'In Progress' : 
+                                {tournament.status === 'in_progress' ? 'In Progress' :
                                  tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
                               </Badge>
                             </div>

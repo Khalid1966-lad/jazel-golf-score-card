@@ -8,16 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  BookOpen, 
-  User, 
-  MapPin, 
-  Circle, 
-  Trophy, 
-  BarChart3, 
-  Users, 
-  Cloud, 
+import {
+  ArrowLeft,
+  BookOpen,
+  User,
+  MapPin,
+  Circle,
+  Trophy,
+  BarChart3,
+  Users,
+  Cloud,
   Settings,
   ChevronRight,
   Check,
@@ -39,7 +39,10 @@ import {
   Upload,
   Heart,
   RefreshCw,
-  Save
+  Save,
+  Info,
+  Globe,
+  MailOpen
 } from 'lucide-react';
 
 interface GuideSection {
@@ -50,9 +53,15 @@ interface GuideSection {
 }
 
 export default function GuidePage() {
-  const [activeSection, setActiveSection] = useState('welcome');
+  const [activeSection, setActiveSection] = useState('about');
 
   const sections: GuideSection[] = [
+    {
+      id: 'about',
+      title: 'About',
+      icon: <Info className="w-4 h-4" />,
+      content: <AboutSection />
+    },
     {
       id: 'welcome',
       title: 'Welcome',
@@ -230,6 +239,99 @@ export default function GuidePage() {
           </main>
         </div>
       </div>
+    </div>
+  );
+}
+
+// About Section
+function AboutSection() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl flex items-center gap-3">
+            <span className="p-2 rounded-lg" style={{ backgroundColor: '#39638b20' }}>
+              <Info className="w-6 h-6" style={{ color: '#39638b' }} />
+            </span>
+            About Jazel Golf
+          </CardTitle>
+          <CardDescription className="text-base">
+            Your smart golf companion for Morocco
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Developer Info */}
+          <div className="flex flex-col items-center text-center py-6">
+            <img
+              src="/logo-jazel.png"
+              alt="Jazel Web Agency"
+              className="w-24 h-24 object-contain mb-4"
+            />
+            <h3 className="text-xl font-bold mb-1">Developed by</h3>
+            <p className="text-2xl font-semibold" style={{ color: '#39638b' }}>Jazel Web Agency</p>
+          </div>
+
+          {/* Contact Info */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <a
+              href="mailto:contact@jazelwebagency.com"
+              className="p-4 border rounded-lg hover:bg-muted/50 transition-colors flex items-center gap-3"
+            >
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#39638b20' }}>
+                <MailOpen className="w-5 h-5" style={{ color: '#39638b' }} />
+              </div>
+              <div>
+                <p className="font-medium">Email</p>
+                <p className="text-sm text-muted-foreground">contact@jazelwebagency.com</p>
+              </div>
+            </a>
+            <a
+              href="https://www.jazelwebagency.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-4 border rounded-lg hover:bg-muted/50 transition-colors flex items-center gap-3"
+            >
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#39638b20' }}>
+                <Globe className="w-5 h-5" style={{ color: '#39638b' }} />
+              </div>
+              <div>
+                <p className="font-medium">Website</p>
+                <p className="text-sm text-muted-foreground">jazelwebagency.com</p>
+              </div>
+            </a>
+          </div>
+
+          <Separator />
+
+          {/* App Description */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-lg">About the App</h4>
+            <p className="text-muted-foreground">
+              Jazel Golf is a complete golf scorecard application designed for golfers in Morocco.
+              Track your rounds, get smart club recommendations with AI Caddie, discover courses,
+              and connect with fellow golfers.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <span className="font-medium">📍 GPS Range Finder</span>
+                <p className="text-sm text-muted-foreground">Real-time distances to greens</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <span className="font-medium">🤖 AI Caddie</span>
+                <p className="text-sm text-muted-foreground">Smart club recommendations</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <span className="font-medium">🏆 Tournaments</span>
+                <p className="text-sm text-muted-foreground">Organize and compete</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <span className="font-medium">📊 Statistics</span>
+                <p className="text-sm text-muted-foreground">Track your progress</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
