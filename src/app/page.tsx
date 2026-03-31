@@ -7340,17 +7340,20 @@ export default function JazelApp() {
 
       {/* Repair Shops Dialog */}
       <Dialog open={showRepairShopsDialog} onOpenChange={setShowRepairShopsDialog}>
-        <DialogContent className="max-w-2xl max-h-[85vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wrench className="w-5 h-5" style={{color: '#39638b'}} />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
+                style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                <Wrench className="w-4 h-4 text-white" />
+              </div>
               Repair Shops
             </DialogTitle>
             <DialogDescription>
               Find golf equipment repair shops near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-[3px]">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7367,7 +7370,7 @@ export default function JazelApp() {
               {/* Country and City Filters */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-sm text-muted-foreground">Country</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Country</Label>
                   <Select value={selectedShopCountry} onValueChange={setSelectedShopCountry}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="All Countries" />
@@ -7383,7 +7386,7 @@ export default function JazelApp() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm text-muted-foreground">City</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">City</Label>
                   <Select value={selectedShopCity} onValueChange={setSelectedShopCity}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="All Cities" />
@@ -7402,60 +7405,69 @@ export default function JazelApp() {
             </div>
             
             {/* Repair Shops List */}
-            <ScrollArea className="h-[400px] pr-4">
+            <ScrollArea className="h-[350px] sm:h-[400px] pr-2">
               {repairShops.length === 0 ? (
                 <div className="text-center py-8">
-                  <Wrench className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" 
+                    style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                    <Wrench className="w-8 h-8" style={{color: '#8ab0d1'}} />
+                  </div>
                   <p className="text-lg font-medium text-muted-foreground">No repair shops found</p>
                   <p className="text-sm text-muted-foreground mt-2">
                     Try adjusting your search or filters
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-[3px]">
                   {repairShops.map((shop) => (
                     <Card
                       key={shop.id}
-                      className="cursor-pointer transition-all hover:shadow-md"
-                      style={{borderColor: '#8ab0d1'}}
+                      className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group"
+                      style={{borderColor: '#d6e4ef'}}
                       onClick={() => {
                         setSelectedRepairShop(shop);
                         setShowRepairShopDetail(true);
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#4a7aa8'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex gap-4">
-                          {/* Shop Image */}
-                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 flex items-center justify-center">
-                            {shop.imageUrl ? (
-                              <img
-                                src={shop.imageUrl}
-                                alt={shop.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Wrench className="w-8 h-8 text-muted-foreground" style={{color: '#8ab0d1'}} />
-                            )}
+                      {/* Shop Image - Full Width */}
+                      <div className="w-full h-32 sm:h-36 relative overflow-hidden bg-slate-100">
+                        {shop.imageUrl ? (
+                          <img
+                            src={shop.imageUrl}
+                            alt={shop.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center" 
+                            style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                            <Wrench className="w-10 h-10" style={{color: '#8ab0d1'}} />
                           </div>
-                          
-                          {/* Shop Info */}
+                        )}
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                        
+                        {/* Shop Name Overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <h4 className="font-bold text-white text-base truncate drop-shadow-md">{shop.name}</h4>
+                        </div>
+                      </div>
+                      
+                      {/* Shop Info */}
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold truncate" style={{color: '#39638b'}}>{shop.name}</h4>
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {shop.city}, {shop.country}
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{shop.city}, {shop.country}</span>
                             </p>
                             {shop.manager && (
-                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                <User className="w-3 h-3" />
-                                {shop.manager}
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                <User className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{shop.manager}</span>
                               </p>
                             )}
                           </div>
-                          
-                          <ChevronRight className="w-5 h-5 text-muted-foreground self-center flex-shrink-0" />
+                          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                         </div>
                       </CardContent>
                     </Card>
@@ -7466,7 +7478,7 @@ export default function JazelApp() {
             
             {/* Add Shop Button (Super Admin only) */}
             {(user as any)?.isSuperAdmin && (
-              <div className="pt-2 border-t" style={{borderColor: '#d6e4ef'}}>
+              <div className="pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
                 <Button
                   className="w-full text-white"
                   style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
@@ -7483,55 +7495,81 @@ export default function JazelApp() {
 
       {/* Repair Shop Detail Dialog */}
       <Dialog open={showRepairShopDetail} onOpenChange={setShowRepairShopDetail}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] w-[calc(100%-6px)] mx-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wrench className="w-5 h-5" style={{color: '#39638b'}} />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
+                style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                <Wrench className="w-4 h-4 text-white" />
+              </div>
               {selectedRepairShop?.name}
             </DialogTitle>
           </DialogHeader>
           {selectedRepairShop && (
-            <div className="space-y-4">
-              {/* Shop Image */}
-              {selectedRepairShop.imageUrl && (
-                <div className="w-full h-48 rounded-lg overflow-hidden">
+            <div className="space-y-4 px-[3px]">
+              {/* Shop Image - Full Width */}
+              <div className="w-full h-48 sm:h-56 rounded-xl overflow-hidden relative">
+                {selectedRepairShop.imageUrl ? (
                   <img
                     src={selectedRepairShop.imageUrl}
                     alt={selectedRepairShop.name}
                     className="w-full h-full object-cover"
                   />
-                </div>
-              )}
-              
-              {/* Basic Info */}
-              <div className="space-y-3">
-                {selectedRepairShop.manager && (
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" style={{color: '#39638b'}} />
-                    <span className="text-sm">{selectedRepairShop.manager}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
-                  <span className="text-sm">{selectedRepairShop.city}, {selectedRepairShop.country}</span>
-                </div>
-                
-                {selectedRepairShop.activeSince && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" style={{color: '#39638b'}} />
-                    <span className="text-sm">Active since {new Date(selectedRepairShop.activeSince).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}</span>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center rounded-xl" 
+                    style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                    <Wrench className="w-16 h-16" style={{color: '#8ab0d1'}} />
                   </div>
                 )}
               </div>
               
+              {/* Basic Info Card */}
+              <div className="p-4 rounded-xl" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                <div className="space-y-3">
+                  {selectedRepairShop.manager && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/80">
+                        <User className="w-4 h-4" style={{color: '#39638b'}} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Manager</p>
+                        <span className="text-sm font-medium">{selectedRepairShop.manager}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/80">
+                      <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Location</p>
+                      <span className="text-sm font-medium">{selectedRepairShop.city}, {selectedRepairShop.country}</span>
+                    </div>
+                  </div>
+                  
+                  {selectedRepairShop.activeSince && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/80">
+                        <Calendar className="w-4 h-4" style={{color: '#39638b'}} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Active Since</p>
+                        <span className="text-sm font-medium">{new Date(selectedRepairShop.activeSince).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
               {/* Description */}
               {selectedRepairShop.description && (
-                <div className="p-3 rounded-lg" style={{backgroundColor: '#d6e4ef'}}>
+                <div className="p-4 rounded-xl border" style={{borderColor: '#d6e4ef'}}>
+                  <p className="text-xs text-muted-foreground mb-1">About</p>
                   <p className="text-sm">{selectedRepairShop.description}</p>
                 </div>
               )}
@@ -7541,20 +7579,34 @@ export default function JazelApp() {
                 {selectedRepairShop.phone && (
                   <a
                     href={`tel:${selectedRepairShop.phone}`}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-md"
+                    style={{borderColor: '#d6e4ef'}}
                   >
-                    <Phone className="w-4 h-4" style={{color: '#39638b'}} />
-                    <span className="text-sm" style={{color: '#39638b'}}>{selectedRepairShop.phone}</span>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                      style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      <span className="text-sm font-medium" style={{color: '#39638b'}}>{selectedRepairShop.phone}</span>
+                    </div>
                   </a>
                 )}
                 
                 {selectedRepairShop.email && (
                   <a
                     href={`mailto:${selectedRepairShop.email}`}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-md"
+                    style={{borderColor: '#d6e4ef'}}
                   >
-                    <Mail className="w-4 h-4" style={{color: '#39638b'}} />
-                    <span className="text-sm" style={{color: '#39638b'}}>{selectedRepairShop.email}</span>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+                      style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <span className="text-sm font-medium" style={{color: '#39638b'}}>{selectedRepairShop.email}</span>
+                    </div>
                   </a>
                 )}
               </div>
