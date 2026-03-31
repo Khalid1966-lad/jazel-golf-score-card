@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { isSuperAdminEmail } from '@/lib/super-admin';
 
 // Validation schema for repair shop
 const repairShopSchema = z.object({
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
       include: { user: true },
     });
 
-    if (!session || session.expiresAt < new Date() || !session.user.isSuperAdmin) {
+    if (!session || session.expiresAt < new Date() || !isSuperAdminEmail(session.user.email)) {
       return NextResponse.json({ error: 'Unauthorized - Super Admin required' }, { status: 403 });
     }
 
@@ -148,7 +149,7 @@ export async function PUT(request: NextRequest) {
       include: { user: true },
     });
 
-    if (!session || session.expiresAt < new Date() || !session.user.isSuperAdmin) {
+    if (!session || session.expiresAt < new Date() || !isSuperAdminEmail(session.user.email)) {
       return NextResponse.json({ error: 'Unauthorized - Super Admin required' }, { status: 403 });
     }
 
@@ -199,7 +200,7 @@ export async function DELETE(request: NextRequest) {
       include: { user: true },
     });
 
-    if (!session || session.expiresAt < new Date() || !session.user.isSuperAdmin) {
+    if (!session || session.expiresAt < new Date() || !isSuperAdminEmail(session.user.email)) {
       return NextResponse.json({ error: 'Unauthorized - Super Admin required' }, { status: 403 });
     }
 
