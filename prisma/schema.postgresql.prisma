@@ -41,6 +41,7 @@ model User {
   assignedCourses      GolfCourse[]        @relation("CourseAdmin")
   adminPermission      AdminPermission?
   achievements         UserAchievement[]
+  administeredTournaments Tournament[]
 
   @@map("users")
 }
@@ -352,10 +353,13 @@ model Tournament {
   maxPlayers      Int      @default(144)
   notes           String?
   status          String   @default("upcoming")
+  adminId         String?
+  adminPhone      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   course          GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  admin           User?     @relation(fields: [adminId], references: [id])
   participants    TournamentParticipant[]
   
   @@map("tournaments")
