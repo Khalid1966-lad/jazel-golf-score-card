@@ -1621,8 +1621,10 @@ export default function JazelApp() {
         toast.success('Partner request created successfully!');
         setShowCreatePartnerRequestDialog(false);
         setNewPartnerRequest({ courseId: '', date: '', time: '09:00', notes: '', maxPlayers: 4 });
-        // Refresh the partner requests list
-        await fetchPartnerRequests();
+        // Small delay to ensure database is updated
+        setTimeout(() => {
+          fetchPartnerRequests();
+        }, 100);
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to create partner request');
@@ -1644,7 +1646,10 @@ export default function JazelApp() {
       });
       if (response.ok) {
         toast.success('You have joined the request!');
-        await fetchPartnerRequests();
+        // Small delay to ensure database is updated
+        setTimeout(() => {
+          fetchPartnerRequests();
+        }, 100);
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to join partner request');
@@ -1664,7 +1669,10 @@ export default function JazelApp() {
       });
       if (response.ok) {
         toast.success('You have left the request');
-        await fetchPartnerRequests();
+        // Small delay to ensure database is updated
+        setTimeout(() => {
+          fetchPartnerRequests();
+        }, 100);
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to leave partner request');
@@ -1685,7 +1693,9 @@ export default function JazelApp() {
       if (response.ok) {
         toast.success('Partner request deleted');
         setPartnerRequestToDelete(null);
-        await fetchPartnerRequests();
+        setTimeout(() => {
+          fetchPartnerRequests();
+        }, 100);
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to delete partner request');
@@ -1722,7 +1732,9 @@ export default function JazelApp() {
         toast.success('Partner request updated successfully!');
         setShowEditPartnerRequestDialog(false);
         setPartnerRequestToEdit(null);
-        await fetchPartnerRequests();
+        setTimeout(() => {
+          fetchPartnerRequests();
+        }, 100);
       } else {
         const data = await response.json();
         toast.error(data.error || 'Failed to update partner request');
@@ -7199,7 +7211,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.8</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.9</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
