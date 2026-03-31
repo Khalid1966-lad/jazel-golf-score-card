@@ -7736,7 +7736,7 @@ export default function JazelApp() {
 
       {/* Shared Scorecard Dialog */}
       <Dialog open={!!viewingSharedScorecard} onOpenChange={(open) => !open && setViewingSharedScorecard(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0">
+        <DialogContent className="max-w-2xl p-0 gap-0 [&>button]:hidden">
           {viewingSharedScorecard?.lastSharedRound && (
             <>
               <DialogHeader className="p-3 border-b" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
@@ -7764,8 +7764,7 @@ export default function JazelApp() {
                 </div>
               </DialogHeader>
               
-              <ScrollArea className="flex-1 h-[calc(90vh-80px)]">
-                <div className="p-3 space-y-2">
+              <div className="p-3 space-y-2">
                   {/* Stats Summary */}
                   <div className="grid grid-cols-4 gap-1.5">
                     <div className="text-center p-2 rounded-lg" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
@@ -7943,7 +7942,6 @@ export default function JazelApp() {
                     Close
                   </Button>
                 </div>
-              </ScrollArea>
             </>
           )}
         </DialogContent>
@@ -7964,7 +7962,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.8</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.9</p>
             </div>
             
             {/* Description */}
