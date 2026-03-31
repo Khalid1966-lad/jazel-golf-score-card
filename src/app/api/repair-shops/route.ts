@@ -8,6 +8,7 @@ import { isSuperAdminEmail } from '@/lib/super-admin';
 const repairShopSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   manager: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
   city: z.string().min(1, 'City is required'),
   country: z.string().min(1, 'Country is required'),
   phone: z.string().optional().nullable(),
@@ -16,6 +17,7 @@ const repairShopSchema = z.object({
     z.literal(''),
     z.null()
   ]).optional(),
+  website: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   imageUrl: z.string().optional().nullable(),
   activeSince: z.string().optional().nullable(),
@@ -113,10 +115,12 @@ export async function POST(request: NextRequest) {
       data: {
         name: validated.name,
         manager: validated.manager || null,
+        address: validated.address || null,
         city: validated.city,
         country: validated.country,
         phone: validated.phone || null,
         email: validated.email || null,
+        website: validated.website || null,
         description: validated.description || null,
         imageUrl: validated.imageUrl || null,
         activeSince: validated.activeSince ? new Date(validated.activeSince) : null,

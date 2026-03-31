@@ -7353,7 +7353,7 @@ export default function JazelApp() {
               Find golf equipment repair shops near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-[3px]">
+          <div className="space-y-4 px-3">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7418,58 +7418,55 @@ export default function JazelApp() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-[3px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {repairShops.map((shop) => (
                     <Card
                       key={shop.id}
-                      className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group"
+                      className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group flex flex-row"
                       style={{borderColor: '#d6e4ef'}}
                       onClick={() => {
                         setSelectedRepairShop(shop);
                         setShowRepairShopDetail(true);
                       }}
                     >
-                      {/* Shop Image - Full Width */}
-                      <div className="w-full h-32 sm:h-36 relative overflow-hidden bg-slate-100">
+                      {/* Shop Image - Small Thumbnail */}
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden bg-slate-100">
                         {shop.imageUrl ? (
                           <img
                             src={shop.imageUrl}
                             alt={shop.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center" 
                             style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
-                            <Wrench className="w-10 h-10" style={{color: '#8ab0d1'}} />
+                            <Wrench className="w-6 h-6" style={{color: '#8ab0d1'}} />
                           </div>
                         )}
-                        {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                        
-                        {/* Shop Name Overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                          <h4 className="font-bold text-white text-base truncate drop-shadow-md">{shop.name}</h4>
-                        </div>
                       </div>
                       
                       {/* Shop Info */}
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{shop.city}, {shop.country}</span>
-                            </p>
-                            {shop.manager && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                <User className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{shop.manager}</span>
-                              </p>
-                            )}
-                          </div>
-                          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
-                        </div>
+                      <CardContent className="p-3 flex-1 min-w-0">
+                        <h4 className="font-bold text-sm sm:text-base truncate" style={{color: '#39638b'}}>{shop.name}</h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{shop.city}, {shop.country}</span>
+                        </p>
+                        {shop.manager && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{shop.manager}</span>
+                          </p>
+                        )}
+                        {shop.phone && (
+                          <p className="text-xs mt-1" style={{color: '#39638b'}}>
+                            {shop.phone}
+                          </p>
+                        )}
                       </CardContent>
+                      <div className="flex items-center pr-3">
+                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -7495,8 +7492,8 @@ export default function JazelApp() {
 
       {/* Repair Shop Detail Dialog */}
       <Dialog open={showRepairShopDetail} onOpenChange={setShowRepairShopDetail}>
-        <DialogContent className="max-w-lg max-h-[90vh] w-[calc(100%-6px)] mx-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[100vw] w-[calc(100vw-24px)] max-h-[100vh] h-[calc(100vh-24px)] mx-auto p-0 gap-0">
+          <DialogHeader className="p-4 border-b" style={{borderColor: '#d6e4ef'}}>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
                 style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
@@ -7506,18 +7503,18 @@ export default function JazelApp() {
             </DialogTitle>
           </DialogHeader>
           {selectedRepairShop && (
-            <ScrollArea className="max-h-[calc(90vh-120px)]">
-              <div className="space-y-4 px-[3px] pr-4">
-                {/* Shop Image - Full Width */}
-                <div className="w-full h-40 sm:h-48 rounded-xl overflow-hidden relative">
+            <ScrollArea className="flex-1 h-[calc(100vh-140px)]">
+              <div className="space-y-4 p-4">
+                {/* Shop Image - Full Width, No Cropping */}
+                <div className="w-full rounded-xl overflow-hidden relative bg-slate-100">
                   {selectedRepairShop.imageUrl ? (
                     <img
                       src={selectedRepairShop.imageUrl}
                       alt={selectedRepairShop.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-auto object-contain"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center rounded-xl" 
+                    <div className="w-full h-40 flex items-center justify-center rounded-xl" 
                       style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
                       <Wrench className="w-12 h-12" style={{color: '#8ab0d1'}} />
                     </div>
@@ -7539,6 +7536,18 @@ export default function JazelApp() {
                       </div>
                     )}
                     
+                    {selectedRepairShop.address && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/80 flex-shrink-0">
+                          <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground">Address</p>
+                          <span className="text-sm font-medium break-words">{selectedRepairShop.address}</span>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/80 flex-shrink-0">
                         <MapPin className="w-4 h-4" style={{color: '#39638b'}} />
@@ -7556,11 +7565,7 @@ export default function JazelApp() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Active Since</p>
-                          <span className="text-sm font-medium">{new Date(selectedRepairShop.activeSince).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}</span>
+                          <span className="text-sm font-medium">{new Date(selectedRepairShop.activeSince).getFullYear()}</span>
                         </div>
                       </div>
                     )}
@@ -7610,6 +7615,27 @@ export default function JazelApp() {
                       </div>
                     </a>
                   )}
+                  
+                  {selectedRepairShop.website && (
+                    <a
+                      href={selectedRepairShop.website.startsWith('http') ? selectedRepairShop.website : `https://${selectedRepairShop.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-md active:scale-[0.98]"
+                      style={{borderColor: '#d6e4ef'}}
+                    >
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                        style={{background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'}}>
+                        <Globe className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">Website</p>
+                        <span className="text-sm font-medium break-all" style={{color: '#39638b'}}>
+                          {selectedRepairShop.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                        </span>
+                      </div>
+                    </a>
+                  )}
                 </div>
                 
                 {/* Close Button */}
@@ -7642,7 +7668,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.2</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.4</p>
             </div>
             
             {/* Description */}

@@ -365,10 +365,12 @@ export default function AdminPage() {
   const [newRepairShopForm, setNewRepairShopForm] = useState({
     name: '',
     manager: '',
+    address: '',
     city: '',
     country: 'Morocco',
     phone: '',
     email: '',
+    website: '',
     description: '',
     imageUrl: '',
     activeSince: '',
@@ -378,10 +380,12 @@ export default function AdminPage() {
     id: '',
     name: '',
     manager: '',
+    address: '',
     city: '',
     country: 'Morocco',
     phone: '',
     email: '',
+    website: '',
     description: '',
     imageUrl: '',
     activeSince: '',
@@ -525,10 +529,12 @@ export default function AdminPage() {
         body: JSON.stringify({
           name: newRepairShopForm.name,
           manager: newRepairShopForm.manager || null,
+          address: newRepairShopForm.address || null,
           city: newRepairShopForm.city,
           country: newRepairShopForm.country,
           phone: newRepairShopForm.phone || null,
           email: newRepairShopForm.email || null,
+          website: newRepairShopForm.website || null,
           description: newRepairShopForm.description || null,
           imageUrl: newRepairShopForm.imageUrl || null,
           activeSince: newRepairShopForm.activeSince || null,
@@ -543,10 +549,12 @@ export default function AdminPage() {
         setNewRepairShopForm({
           name: '',
           manager: '',
+          address: '',
           city: '',
           country: 'Morocco',
           phone: '',
           email: '',
+          website: '',
           description: '',
           imageUrl: '',
           activeSince: '',
@@ -581,10 +589,12 @@ export default function AdminPage() {
           id: editRepairShopForm.id,
           name: editRepairShopForm.name,
           manager: editRepairShopForm.manager || null,
+          address: editRepairShopForm.address || null,
           city: editRepairShopForm.city,
           country: editRepairShopForm.country,
           phone: editRepairShopForm.phone || null,
           email: editRepairShopForm.email || null,
+          website: editRepairShopForm.website || null,
           description: editRepairShopForm.description || null,
           imageUrl: editRepairShopForm.imageUrl || null,
           activeSince: editRepairShopForm.activeSince || null,
@@ -600,10 +610,12 @@ export default function AdminPage() {
           id: '',
           name: '',
           manager: '',
+          address: '',
           city: '',
           country: 'Morocco',
           phone: '',
           email: '',
+          website: '',
           description: '',
           imageUrl: '',
           activeSince: '',
@@ -755,10 +767,12 @@ export default function AdminPage() {
       id: shop.id,
       name: shop.name,
       manager: shop.manager || '',
+      address: shop.address || '',
       city: shop.city,
       country: shop.country,
       phone: shop.phone || '',
       email: shop.email || '',
+      website: shop.website || '',
       description: shop.description || '',
       imageUrl: shop.imageUrl || '',
       activeSince: shop.activeSince ? new Date(shop.activeSince).toISOString().split('T')[0] : '',
@@ -4263,6 +4277,10 @@ export default function AdminPage() {
                             <Input id="shopManager" value={newRepairShopForm.manager} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, manager: e.target.value })} placeholder="e.g., John Smith" />
                           </div>
                         </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="shopAddress">Address</Label>
+                          <Input id="shopAddress" value={newRepairShopForm.address} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, address: e.target.value })} placeholder="e.g., 123 Golf Street, Suite 100" />
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="shopCity">City *</Label>
@@ -4282,6 +4300,10 @@ export default function AdminPage() {
                             <Label htmlFor="shopEmail">Email</Label>
                             <Input id="shopEmail" type="email" value={newRepairShopForm.email} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, email: e.target.value })} placeholder="e.g., contact@shop.com" />
                           </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="shopWebsite">Website</Label>
+                          <Input id="shopWebsite" value={newRepairShopForm.website} onChange={(e) => setNewRepairShopForm({ ...newRepairShopForm, website: e.target.value })} placeholder="e.g., https://www.example.com" />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="shopDescription">Description</Label>
@@ -4531,6 +4553,10 @@ export default function AdminPage() {
                       <Input id="editShopManager" value={editRepairShopForm.manager} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, manager: e.target.value })} />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editShopAddress">Address</Label>
+                    <Input id="editShopAddress" value={editRepairShopForm.address} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, address: e.target.value })} placeholder="e.g., 123 Golf Street, Suite 100" />
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="editShopCity">City *</Label>
@@ -4550,6 +4576,10 @@ export default function AdminPage() {
                       <Label htmlFor="editShopEmail">Email</Label>
                       <Input id="editShopEmail" type="email" value={editRepairShopForm.email} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, email: e.target.value })} />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editShopWebsite">Website</Label>
+                    <Input id="editShopWebsite" placeholder="https://example.com" value={editRepairShopForm.website} onChange={(e) => setEditRepairShopForm({ ...editRepairShopForm, website: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="editShopDescription">Description</Label>
