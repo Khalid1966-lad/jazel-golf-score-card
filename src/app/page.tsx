@@ -3168,6 +3168,22 @@ export default function JazelApp() {
                         </div>
                       </div>
                     )}
+
+                    {/* GPS Range Finder Panel - Above Scorecard */}
+                    {showGPSPanel && (
+                      <div className="p-3 border-b bg-slate-50" style={{borderColor: '#8ab0d1'}}>
+                        <GPSRangeFinder 
+                          course={selectedCourse} 
+                          userLocation={userLocation}
+                          onLocationUpdate={(loc) => setUserLocation(loc)}
+                          selectedHole={selectedGPSHole}
+                          onHoleChange={setSelectedGPSHole}
+                          distanceUnit={distanceUnit}
+                          userClubs={userClubs}
+                        />
+                      </div>
+                    )}
+
                     <div 
                       ref={scorecardRef}
                       className="overflow-x-auto"
@@ -3469,28 +3485,6 @@ export default function JazelApp() {
                           Add Players ({additionalPlayers.length}/3)
                         </Button>
                       </div>
-                      
-                      {/* GPS Range Finder Panel */}
-                      {showGPSPanel && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="pt-2">
-                            <GPSRangeFinder 
-                              course={selectedCourse} 
-                              userLocation={userLocation}
-                              onLocationUpdate={(loc) => setUserLocation(loc)}
-                              selectedHole={selectedGPSHole}
-                              onHoleChange={setSelectedGPSHole}
-                              distanceUnit={distanceUnit}
-                              userClubs={userClubs}
-                            />
-                          </div>
-                        </motion.div>
-                      )}
                       
                       {/* Save and Discard Buttons */}
                       <div className="flex gap-3">
@@ -6148,7 +6142,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.89</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.2.90</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
