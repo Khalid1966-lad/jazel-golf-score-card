@@ -1586,7 +1586,10 @@ export default function JazelApp() {
     if (!user) return;
     setPartnerRequestsLoading(true);
     try {
-      const response = await fetch(`/api/partner-requests?userId=${user.id}`);
+      // Add timestamp to bypass browser cache
+      const response = await fetch(`/api/partner-requests?userId=${user.id}&_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (response.ok) {
         const data = await response.json();
         setPartnerRequests(data.requests || []);
@@ -7211,7 +7214,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.9</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.0</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
