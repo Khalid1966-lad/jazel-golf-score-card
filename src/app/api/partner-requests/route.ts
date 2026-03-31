@@ -1,9 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Cleanup old requests - delete requests older than 7 days past their date
+async function cleanupOldRequests() {
+  try {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    oneWeekAgo.setHours(0, 0, 0, 0);
+    
+    // Find and delete old requests (cascade will handle participants)
+    const deleted = await db.golfPartnerRequest.deleteMany({
+      where: {
+        date: {
+          lt: oneWeekAgo
+        }
+      }
+    });
+    
+    if (deleted.count > 0) {
+      console.log(`Cleaned up ${deleted.count} old partner request(s)`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up old partner requests:', error);
+  }
+}
+
 // GET - Fetch all partner requests or filter by user
 export async function GET(request: NextRequest) {
   try {
+    // Run cleanup in the background (don't await to not slow down the response)
+    cleanupOldRequests();
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const courseId = searchParams.get('courseId');
