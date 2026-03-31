@@ -42,6 +42,10 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   
   // Tables depending on tournaments and users
   tournament_participants: ['tournaments', 'users'],
+
+  // Tables depending on users and golf_courses (partner requests)
+  golf_partner_requests: ['users', 'golf_courses'],
+  golf_partner_request_participants: ['golf_partner_requests', 'users'],
 };
 
 // Get table names in correct restore order (topological sort)
@@ -273,6 +277,26 @@ async function fetchAllData() {
     errors.push(`user_achievements: ${e instanceof Error ? e.message : 'Unknown error'}`);
     data.user_achievements = [];
     statistics.user_achievements = 0;
+  }
+
+  // Fetch golf partner requests
+  try {
+    data.golf_partner_requests = await db.golfPartnerRequest.findMany();
+    statistics.golf_partner_requests = data.golf_partner_requests.length;
+  } catch (e) {
+    errors.push(`golf_partner_requests: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.golf_partner_requests = [];
+    statistics.golf_partner_requests = 0;
+  }
+
+  // Fetch golf partner request participants
+  try {
+    data.golf_partner_request_participants = await db.golfPartnerRequestParticipant.findMany();
+    statistics.golf_partner_request_participants = data.golf_partner_request_participants.length;
+  } catch (e) {
+    errors.push(`golf_partner_request_participants: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.golf_partner_request_participants = [];
+    statistics.golf_partner_request_participants = 0;
   }
 
   return { data, statistics, errors };

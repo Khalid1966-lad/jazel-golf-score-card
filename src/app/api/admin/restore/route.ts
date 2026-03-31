@@ -26,6 +26,8 @@ const TABLE_TO_MODEL: Record<string, string> = {
   messages: 'message',
   message_reads: 'messageRead',
   tournament_participants: 'tournamentParticipant',
+  golf_partner_requests: 'golfPartnerRequest',
+  golf_partner_request_participants: 'golfPartnerRequestParticipant',
 };
 
 // Define table dependencies (child -> parent relationships)
@@ -52,6 +54,10 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   messages: ['users'],
   message_reads: ['messages', 'users'],
   tournament_participants: ['tournaments', 'users'],
+
+  // Tables depending on users and golf_courses (partner requests)
+  golf_partner_requests: ['users', 'golf_courses'],
+  golf_partner_request_participants: ['golf_partner_requests', 'users'],
 };
 
 // Get table names in correct restore order (topological sort - parents first)
@@ -150,6 +156,8 @@ async function clearAllTables(): Promise<{ cleared: string[]; errors: string[] }
         case 'message': await db.message.deleteMany(); break;
         case 'messageRead': await db.messageRead.deleteMany(); break;
         case 'tournamentParticipant': await db.tournamentParticipant.deleteMany(); break;
+        case 'golfPartnerRequestParticipant': await db.golfPartnerRequestParticipant.deleteMany(); break;
+        case 'golfPartnerRequest': await db.golfPartnerRequest.deleteMany(); break;
       }
       cleared.push(tableName);
       console.log(`Cleared table: ${tableName}`);
@@ -347,6 +355,20 @@ async function insertRecords(
             where: { id },
             update: filteredRecord as Parameters<typeof db.tournamentParticipant.update>[0]['data'],
             create: filteredRecord as Parameters<typeof db.tournamentParticipant.create>[0]['data']
+          }); 
+          break;
+        case 'golfPartnerRequest': 
+          await db.golfPartnerRequest.upsert({ 
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.golfPartnerRequest.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.golfPartnerRequest.create>[0]['data']
+          }); 
+          break;
+        case 'golfPartnerRequestParticipant': 
+          await db.golfPartnerRequestParticipant.upsert({ 
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.golfPartnerRequestParticipant.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.golfPartnerRequestParticipant.create>[0]['data']
           }); 
           break;
         default:
