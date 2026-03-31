@@ -3623,14 +3623,33 @@ export default function JazelApp() {
                   </Select>
 
                   {/* Date Filter */}
-                  <Input
-                    type="date"
-                    value={partnerFilterDate}
-                    onChange={(e) => setPartnerFilterDate(e.target.value)}
-                    placeholder="Filter by date"
-                    className="w-full sm:w-40 h-10 bg-white"
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={partnerFilterDate}
+                      onChange={(e) => setPartnerFilterDate(e.target.value)}
+                      className="w-full sm:w-44 h-10 bg-white"
+                      style={{borderColor: '#a3c4e0'}}
+                    />
+                    {!partnerFilterDate && (
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                        Filter by date
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Refresh Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchPartnerRequests()}
+                    disabled={partnerRequestsLoading}
+                    className="h-10"
                     style={{borderColor: '#a3c4e0'}}
-                  />
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-1 ${partnerRequestsLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
 
                   {/* Clear Filters */}
                   {(partnerFilterCity || partnerFilterCourse || partnerFilterDate) && (
@@ -7162,7 +7181,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.6</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.3.7</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
