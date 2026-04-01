@@ -3380,40 +3380,40 @@ export default function JazelApp() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="w-full mb-6">
-            <TabsList className={`inline-flex w-auto mx-auto bg-white/80 backdrop-blur ${user ? 'gap-1' : ''}`}>
+          <div className="w-full mb-6 flex justify-center">
+            <TabsList className="inline-flex bg-white/80 backdrop-blur gap-2">
               {user && (
-                <TabsTrigger value="search" className="gap-1.5 px-3 py-2">
+                <TabsTrigger value="search" className="flex items-center gap-1.5 px-4 py-2">
                   <Flag className="w-4 h-4" />
                   <span className="hidden sm:inline">Courses</span>
                 </TabsTrigger>
               )}
-              <TabsTrigger value="weather" className="gap-1.5 px-3 py-2">
+              <TabsTrigger value="weather" className="flex items-center gap-1.5 px-4 py-2">
                 <Cloud className="w-4 h-4" />
                 <span className="hidden sm:inline">Weather</span>
               </TabsTrigger>
               {user && (
                 <>
-                  <TabsTrigger value="golfers" className="gap-1.5 px-3 py-2">
+                  <TabsTrigger value="golfers" className="flex items-center gap-1.5 px-4 py-2">
                     <Users className="w-4 h-4" />
                     <span className="hidden sm:inline">Golfers</span>
                   </TabsTrigger>
-                  <TabsTrigger value="tournaments" className="gap-1.5 px-3 py-2">
+                  <TabsTrigger value="tournaments" className="flex items-center gap-1.5 px-4 py-2">
                     <Trophy className="w-4 h-4" />
                     <span className="hidden sm:inline">Tournaments</span>
                   </TabsTrigger>
-                  <TabsTrigger value="partners" className="gap-1.5 px-3 py-2 relative">
+                  <TabsTrigger value="partners" className="flex items-center gap-1.5 px-4 py-2 relative">
                     <Calendar className="w-4 h-4" />
                     <span className="hidden sm:inline">Partners</span>
                     {showPartnerNotificationDot && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="scorecard" className="gap-1.5 px-3 py-2">
+                  <TabsTrigger value="scorecard" className="flex items-center gap-1.5 px-4 py-2">
                     <Target className="w-4 h-4" />
                     <span className="hidden sm:inline">Scorecard</span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-1.5 px-3 py-2">
+                  <TabsTrigger value="history" className="flex items-center gap-1.5 px-4 py-2">
                     <Clock className="w-4 h-4" />
                     <span className="hidden sm:inline">History</span>
                   </TabsTrigger>
