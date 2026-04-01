@@ -7478,7 +7478,7 @@ export default function JazelApp() {
 
       {/* Repair Shops Dialog */}
       <Dialog open={showRepairShopsDialog} onOpenChange={setShowRepairShopsDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] w-full sm:w-[calc(100%-2rem)]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
@@ -7491,7 +7491,7 @@ export default function JazelApp() {
               Find golf equipment repair shops near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-6">
+          <div className="space-y-4 px-4">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7793,7 +7793,7 @@ export default function JazelApp() {
 
       {/* Find a Pro Dialog */}
       <Dialog open={showGolfProsDialog} onOpenChange={setShowGolfProsDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] w-full sm:w-[calc(100%-2rem)]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
@@ -7806,7 +7806,7 @@ export default function JazelApp() {
               Find golf coaches and instructors near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-6">
+          <div className="space-y-4 px-4">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
