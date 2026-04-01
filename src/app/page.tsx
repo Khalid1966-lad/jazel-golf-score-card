@@ -7567,8 +7567,8 @@ export default function JazelApp() {
                         setShowRepairShopDetail(true);
                       }}
                     >
-                      {/* Shop Image - Small Thumbnail */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden bg-slate-100">
+                      {/* Shop Image - Round */}
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2">
                         {shop.imageUrl ? (
                           <img
                             src={shop.imageUrl}
@@ -7576,9 +7576,9 @@ export default function JazelApp() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center" 
-                            style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
-                            <Wrench className="w-6 h-6" style={{color: '#8ab0d1'}} />
+                          <div className="w-full h-full flex items-center justify-center rounded-full" 
+                            style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                            <Wrench className="w-6 h-6 text-white" />
                           </div>
                         )}
                       </div>
