@@ -8067,10 +8067,38 @@ export default function JazelApp() {
               
               <div className="p-3 space-y-2">
                   {/* Stats Summary */}
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-5 gap-1.5">
                     <div className="text-center p-2 rounded-lg" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
                       <p className="text-[10px] text-muted-foreground">Total</p>
                       <p className="text-lg font-bold" style={{color: '#39638b'}}>{viewingSharedScorecard.lastSharedRound.totalStrokes || '-'}</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                      <p className="text-[10px] text-muted-foreground">+/-</p>
+                      <p className={`text-lg font-bold ${
+                        (() => {
+                          const round = viewingSharedScorecard.lastSharedRound!;
+                          const holes = round.course.holes;
+                          const is9Holes = round.holesPlayed === 9;
+                          const holeNumbers = is9Holes 
+                            ? (round.holesType === 'back' ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9])
+                            : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+                          const coursePar = holes.filter(h => holeNumbers.includes(h.holeNumber)).reduce((sum, h) => sum + h.par, 0);
+                          const vsPar = (round.totalStrokes || 0) - coursePar;
+                          return vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600';
+                        })()
+                      }`}>
+                        {(() => {
+                          const round = viewingSharedScorecard.lastSharedRound!;
+                          const holes = round.course.holes;
+                          const is9Holes = round.holesPlayed === 9;
+                          const holeNumbers = is9Holes 
+                            ? (round.holesType === 'back' ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9])
+                            : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+                          const coursePar = holes.filter(h => holeNumbers.includes(h.holeNumber)).reduce((sum, h) => sum + h.par, 0);
+                          const vsPar = (round.totalStrokes || 0) - coursePar;
+                          return (vsPar > 0 ? '+' : '') + vsPar;
+                        })()}
+                      </p>
                     </div>
                     <div className="text-center p-2 rounded-lg" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
                       <p className="text-[10px] text-muted-foreground">Putts</p>
