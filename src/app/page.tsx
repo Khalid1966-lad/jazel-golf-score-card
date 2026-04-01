@@ -3416,10 +3416,6 @@ export default function JazelApp() {
                   <Clock className="w-4 h-4" />
                   <span className="hidden sm:inline">History</span>
                 </TabsTrigger>
-                <TabsTrigger value="pros" className="gap-2">
-                  <GraduationCap className="w-4 h-4" />
-                  <span className="hidden sm:inline">Find a Pro</span>
-                </TabsTrigger>
               </>
             )}
           </TabsList>
@@ -7915,6 +7911,23 @@ export default function JazelApp() {
                 </div>
               )}
             </ScrollArea>
+            
+            {/* Add Pro Button (Super Admin only) */}
+            {(user as any)?.isSuperAdmin && (
+              <div className="pt-3 border-t" style={{borderColor: '#d6e4ef'}}>
+                <Button
+                  className="w-full text-white"
+                  style={{background: 'linear-gradient(to right, #059669, #10b981)'}}
+                  onClick={() => {
+                    setShowGolfProsDialog(false);
+                    window.location.href = '/admin';
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Golf Pro (Admin Panel)
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
