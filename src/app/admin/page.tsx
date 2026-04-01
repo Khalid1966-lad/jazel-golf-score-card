@@ -46,7 +46,8 @@ import {
   Wrench,
   Camera,
   Image as ImageIcon,
-  Phone
+  Phone,
+  GraduationCap
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -398,6 +399,42 @@ export default function AdminPage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoCompressionInfo, setPhotoCompressionInfo] = useState<string | null>(null);
 
+  // Golf Pros state
+  const [golfPros, setGolfPros] = useState<any[]>([]);
+  const [golfProsLoading, setGolfProsLoading] = useState(false);
+  const [addProDialogOpen, setAddProDialogOpen] = useState(false);
+  const [editProDialogOpen, setEditProDialogOpen] = useState(false);
+  const [selectedPro, setSelectedPro] = useState<any | null>(null);
+  const [newProForm, setNewProForm] = useState({
+    name: '',
+    avatar: '',
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Morocco',
+    email: '',
+    description: '',
+    yearBecamePro: '',
+    specialties: '',
+    isActive: true
+  });
+  const [editProForm, setEditProForm] = useState({
+    id: '',
+    name: '',
+    avatar: '',
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Morocco',
+    email: '',
+    description: '',
+    yearBecamePro: '',
+    specialties: '',
+    isActive: true
+  });
+  const [newProPhotoPreview, setNewProPhotoPreview] = useState<string | null>(null);
+  const [editProPhotoPreview, setEditProPhotoPreview] = useState<string | null>(null);
+
   // Admin permissions state
   const [adminPermissions, setAdminPermissions] = useState<{
     isSuperAdmin: boolean;
@@ -651,6 +688,171 @@ export default function AdminPage() {
     }
   };
 
+  // Fetch golf pros
+  const fetchGolfPros = async () => {
+    try {
+      setGolfProsLoading(true);
+      const response = await fetch('/api/pros');
+      const data = await response.json();
+      setGolfPros(data.pros || []);
+    } catch (error) {
+      console.error('Error fetching golf pros:', error);
+    } finally {
+      setGolfProsLoading(false);
+    }
+  };
+
+  // Create golf pro
+  const createGolfPro = async () => {
+    if (!newProForm.name || !newProForm.city) {
+      toast({ title: 'Error', description: 'Name and city are required', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch('/api/pros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newProForm.name,
+          avatar: newProForm.avatar || null,
+          phone: newProForm.phone || null,
+          address: newProForm.address || null,
+          city: newProForm.city,
+          country: newProForm.country || 'Morocco',
+          email: newProForm.email || null,
+          description: newProForm.description || null,
+          yearBecamePro: newProForm.yearBecamePro || null,
+          specialties: newProForm.specialties || null,
+        })
+      });
+
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Golf pro created successfully' });
+        fetchGolfPros();
+        setAddProDialogOpen(false);
+        setNewProForm({
+          name: '',
+          avatar: '',
+          phone: '',
+          address: '',
+          city: '',
+          country: 'Morocco',
+          email: '',
+          description: '',
+          yearBecamePro: '',
+          specialties: '',
+          isActive: true
+        });
+        setNewProPhotoPreview(null);
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create golf pro');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message || 'Failed to create golf pro', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update golf pro
+  const updateGolfPro = async () => {
+    if (!editProForm.name || !editProForm.city) {
+      toast({ title: 'Error', description: 'Name and city are required', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch('/api/pros', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editProForm.id,
+          name: editProForm.name,
+          avatar: editProForm.avatar || null,
+          phone: editProForm.phone || null,
+          address: editProForm.address || null,
+          city: editProForm.city,
+          country: editProForm.country || 'Morocco',
+          email: editProForm.email || null,
+          description: editProForm.description || null,
+          yearBecamePro: editProForm.yearBecamePro || null,
+          specialties: editProForm.specialties || null,
+          isActive: editProForm.isActive
+        })
+      });
+
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Golf pro updated successfully' });
+        fetchGolfPros();
+        setEditProDialogOpen(false);
+        setEditProForm({
+          id: '',
+          name: '',
+          avatar: '',
+          phone: '',
+          address: '',
+          city: '',
+          country: 'Morocco',
+          email: '',
+          description: '',
+          yearBecamePro: '',
+          specialties: '',
+          isActive: true
+        });
+        setEditProPhotoPreview(null);
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update golf pro');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message || 'Failed to update golf pro', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete golf pro
+  const deleteGolfPro = async (proId: string) => {
+    if (!confirm('Are you sure you want to delete this golf pro?')) return;
+
+    try {
+      const response = await fetch(`/api/pros?id=${proId}`, { method: 'DELETE' });
+      if (response.ok) {
+        toast({ title: 'Success', description: 'Golf pro deleted successfully' });
+        fetchGolfPros();
+      } else {
+        throw new Error('Failed to delete golf pro');
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete golf pro', variant: 'destructive' });
+    }
+  };
+
+  // Open edit golf pro dialog
+  const openProEditDialog = (pro: any) => {
+    setEditProForm({
+      id: pro.id,
+      name: pro.name,
+      avatar: pro.avatar || '',
+      phone: pro.phone || '',
+      address: pro.address || '',
+      city: pro.city,
+      country: pro.country || 'Morocco',
+      email: pro.email || '',
+      description: pro.description || '',
+      yearBecamePro: pro.yearBecamePro ? String(pro.yearBecamePro) : '',
+      specialties: pro.specialties || '',
+      isActive: pro.isActive
+    });
+    setEditProPhotoPreview(pro.avatar || null);
+    setSelectedPro(pro);
+    setEditProDialogOpen(true);
+  };
+
   // Handle photo compression and upload
   const handleShopPhotoUpload = async (
     file: File,
@@ -792,6 +994,7 @@ export default function AdminPage() {
       fetchTournaments();
       fetchGroups();
       fetchRepairShops();
+      fetchGolfPros();
       fetchAdminPermissions();
     }
   }, [isAuthenticated]);
@@ -2584,6 +2787,15 @@ export default function AdminPage() {
               >
                 <Wrench className="w-4 h-4" />
                 Repair Shops
+              </TabsTrigger>
+            )}
+            {adminPermissions?.isSuperAdmin && (
+              <TabsTrigger
+                value="golf-pros"
+                className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
+              >
+                <GraduationCap className="w-4 h-4" />
+                Golf Pros
               </TabsTrigger>
             )}
             {(adminPermissions?.isSuperAdmin || adminPermissions?.permissions?.canViewSettings) && (
@@ -4694,6 +4906,319 @@ export default function AdminPage() {
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditRepairShopDialogOpen(false)}>Cancel</Button>
                   <Button onClick={updateRepairShop} disabled={saving || !editRepairShopForm.name || !editRepairShopForm.city}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
+          <TabsContent value="golf-pros" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5" />
+                      Golf Pros
+                    </CardTitle>
+                    <CardDescription>Manage golf coaches and instructors ({golfPros.length} total)</CardDescription>
+                  </div>
+                  <Dialog open={addProDialogOpen} onOpenChange={setAddProDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button><Plus className="mr-2 h-4 w-4" />Add Pro</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Golf Pro</DialogTitle>
+                        <DialogDescription>Add a new golf coach or instructor</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="proName">Name *</Label>
+                            <Input id="proName" value={newProForm.name} onChange={(e) => setNewProForm({ ...newProForm, name: e.target.value })} placeholder="e.g., John Smith" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="proPhone">Phone</Label>
+                            <Input id="proPhone" value={newProForm.phone} onChange={(e) => setNewProForm({ ...newProForm, phone: e.target.value })} placeholder="e.g., +212 6XX XXX XXX" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="proAddress">Address</Label>
+                          <Input id="proAddress" value={newProForm.address} onChange={(e) => setNewProForm({ ...newProForm, address: e.target.value })} placeholder="e.g., 123 Golf Street" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="proCity">City *</Label>
+                            <Input id="proCity" value={newProForm.city} onChange={(e) => setNewProForm({ ...newProForm, city: e.target.value })} placeholder="e.g., Casablanca" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="proCountry">Country *</Label>
+                            <Input id="proCountry" value={newProForm.country} onChange={(e) => setNewProForm({ ...newProForm, country: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="proEmail">Email</Label>
+                            <Input id="proEmail" type="email" value={newProForm.email} onChange={(e) => setNewProForm({ ...newProForm, email: e.target.value })} placeholder="e.g., pro@example.com" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="proYear">Year Became Pro</Label>
+                            <Input id="proYear" type="number" value={newProForm.yearBecamePro} onChange={(e) => setNewProForm({ ...newProForm, yearBecamePro: e.target.value })} placeholder="e.g., 2010" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="proDescription">Description</Label>
+                          <Textarea id="proDescription" value={newProForm.description} onChange={(e) => setNewProForm({ ...newProForm, description: e.target.value })} rows={3} placeholder="About this pro..." />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Avatar Photo</Label>
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="w-full sm:w-32 h-32 border-2 border-dashed rounded-lg overflow-hidden flex items-center justify-center bg-muted/30">
+                              {newProPhotoPreview ? (
+                                <img src={newProPhotoPreview} alt="Pro preview" className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-8 h-8 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-2 flex-1">
+                              <div className="flex gap-2">
+                                <Button type="button" variant="outline" size="sm" onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = 'image/*';
+                                  input.onchange = async (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (file) {
+                                      await handleShopPhotoUpload(file, setNewProPhotoPreview, (url) => setNewProForm({ ...newProForm, avatar: url }));
+                                    }
+                                  };
+                                  input.click();
+                                }} disabled={photoUploading} className="flex-1">
+                                  {photoUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                                  Upload
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => handleCameraCapture(setNewProPhotoPreview, (url) => setNewProForm({ ...newProForm, avatar: url }))} disabled={photoUploading} className="flex-1">
+                                  <Camera className="w-4 h-4 mr-2" />
+                                  Camera
+                                </Button>
+                              </div>
+                              {newProPhotoPreview && (
+                                <Button type="button" variant="ghost" size="sm" onClick={() => { setNewProPhotoPreview(null); setNewProForm({ ...newProForm, avatar: '' }); }} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                                  <X className="w-4 h-4 mr-2" />Remove Photo
+                                </Button>
+                              )}
+                              <p className="text-xs text-muted-foreground">Max 500KB, auto-compressed</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Switch id="proIsActive" checked={newProForm.isActive} onCheckedChange={(checked) => setNewProForm({ ...newProForm, isActive: checked })} />
+                          <Label htmlFor="proIsActive">Active</Label>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setAddProDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={createGolfPro} disabled={saving || !newProForm.name || !newProForm.city}>
+                          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Add Pro
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {golfProsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : golfPros.length > 0 ? (
+                  <div className="space-y-3">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
+                      <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm">
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-2">City</div>
+                        <div className="col-span-2">Phone</div>
+                        <div className="col-span-2">Pro Since</div>
+                        <div className="col-span-1">Status</div>
+                        <div className="col-span-2 text-right">Actions</div>
+                      </div>
+                      <div className="max-h-[400px] overflow-y-auto">
+                        {golfPros.map((pro) => (
+                          <div key={pro.id} className="grid grid-cols-12 gap-2 p-3 border-t items-center hover:bg-muted/30">
+                            <div className="col-span-3 flex items-center gap-2">
+                              {pro.avatar ? (
+                                <img src={pro.avatar} alt={pro.name} className="w-8 h-8 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                  <User className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              )}
+                              <span className="font-medium truncate">{pro.name}</span>
+                            </div>
+                            <div className="col-span-2 text-sm truncate">{pro.city}</div>
+                            <div className="col-span-2 text-sm truncate">{pro.phone || '-'}</div>
+                            <div className="col-span-2 text-sm">{pro.yearBecamePro || '-'}</div>
+                            <div className="col-span-1">
+                              <Badge variant={pro.isActive ? 'default' : 'secondary'} className={pro.isActive ? 'bg-green-500' : ''}>
+                                {pro.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                            <div className="col-span-2 flex justify-end gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => openProEditDialog(pro)}>
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => deleteGolfPro(pro.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                      {golfPros.map((pro) => (
+                        <Card key={pro.id} className="p-4">
+                          <div className="flex items-start gap-3">
+                            {pro.avatar ? (
+                              <img src={pro.avatar} alt={pro.name} className="w-12 h-12 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                                <User className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate">{pro.name}</h4>
+                              <p className="text-sm text-muted-foreground">{pro.city}, {pro.country}</p>
+                              {pro.phone && <p className="text-sm">{pro.phone}</p>}
+                              {pro.yearBecamePro && <p className="text-xs text-muted-foreground">Pro since {pro.yearBecamePro}</p>}
+                            </div>
+                            <Badge variant={pro.isActive ? 'default' : 'secondary'} className={pro.isActive ? 'bg-green-500' : ''}>
+                              {pro.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-2 mt-3 pt-3 border-t">
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => openProEditDialog(pro)}>
+                              <Edit2 className="h-4 w-4 mr-1" /> Edit
+                            </Button>
+                            <Button size="sm" variant="outline" className="flex-1 text-red-500 hover:text-red-700" onClick={() => deleteGolfPro(pro.id)}>
+                              <Trash2 className="h-4 w-4 mr-1" /> Delete
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium text-muted-foreground">No golf pros yet</p>
+                    <p className="text-sm text-muted-foreground mt-2">Click "Add Pro" to add your first golf pro</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit Pro Dialog */}
+            <Dialog open={editProDialogOpen} onOpenChange={setEditProDialogOpen}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Golf Pro</DialogTitle>
+                  <DialogDescription>Update golf pro information</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editProName">Name *</Label>
+                      <Input id="editProName" value={editProForm.name} onChange={(e) => setEditProForm({ ...editProForm, name: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editProPhone">Phone</Label>
+                      <Input id="editProPhone" value={editProForm.phone} onChange={(e) => setEditProForm({ ...editProForm, phone: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editProAddress">Address</Label>
+                    <Input id="editProAddress" value={editProForm.address} onChange={(e) => setEditProForm({ ...editProForm, address: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editProCity">City *</Label>
+                      <Input id="editProCity" value={editProForm.city} onChange={(e) => setEditProForm({ ...editProForm, city: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editProCountry">Country *</Label>
+                      <Input id="editProCountry" value={editProForm.country} onChange={(e) => setEditProForm({ ...editProForm, country: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editProEmail">Email</Label>
+                      <Input id="editProEmail" type="email" value={editProForm.email} onChange={(e) => setEditProForm({ ...editProForm, email: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editProYear">Year Became Pro</Label>
+                      <Input id="editProYear" type="number" value={editProForm.yearBecamePro} onChange={(e) => setEditProForm({ ...editProForm, yearBecamePro: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editProDescription">Description</Label>
+                    <Textarea id="editProDescription" value={editProForm.description} onChange={(e) => setEditProForm({ ...editProForm, description: e.target.value })} rows={3} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Avatar Photo</Label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="w-full sm:w-32 h-32 border-2 border-dashed rounded-lg overflow-hidden flex items-center justify-center bg-muted/30">
+                        {editProPhotoPreview ? (
+                          <img src={editProPhotoPreview} alt="Pro preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-8 h-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (file) {
+                                await handleShopPhotoUpload(file, setEditProPhotoPreview, (url) => setEditProForm({ ...editProForm, avatar: url }));
+                              }
+                            };
+                            input.click();
+                          }} disabled={photoUploading} className="flex-1">
+                            {photoUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                            Upload
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => handleCameraCapture(setEditProPhotoPreview, (url) => setEditProForm({ ...editProForm, avatar: url }))} disabled={photoUploading} className="flex-1">
+                            <Camera className="w-4 h-4 mr-2" />
+                            Camera
+                          </Button>
+                        </div>
+                        {editProPhotoPreview && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => { setEditProPhotoPreview(null); setEditProForm({ ...editProForm, avatar: '' }); }} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <X className="w-4 h-4 mr-2" />Remove Photo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Switch id="editProIsActive" checked={editProForm.isActive} onCheckedChange={(checked) => setEditProForm({ ...editProForm, isActive: checked })} />
+                    <Label htmlFor="editProIsActive">Active</Label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditProDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={updateGolfPro} disabled={saving || !editProForm.name || !editProForm.city}>
                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                   </Button>

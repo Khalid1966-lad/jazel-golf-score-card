@@ -1281,26 +1281,14 @@ export default function JazelApp() {
   const [showRepairShopDetail, setShowRepairShopDetail] = useState(false);
 
   // Golf Pros state
+  const [showGolfProsDialog, setShowGolfProsDialog] = useState(false);
   const [golfPros, setGolfPros] = useState<any[]>([]);
   const [prosLoading, setProsLoading] = useState(false);
   const [prosCities, setProsCities] = useState<string[]>([]);
-  const [prosCityFilter, setProsCityFilter] = useState('');
-  const [prosSortBy, setProsSortBy] = useState<'name' | 'city'>('name');
+  const [prosCityFilter, setProsCityFilter] = useState('all');
+  const [prosSearchQuery, setProsSearchQuery] = useState('');
   const [selectedPro, setSelectedPro] = useState<any | null>(null);
   const [showProDetail, setShowProDetail] = useState(false);
-  const [showAddProDialog, setShowAddProDialog] = useState(false);
-  const [editingPro, setEditingPro] = useState<any | null>(null);
-  const [proForm, setProForm] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    city: '',
-    country: 'Morocco',
-    email: '',
-    description: '',
-    yearBecamePro: '',
-    avatar: ''
-  });
 
   // User clubs state
   const [showBagDialog, setShowBagDialog] = useState(false);
@@ -1498,8 +1486,8 @@ export default function JazelApp() {
     setProsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (prosCityFilter) params.append('city', prosCityFilter);
-      params.append('sortBy', prosSortBy);
+      if (prosCityFilter && prosCityFilter !== 'all') params.append('city', prosCityFilter);
+      params.append('sortBy', 'name');
       
       const response = await fetch(`/api/pros?${params.toString()}`);
       const data = await response.json();
@@ -1510,14 +1498,14 @@ export default function JazelApp() {
     } finally {
       setProsLoading(false);
     }
-  }, [prosCityFilter, prosSortBy]);
+  }, [prosCityFilter]);
 
-  // Fetch golf pros when tab changes
+  // Fetch golf pros when dialog opens
   useEffect(() => {
-    if (activeTab === 'pros') {
+    if (showGolfProsDialog) {
       fetchGolfPros();
     }
-  }, [activeTab, fetchGolfPros]);
+  }, [showGolfProsDialog, fetchGolfPros]);
 
   // Calculate distance between two coordinates
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -7616,6 +7604,25 @@ export default function JazelApp() {
           
           {/* Menu Items */}
           <div className="p-4 flex flex-col gap-2">
+            {/* Find a Pro */}
+            <button
+              onClick={() => {
+                setShowSideMenu(false);
+                setShowGolfProsDialog(true);
+              }}
+              className="flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-slate-100 transition-all text-left group"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+                style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="font-medium text-gray-900">Find a Pro</span>
+                <p className="text-xs text-muted-foreground">Find golf coaches & instructors</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+            
             {/* Repair Shops */}
             <button
               onClick={() => {
@@ -7991,6 +7998,132 @@ export default function JazelApp() {
               </div>
             </ScrollArea>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Find a Pro Dialog */}
+      <Dialog open={showGolfProsDialog} onOpenChange={setShowGolfProsDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
+                style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
+                <GraduationCap className="w-4 h-4 text-white" />
+              </div>
+              Find a Pro
+            </DialogTitle>
+            <DialogDescription>
+              Find golf coaches and instructors near you
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 px-3">
+            {/* Search and Filters */}
+            <div className="space-y-3">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search pros by name..."
+                  value={prosSearchQuery}
+                  onChange={(e) => setProsSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              {/* City Filter */}
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground">City</Label>
+                <Select value={prosCityFilter} onValueChange={setProsCityFilter}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="All Cities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Cities</SelectItem>
+                    {prosCities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Golf Pros List */}
+            <ScrollArea className="h-[350px] sm:h-[400px] pr-2">
+              {prosLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
+                </div>
+              ) : golfPros.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" 
+                    style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                    <GraduationCap className="w-8 h-8" style={{color: '#10b981'}} />
+                  </div>
+                  <p className="text-lg font-medium text-muted-foreground">No golf pros found</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Try adjusting your search or filters
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {golfPros
+                    .filter((pro) => !prosSearchQuery || pro.name.toLowerCase().includes(prosSearchQuery.toLowerCase()))
+                    .map((pro) => (
+                    <Card
+                      key={pro.id}
+                      className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group flex flex-row"
+                      style={{borderColor: '#d6e4ef'}}
+                      onClick={() => {
+                        setSelectedPro(pro);
+                        setShowProDetail(true);
+                        setShowGolfProsDialog(false);
+                      }}
+                    >
+                      {/* Pro Avatar - Small Thumbnail */}
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden bg-slate-100">
+                        {pro.avatar ? (
+                          <img
+                            src={pro.avatar}
+                            alt={pro.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center" 
+                            style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
+                            <GraduationCap className="w-8 h-8 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Pro Info */}
+                      <CardContent className="p-3 flex-1 min-w-0">
+                        <h4 className="font-bold text-sm sm:text-base truncate" style={{color: '#39638b'}}>{pro.name}</h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{pro.city}, {pro.country}</span>
+                        </p>
+                        {pro.yearBecamePro && (
+                          <p className="text-xs mt-1" style={{color: '#10b981'}}>
+                            Pro since {pro.yearBecamePro}
+                          </p>
+                        )}
+                        {pro.phone && (
+                          <p className="text-xs mt-1" style={{color: '#39638b'}}>
+                            {pro.phone}
+                          </p>
+                        )}
+                      </CardContent>
+                      <div className="flex items-center pr-3">
+                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
 

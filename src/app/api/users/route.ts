@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Force recompilation after Prisma client regeneration
 // Level definitions - matching the achievement system
 const LEVELS = [
   { level: 'Beginner', minPoints: 0, color: 'gray' },
