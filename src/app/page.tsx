@@ -3289,17 +3289,16 @@ export default function JazelApp() {
             
             <div className="flex items-center gap-3">
               {user?.isAdmin && (
-                <Link href="/admin">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1"
-                    style={{color: '#39638b'}}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="hidden sm:inline">Setup</span>
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 cursor-pointer"
+                  style={{color: '#39638b'}}
+                  onClick={() => window.location.href = '/admin'}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Setup</span>
+                </Button>
               )}
               {user && (
                 <Button
