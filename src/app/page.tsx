@@ -6933,6 +6933,72 @@ export default function JazelApp() {
                     </div>
                   )}
 
+                  {/* Scoring Distribution Graph */}
+                  <div className="pt-2 border-t" style={{borderColor: '#d6e4ef'}}>
+                    <h4 className="text-xs font-semibold mb-2 text-center" style={{color: '#39638b'}}>Scoring Distribution</h4>
+                    {(() => {
+                      const holesPlayedCount = roundToView.holesPlayed || 18;
+                      const holesTypeValue = roundToView.holesType || 'front';
+                      const holes = roundToView.course?.holes || [];
+                      const scores = roundToView.scores || [];
+                      const mainScores = scores.filter(s => s.playerIndex === 0 || !s.playerIndex);
+                      
+                      const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+                      const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+                      const relevantHoles = holes.filter(h => h.holeNumber >= startHole && h.holeNumber <= endHole);
+                      
+                      let eagles = 0, birdies = 0, pars = 0, bogeys = 0, doubleBogeys = 0, tripleOrWorse = 0;
+                      mainScores.forEach(score => {
+                        if (score.strokes > 0) {
+                          const hole = relevantHoles.find(h => h.holeNumber === score.holeNumber);
+                          const par = hole?.par || 4;
+                          const diff = score.strokes - par;
+                          if (diff <= -2) eagles++;
+                          else if (diff === -1) birdies++;
+                          else if (diff === 0) pars++;
+                          else if (diff === 1) bogeys++;
+                          else if (diff === 2) doubleBogeys++;
+                          else tripleOrWorse++;
+                        }
+                      });
+                      
+                      const chartData = [
+                        { name: 'Eagle', value: eagles, color: '#ffd700' },
+                        { name: 'Birdie', value: birdies, color: '#22c55e' },
+                        { name: 'Par', value: pars, color: '#3b82f6' },
+                        { name: 'Bogey', value: bogeys, color: '#f97316' },
+                        { name: 'Double', value: doubleBogeys, color: '#ef4444' },
+                        { name: 'Triple+', value: tripleOrWorse, color: '#7c3aed' },
+                      ].filter(d => d.value > 0);
+                      
+                      return chartData.length > 0 ? (
+                        <div className="h-28">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={chartData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={20}
+                                outerRadius={35}
+                                paddingAngle={2}
+                                dataKey="value"
+                              >
+                                {chartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value: number) => [value, 'holes']} />
+                              <Legend wrapperStyle={{ fontSize: '9px' }} iconSize={8} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground text-xs py-2">No scores recorded</p>
+                      );
+                    })()}
+                  </div>
+
                   {/* Close Button */}
                   <Button
                     variant="outline"
