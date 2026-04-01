@@ -3415,7 +3415,13 @@ export default function JazelApp() {
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="scorecard" className={`flex items-center gap-1.5 px-3 py-1.5 relative ${hasUnsavedWork ? 'animate-[fade-pulse_1.5s_ease-in-out_infinite]' : ''}`}>
-                    <Target className="w-4 h-4" />
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="14" height="18" rx="2" />
+                      <line x1="7" y1="8" x2="13" y2="8" />
+                      <line x1="7" y1="12" x2="13" y2="12" />
+                      <line x1="7" y1="16" x2="10" y2="16" />
+                      <path d="M17 3l4 4-7 7h-4v-4l7-7z" />
+                    </svg>
                     <span className="hidden sm:inline">Scorecard</span>
                   </TabsTrigger>
                   <TabsTrigger value="history" className="flex items-center gap-1.5 px-3 py-1.5">
