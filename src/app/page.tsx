@@ -526,12 +526,12 @@ function RoundHistoryCard({
       <Card 
         className="transition-colors cursor-pointer" 
         style={{
-          borderColor: round.completed ? '#8ab0d1' : '#f59e0b',
-          backgroundColor: round.completed ? 'white' : 'rgba(251, 191, 36, 0.1)'
+          borderColor: round.completed ? (round.isShared ? '#22c55e' : '#8ab0d1') : '#f59e0b',
+          backgroundColor: round.completed ? (round.isShared ? 'rgba(34, 197, 94, 0.1)' : 'white') : 'rgba(251, 191, 36, 0.1)'
         }}
         onClick={() => setIsExpanded(!isExpanded)}
-        onMouseEnter={(e) => e.currentTarget.style.borderColor = round.completed ? '#5d8cb8' : '#d97706'}
-        onMouseLeave={(e) => e.currentTarget.style.borderColor = round.completed ? '#8ab0d1' : '#f59e0b'}>
+        onMouseEnter={(e) => e.currentTarget.style.borderColor = round.completed ? (round.isShared ? '#16a34a' : '#5d8cb8') : '#d97706'}
+        onMouseLeave={(e) => e.currentTarget.style.borderColor = round.completed ? (round.isShared ? '#22c55e' : '#8ab0d1') : '#f59e0b'}>
         <CardContent className="p-4">
           {/* Main row - always visible */}
           <div className="flex items-center justify-between">
@@ -629,7 +629,7 @@ function RoundHistoryCard({
                     size="sm"
                     onClick={() => onToggleShare(round.id, !round.isShared)}
                     className={round.isShared 
-                      ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200" 
+                      ? "text-white bg-green-500 hover:bg-green-600 border-green-500 hover:border-green-600" 
                       : "text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-slate-200"}
                     title={round.isShared ? "Unshare scorecard" : "Share scorecard with golfers"}
                   >
@@ -7491,7 +7491,7 @@ export default function JazelApp() {
               Find golf equipment repair shops near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7806,7 +7806,7 @@ export default function JazelApp() {
               Find golf coaches and instructors near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
