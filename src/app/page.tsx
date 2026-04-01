@@ -7491,7 +7491,7 @@ export default function JazelApp() {
               Find golf equipment repair shops near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-1">
+          <div className="space-y-4 px-4">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7806,7 +7806,7 @@ export default function JazelApp() {
               Find golf coaches and instructors near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-1">
+          <div className="space-y-4 px-4">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
