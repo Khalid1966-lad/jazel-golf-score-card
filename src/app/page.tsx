@@ -3414,10 +3414,7 @@ export default function JazelApp() {
                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="scorecard" className="flex items-center gap-1.5 px-3 py-1.5 relative">
-                    {hasUnsavedWork && (
-                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-red-500 text-lg font-bold">!</span>
-                    )}
+                  <TabsTrigger value="scorecard" className={`flex items-center gap-1.5 px-3 py-1.5 relative ${hasUnsavedWork ? 'animate-[fade-pulse_1.5s_ease-in-out_infinite]' : ''}`}>
                     <Target className="w-4 h-4" />
                     <span className="hidden sm:inline">Scorecard</span>
                   </TabsTrigger>
