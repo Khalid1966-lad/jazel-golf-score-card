@@ -324,14 +324,4 @@
   .has-scroll-right .scroll-indicator-right {
     opacity: 1;
   }
-  
-  /* Active scorecard button fade animation */
-  @keyframes fade-pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
 }

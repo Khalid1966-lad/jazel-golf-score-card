@@ -3414,7 +3414,7 @@ export default function JazelApp() {
                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="scorecard" className={`flex items-center gap-1.5 px-3 py-1.5 relative ${hasUnsavedWork ? 'animate-[fade-pulse_1.5s_ease-in-out_infinite]' : ''}`}>
+                  <TabsTrigger value="scorecard" className={`flex items-center gap-1.5 px-3 py-1.5 relative ${hasUnsavedWork ? 'bg-red-100 data-[state=active]:bg-red-100' : ''}`}>
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="14" height="18" rx="2" />
                       <line x1="7" y1="8" x2="13" y2="8" />
