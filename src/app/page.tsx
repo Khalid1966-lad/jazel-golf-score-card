@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon
+  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -1196,6 +1196,8 @@ export default function JazelApp() {
   const [showProfileEditDialog, setShowProfileEditDialog] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [signupForm, setSignupForm] = useState({ name: '', email: '', password: '', handicap: '', city: '', country: 'Morocco' });
   const [forgotPasswordForm, setForgotPasswordForm] = useState({ email: '' });
@@ -5815,6 +5817,7 @@ export default function JazelApp() {
       <Dialog open={showLoginDialog} onOpenChange={(open) => {
         setShowLoginDialog(open);
         if (open) setLoginError(null);
+        if (!open) setShowLoginPassword(false);
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -5844,17 +5847,27 @@ export default function JazelApp() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                placeholder="••••••••"
-                value={loginForm.password}
-                onChange={(e) => {
-                  setLoginForm({ ...loginForm, password: e.target.value });
-                  if (loginError) setLoginError(null);
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && loginForm.email && loginForm.password && handleLogin()}
-              />
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showLoginPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={loginForm.password}
+                  onChange={(e) => {
+                    setLoginForm({ ...loginForm, password: e.target.value });
+                    if (loginError) setLoginError(null);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && loginForm.email && loginForm.password && handleLogin()}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <Button
               className="w-full text-white"
@@ -5998,6 +6011,7 @@ export default function JazelApp() {
           setSignupForm({ name: '', email: '', password: '', handicap: '', city: '', country: 'Morocco' });
           setSignupError(null);
         }
+        if (!open) setShowSignupPassword(false);
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -6037,15 +6051,25 @@ export default function JazelApp() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="signup-password">Password</Label>
-              <Input
-                id="signup-password"
-                type="password"
-                placeholder="Min. 6 characters"
-                value={signupForm.password}
-                onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
-                onKeyDown={(e) => e.key === 'Enter' && signupForm.email && signupForm.password && handleSignup()}
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="signup-password"
+                  type={showSignupPassword ? "text" : "password"}
+                  placeholder="Min. 6 characters"
+                  value={signupForm.password}
+                  onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && signupForm.email && signupForm.password && handleSignup()}
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSignupPassword(!showSignupPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="signup-handicap">Handicap (optional)</Label>
