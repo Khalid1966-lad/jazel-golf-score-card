@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2
+  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -1280,6 +1280,28 @@ export default function JazelApp() {
   const [selectedRepairShop, setSelectedRepairShop] = useState<any | null>(null);
   const [showRepairShopDetail, setShowRepairShopDetail] = useState(false);
 
+  // Golf Pros state
+  const [golfPros, setGolfPros] = useState<any[]>([]);
+  const [prosLoading, setProsLoading] = useState(false);
+  const [prosCities, setProsCities] = useState<string[]>([]);
+  const [prosCityFilter, setProsCityFilter] = useState('');
+  const [prosSortBy, setProsSortBy] = useState<'name' | 'city'>('name');
+  const [selectedPro, setSelectedPro] = useState<any | null>(null);
+  const [showProDetail, setShowProDetail] = useState(false);
+  const [showAddProDialog, setShowAddProDialog] = useState(false);
+  const [editingPro, setEditingPro] = useState<any | null>(null);
+  const [proForm, setProForm] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Morocco',
+    email: '',
+    description: '',
+    yearBecamePro: '',
+    avatar: ''
+  });
+
   // User clubs state
   const [showBagDialog, setShowBagDialog] = useState(false);
   const [userClubs, setUserClubs] = useState<{ id: string; clubName: string; estimatedDistance: number | null; sortOrder: number }[]>([]);
@@ -1470,6 +1492,32 @@ export default function JazelApp() {
       fetchRepairShops();
     }
   }, [showRepairShopsDialog, fetchRepairShops]);
+
+  // Fetch golf pros
+  const fetchGolfPros = useCallback(async () => {
+    setProsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (prosCityFilter) params.append('city', prosCityFilter);
+      params.append('sortBy', prosSortBy);
+      
+      const response = await fetch(`/api/pros?${params.toString()}`);
+      const data = await response.json();
+      setGolfPros(data.pros || []);
+      setProsCities(data.cities || []);
+    } catch (error) {
+      console.error('Error fetching golf pros:', error);
+    } finally {
+      setProsLoading(false);
+    }
+  }, [prosCityFilter, prosSortBy]);
+
+  // Fetch golf pros when tab changes
+  useEffect(() => {
+    if (activeTab === 'pros') {
+      fetchGolfPros();
+    }
+  }, [activeTab, fetchGolfPros]);
 
   // Calculate distance between two coordinates
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -3344,7 +3392,7 @@ export default function JazelApp() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full mb-6 bg-white/80 backdrop-blur ${user ? 'grid-cols-7' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full mb-6 bg-white/80 backdrop-blur ${user ? 'grid-cols-8' : 'grid-cols-1'}`}>
             {user && (
               <TabsTrigger value="search" className="gap-2">
                 <Flag className="w-4 h-4" />
@@ -3379,6 +3427,10 @@ export default function JazelApp() {
                 <TabsTrigger value="history" className="gap-2">
                   <Clock className="w-4 h-4" />
                   <span className="hidden sm:inline">History</span>
+                </TabsTrigger>
+                <TabsTrigger value="pros" className="gap-2">
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="hidden sm:inline">Find a Pro</span>
                 </TabsTrigger>
               </>
             )}
@@ -3972,6 +4024,214 @@ export default function JazelApp() {
                           </CardContent>
                         </Card>
                       </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Find a Pro Tab */}
+          <TabsContent value="pros" className="space-y-4">
+            <Card className="bg-white/80 backdrop-blur">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5" style={{color: '#39638b'}} />
+                      Find a Golf Pro
+                    </CardTitle>
+                    <CardDescription>
+                      Connect with professional golf coaches in Morocco
+                    </CardDescription>
+                  </div>
+                  {(user as any)?.isSuperAdmin && (
+                    <Button
+                      onClick={() => {
+                        setEditingPro(null);
+                        setProForm({
+                          name: '',
+                          phone: '',
+                          address: '',
+                          city: '',
+                          country: 'Morocco',
+                          email: '',
+                          description: '',
+                          yearBecamePro: '',
+                          avatar: ''
+                        });
+                        setShowAddProDialog(true);
+                      }}
+                      className="text-white"
+                      style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Pro
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  {/* City Filter */}
+                  <Select value={prosCityFilter} onValueChange={(v) => setProsCityFilter(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="w-full sm:w-40 h-10 bg-white" style={{borderColor: '#a3c4e0'}}>
+                      <SelectValue placeholder="All Cities" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Cities</SelectItem>
+                      {prosCities.map(city => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Sort By */}
+                  <Select value={prosSortBy} onValueChange={(v) => setProsSortBy(v as 'name' | 'city')}>
+                    <SelectTrigger className="w-full sm:w-40 h-10 bg-white" style={{borderColor: '#a3c4e0'}}>
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name">Sort by Name</SelectItem>
+                      <SelectItem value="city">Sort by City</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Refresh Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchGolfPros()}
+                    disabled={prosLoading}
+                    className="h-10"
+                    style={{borderColor: '#a3c4e0'}}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-1 ${prosLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+
+                {prosLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{color: '#39638b'}} />
+                    <p className="text-muted-foreground mt-2">Loading golf pros...</p>
+                  </div>
+                ) : golfPros.length === 0 ? (
+                  <div className="text-center py-8">
+                    <GraduationCap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No golf pros available</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Check back later for professional golf coaches
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {golfPros.map((pro) => (
+                      <Card
+                        key={pro.id}
+                        className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group"
+                        style={{borderColor: '#d6e4ef'}}
+                        onClick={() => {
+                          setSelectedPro(pro);
+                          setShowProDetail(true);
+                        }}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            {/* Avatar */}
+                            <div className="w-16 h-16 rounded-full flex-shrink-0 overflow-hidden bg-slate-100">
+                              {pro.avatar ? (
+                                <img
+                                  src={pro.avatar}
+                                  alt={pro.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center"
+                                  style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                                  <GraduationCap className="w-8 h-8 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-base truncate" style={{color: '#39638b'}}>{pro.name}</h4>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{pro.city}, {pro.country}</span>
+                              </p>
+                              {pro.yearBecamePro && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Pro since {pro.yearBecamePro}
+                                </p>
+                              )}
+                              {pro.phone && (
+                                <p className="text-xs mt-1" style={{color: '#39638b'}}>
+                                  {pro.phone}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* Actions for super admin */}
+                            {(user as any)?.isSuperAdmin ? (
+                              <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingPro(pro);
+                                    setProForm({
+                                      name: pro.name || '',
+                                      phone: pro.phone || '',
+                                      address: pro.address || '',
+                                      city: pro.city || '',
+                                      country: pro.country || 'Morocco',
+                                      email: pro.email || '',
+                                      description: pro.description || '',
+                                      yearBecamePro: pro.yearBecamePro?.toString() || '',
+                                      avatar: pro.avatar || ''
+                                    });
+                                    setShowAddProDialog(true);
+                                  }}
+                                >
+                                  <Edit2 className="w-4 h-4" style={{color: '#39638b'}} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Delete ${pro.name}?`)) {
+                                      try {
+                                        const response = await fetch(`/api/pros?id=${pro.id}`, {
+                                          method: 'DELETE',
+                                        });
+                                        if (response.ok) {
+                                          toast.success('Pro deleted');
+                                          fetchGolfPros();
+                                        } else {
+                                          toast.error('Failed to delete pro');
+                                        }
+                                      } catch (error) {
+                                        toast.error('Failed to delete pro');
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}
@@ -7413,7 +7673,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.15 • Made with ❤️ for Golfers
+              Version 1.4.16 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -7734,6 +7994,263 @@ export default function JazelApp() {
         </DialogContent>
       </Dialog>
 
+      {/* Golf Pro Detail Dialog */}
+      <Dialog open={showProDetail} onOpenChange={setShowProDetail}>
+        <DialogContent className="max-w-md p-0 gap-0">
+          <DialogHeader className="p-4 border-b" style={{borderColor: '#d6e4ef'}}>
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                {selectedPro?.avatar ? (
+                  <img src={selectedPro.avatar} alt={selectedPro.name} className="w-full h-full object-cover" />
+                ) : (
+                  <GraduationCap className="w-6 h-6 text-white" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <span className="truncate">{selectedPro?.name}</span>
+                <p className="text-sm font-normal text-muted-foreground">{selectedPro?.city}, {selectedPro?.country}</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          {selectedPro && (
+            <div className="p-4 space-y-4">
+              {/* Pro Since Badge */}
+              {selectedPro.yearBecamePro && (
+                <div className="flex items-center gap-2 p-3 rounded-lg" style={{background: 'linear-gradient(135deg, #d6e4ef 0%, #e8f4f5 100%)'}}>
+                  <Trophy className="w-5 h-5" style={{color: '#39638b'}} />
+                  <span className="text-sm font-medium">Professional since {selectedPro.yearBecamePro}</span>
+                </div>
+              )}
+              
+              {/* Description */}
+              {selectedPro.description && (
+                <div className="p-3 rounded-lg border" style={{borderColor: '#d6e4ef'}}>
+                  <p className="text-xs text-muted-foreground mb-1">About</p>
+                  <p className="text-sm break-words">{selectedPro.description}</p>
+                </div>
+              )}
+              
+              {/* Contact Info */}
+              <div className="space-y-2">
+                {selectedPro.phone && (
+                  <a
+                    href={`tel:${selectedPro.phone}`}
+                    className="flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-md active:scale-[0.98]"
+                    style={{borderColor: '#d6e4ef'}}
+                  >
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                      style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      <span className="text-sm font-medium break-all" style={{color: '#39638b'}}>{selectedPro.phone}</span>
+                    </div>
+                  </a>
+                )}
+                
+                {selectedPro.email && (
+                  <a
+                    href={`mailto:${selectedPro.email}`}
+                    className="flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-md active:scale-[0.98]"
+                    style={{borderColor: '#d6e4ef'}}
+                  >
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                      style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
+                      <MailIcon className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <span className="text-sm font-medium break-all" style={{color: '#39638b'}}>{selectedPro.email}</span>
+                    </div>
+                  </a>
+                )}
+                
+                {selectedPro.address && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg border" style={{borderColor: '#d6e4ef'}}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                      style={{background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'}}>
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Address</p>
+                      <span className="text-sm font-medium break-words">{selectedPro.address}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Close Button */}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowProDetail(false)}
+                style={{borderColor: '#8ab0d1'}}
+              >
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Pro Dialog */}
+      <Dialog open={showAddProDialog} onOpenChange={setShowAddProDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5" style={{color: '#39638b'}} />
+              {editingPro ? 'Edit Golf Pro' : 'Add New Golf Pro'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingPro ? 'Update the pro information' : 'Add a new golf professional to the directory'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="pro-name">Name *</Label>
+              <Input
+                id="pro-name"
+                placeholder="Pro name"
+                value={proForm.name}
+                onChange={(e) => setProForm({ ...proForm, name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pro-city">City *</Label>
+                <Input
+                  id="pro-city"
+                  placeholder="e.g., Casablanca"
+                  value={proForm.city}
+                  onChange={(e) => setProForm({ ...proForm, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pro-country">Country</Label>
+                <Input
+                  id="pro-country"
+                  placeholder="Morocco"
+                  value={proForm.country}
+                  onChange={(e) => setProForm({ ...proForm, country: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pro-phone">Phone</Label>
+                <Input
+                  id="pro-phone"
+                  placeholder="+212 6XX XXX XXX"
+                  value={proForm.phone}
+                  onChange={(e) => setProForm({ ...proForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pro-email">Email</Label>
+                <Input
+                  id="pro-email"
+                  type="email"
+                  placeholder="pro@example.com"
+                  value={proForm.email}
+                  onChange={(e) => setProForm({ ...proForm, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pro-address">Address</Label>
+              <Input
+                id="pro-address"
+                placeholder="Full address"
+                value={proForm.address}
+                onChange={(e) => setProForm({ ...proForm, address: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pro-year">Year Became Pro</Label>
+                <Input
+                  id="pro-year"
+                  type="number"
+                  placeholder="e.g., 2010"
+                  value={proForm.yearBecamePro}
+                  onChange={(e) => setProForm({ ...proForm, yearBecamePro: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pro-avatar">Avatar URL</Label>
+                <Input
+                  id="pro-avatar"
+                  placeholder="https://..."
+                  value={proForm.avatar}
+                  onChange={(e) => setProForm({ ...proForm, avatar: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pro-description">Description</Label>
+              <Textarea
+                id="pro-description"
+                placeholder="Brief bio and specialties..."
+                value={proForm.description}
+                onChange={(e) => setProForm({ ...proForm, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowAddProDialog(false);
+                  setEditingPro(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 text-white"
+                style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                onClick={async () => {
+                  if (!proForm.name || !proForm.city) {
+                    toast.error('Name and city are required');
+                    return;
+                  }
+                  try {
+                    const url = editingPro ? `/api/pros?id=${editingPro.id}` : '/api/pros';
+                    const method = editingPro ? 'PUT' : 'POST';
+                    const body = editingPro 
+                      ? { id: editingPro.id, ...proForm }
+                      : proForm;
+                    
+                    const response = await fetch(url, {
+                      method,
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(body),
+                    });
+                    
+                    if (response.ok) {
+                      toast.success(editingPro ? 'Pro updated!' : 'Pro added!');
+                      setShowAddProDialog(false);
+                      setEditingPro(null);
+                      fetchGolfPros();
+                    } else {
+                      const data = await response.json();
+                      toast.error(data.error || 'Failed to save pro');
+                    }
+                  } catch (error) {
+                    toast.error('Failed to save pro');
+                  }
+                }}
+              >
+                {editingPro ? 'Update' : 'Add Pro'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Shared Scorecard Dialog */}
       <Dialog open={!!viewingSharedScorecard} onOpenChange={(open) => !open && setViewingSharedScorecard(null)}>
         <DialogContent className="max-w-2xl p-0 gap-0 [&>button]:hidden">
@@ -7962,7 +8479,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.15</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.16</p>
             </div>
             
             {/* Description */}
@@ -8008,7 +8525,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.15</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.16</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

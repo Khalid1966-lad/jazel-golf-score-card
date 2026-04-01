@@ -471,6 +471,26 @@ model RepairShop {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@map("repair_shops")
+}
+
+// Golf Pro - golf coaches/instructors
+model GolfPro {
+  id           String   @id @default(cuid())
+  name         String
+  avatar       String?
+  phone        String?
+  address      String?
+  city         String
+  country      String  @default("Morocco")
+  email        String?
+  description  String?
+  yearBecamePro Int?   // Year they became a professional
+  specialties  String? // JSON array of specialties (e.g., "Driving,Putting,Short Game")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("golf_pros")
 }
