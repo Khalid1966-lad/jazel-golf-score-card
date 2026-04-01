@@ -7491,7 +7491,7 @@ export default function JazelApp() {
               Find golf equipment repair shops near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-3">
+          <div className="space-y-4">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7543,7 +7543,7 @@ export default function JazelApp() {
             </div>
             
             {/* Repair Shops List */}
-            <ScrollArea className="h-[350px] sm:h-[400px] pr-2">
+            <ScrollArea className="h-[350px] sm:h-[400px]">
               {repairShops.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" 
@@ -7568,7 +7568,7 @@ export default function JazelApp() {
                       }}
                     >
                       {/* Shop Image - Round */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2.5">
                         {shop.imageUrl ? (
                           <img
                             src={shop.imageUrl}
@@ -7602,7 +7602,7 @@ export default function JazelApp() {
                           </p>
                         )}
                       </CardContent>
-                      <div className="flex items-center pr-3">
+                      <div className="flex items-center pr-2.5">
                         <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Card>
@@ -7806,7 +7806,7 @@ export default function JazelApp() {
               Find golf coaches and instructors near you
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 px-3">
+          <div className="space-y-4">
             {/* Search and Filters */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -7840,7 +7840,7 @@ export default function JazelApp() {
             </div>
             
             {/* Golf Pros List */}
-            <ScrollArea className="h-[350px] sm:h-[400px] pr-2">
+            <ScrollArea className="h-[350px] sm:h-[400px]">
               {prosLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
@@ -7872,7 +7872,7 @@ export default function JazelApp() {
                       }}
                     >
                       {/* Pro Avatar - Round */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2.5">
                         {pro.avatar ? (
                           <img
                             src={pro.avatar}
@@ -7905,7 +7905,7 @@ export default function JazelApp() {
                           </p>
                         )}
                       </CardContent>
-                      <div className="flex items-center pr-3">
+                      <div className="flex items-center pr-2.5">
                         <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Card>
