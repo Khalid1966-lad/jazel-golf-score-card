@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { isSuperAdminEmail } from '@/lib/super-admin';
 
 // GET - List all golf pros
 export async function GET(request: NextRequest) {
@@ -40,23 +41,40 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper function to check if user is super admin
+async function checkSuperAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('session_token')?.value;
+
+  if (!token) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  const session = await db.adminSession.findUnique({
+    where: { token },
+    include: { user: true },
+  });
+
+  if (!session || session.expiresAt < new Date()) {
+    return { authorized: false, error: 'Session expired' };
+  }
+
+  // Check super admin by database field OR email
+  const isSuperAdmin = session.user.isSuperAdmin || isSuperAdminEmail(session.user.email);
+  
+  if (!isSuperAdmin) {
+    return { authorized: false, error: 'Unauthorized - Super admin only' };
+  }
+
+  return { authorized: true, user: session.user };
+}
+
 // POST - Create a new golf pro (super admin only)
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const session = await db.adminSession.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-
-    if (!session || session.expiresAt < new Date() || !session.user.isSuperAdmin) {
-      return NextResponse.json({ error: 'Unauthorized - Super admin only' }, { status: 403 });
+    const authCheck = await checkSuperAdmin();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.error === 'Not authenticated' ? 401 : 403 });
     }
 
     const body = await request.json();
@@ -91,20 +109,9 @@ export async function POST(request: NextRequest) {
 // PUT - Update a golf pro (super admin only)
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const session = await db.adminSession.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-
-    if (!session || session.expiresAt < new Date() || !session.user.isSuperAdmin) {
-      return NextResponse.json({ error: 'Unauthorized - Super admin only' }, { status: 403 });
+    const authCheck = await checkSuperAdmin();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.error === 'Not authenticated' ? 401 : 403 });
     }
 
     const body = await request.json();
@@ -142,20 +149,9 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete a golf pro (super admin only)
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const session = await db.adminSession.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-
-    if (!session || session.expiresAt < new Date() || !session.user.isSuperAdmin) {
-      return NextResponse.json({ error: 'Unauthorized - Super admin only' }, { status: 403 });
+    const authCheck = await checkSuperAdmin();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.error === 'Not authenticated' ? 401 : 403 });
     }
 
     const { searchParams } = new URL(request.url);
