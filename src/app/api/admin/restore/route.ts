@@ -29,6 +29,7 @@ const TABLE_TO_MODEL: Record<string, string> = {
   golf_partner_requests: 'golfPartnerRequest',
   golf_partner_request_participants: 'golfPartnerRequestParticipant',
   repair_shops: 'repairShop',
+  golf_pros: 'golfPro',
 };
 
 // Define table dependencies (child -> parent relationships)
@@ -62,6 +63,9 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
 
   // Tables with no dependencies
   repair_shops: [],
+
+  // Golf Pros - no dependencies
+  golf_pros: [],
 };
 
 // Get table names in correct restore order (topological sort - parents first)
@@ -163,6 +167,7 @@ async function clearAllTables(): Promise<{ cleared: string[]; errors: string[] }
         case 'golfPartnerRequestParticipant': await db.golfPartnerRequestParticipant.deleteMany(); break;
         case 'golfPartnerRequest': await db.golfPartnerRequest.deleteMany(); break;
         case 'repairShop': await db.repairShop.deleteMany(); break;
+        case 'golfPro': await db.golfPro.deleteMany(); break;
       }
       cleared.push(tableName);
       console.log(`Cleared table: ${tableName}`);
@@ -381,6 +386,13 @@ async function insertRecords(
             where: { id },
             update: filteredRecord as Parameters<typeof db.repairShop.update>[0]['data'],
             create: filteredRecord as Parameters<typeof db.repairShop.create>[0]['data']
+          }); 
+          break;
+        case 'golfPro': 
+          await db.golfPro.upsert({ 
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.golfPro.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.golfPro.create>[0]['data']
           }); 
           break;
         default:

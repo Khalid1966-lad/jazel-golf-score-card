@@ -49,6 +49,9 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
 
   // Tables with no dependencies
   repair_shops: [],
+
+  // Golf Pros - no dependencies
+  golf_pros: [],
 };
 
 // Get table names in correct restore order (topological sort)
@@ -310,6 +313,16 @@ async function fetchAllData() {
     errors.push(`repair_shops: ${e instanceof Error ? e.message : 'Unknown error'}`);
     data.repair_shops = [];
     statistics.repair_shops = 0;
+  }
+
+  // Fetch golf pros
+  try {
+    data.golf_pros = await db.golfPro.findMany();
+    statistics.golf_pros = data.golf_pros.length;
+  } catch (e) {
+    errors.push(`golf_pros: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.golf_pros = [];
+    statistics.golf_pros = 0;
   }
 
   return { data, statistics, errors };
