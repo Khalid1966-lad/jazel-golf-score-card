@@ -7560,7 +7560,7 @@ export default function JazelApp() {
                   {repairShops.map((shop) => (
                     <Card
                       key={shop.id}
-                      className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group flex flex-row items-center"
+                      className="cursor-pointer transition-all hover:shadow-lg overflow-hidden group flex flex-row"
                       style={{borderColor: '#d6e4ef'}}
                       onClick={() => {
                         setSelectedRepairShop(shop);
@@ -7568,7 +7568,7 @@ export default function JazelApp() {
                       }}
                     >
                       {/* Shop Image - Square */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 relative overflow-hidden rounded-lg m-3">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-lg m-2.5">
                         {shop.imageUrl ? (
                           <img
                             src={shop.imageUrl}
@@ -7578,31 +7578,31 @@ export default function JazelApp() {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center rounded-lg" 
                             style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
-                            <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                            <Wrench className="w-8 h-8 text-white" />
                           </div>
                         )}
                       </div>
                       
                       {/* Shop Info */}
-                      <CardContent className="p-0 py-3 pr-2 flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm sm:text-base truncate" style={{color: '#39638b'}}>{shop.name}</h4>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <CardContent className="p-3 flex-1 min-w-0">
+                        <h4 className="font-bold text-sm sm:text-base truncate" style={{color: '#39638b'}}>{shop.name}</h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                           <MapPin className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{shop.city}, {shop.country}</span>
                         </p>
                         {shop.manager && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <User className="w-3 h-3 flex-shrink-0" />
                             <span className="truncate">{shop.manager}</span>
                           </p>
                         )}
                         {shop.phone && (
-                          <p className="text-xs mt-0.5" style={{color: '#39638b'}}>
+                          <p className="text-xs mt-1" style={{color: '#39638b'}}>
                             {shop.phone}
                           </p>
                         )}
                       </CardContent>
-                      <div className="flex items-center justify-center px-2">
+                      <div className="flex items-center pr-2.5">
                         <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Card>
