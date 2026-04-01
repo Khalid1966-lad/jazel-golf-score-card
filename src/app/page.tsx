@@ -3380,45 +3380,47 @@ export default function JazelApp() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full mb-6 bg-white/80 backdrop-blur ${user ? 'grid-cols-8' : 'grid-cols-1'}`}>
-            {user && (
-              <TabsTrigger value="search" className="gap-2">
-                <Flag className="w-4 h-4" />
-                <span className="hidden sm:inline">Courses</span>
+          <div className="w-full mb-6">
+            <TabsList className={`inline-flex w-auto mx-auto bg-white/80 backdrop-blur ${user ? 'gap-1' : ''}`}>
+              {user && (
+                <TabsTrigger value="search" className="gap-1.5 px-3 py-2">
+                  <Flag className="w-4 h-4" />
+                  <span className="hidden sm:inline">Courses</span>
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="weather" className="gap-1.5 px-3 py-2">
+                <Cloud className="w-4 h-4" />
+                <span className="hidden sm:inline">Weather</span>
               </TabsTrigger>
-            )}
-            <TabsTrigger value="weather" className="gap-2">
-              <Cloud className="w-4 h-4" />
-              <span className="hidden sm:inline">Weather</span>
-            </TabsTrigger>
-            {user && (
-              <>
-                <TabsTrigger value="golfers" className="gap-2">
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">Golfers</span>
-                </TabsTrigger>
-                <TabsTrigger value="tournaments" className="gap-2">
-                  <Trophy className="w-4 h-4" />
-                  <span className="hidden sm:inline">Tournaments</span>
-                </TabsTrigger>
-                <TabsTrigger value="partners" className="gap-2 relative">
-                  <Calendar className="w-4 h-4" />
-                  <span className="hidden sm:inline">Partners</span>
-                  {showPartnerNotificationDot && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="scorecard" className="gap-2">
-                  <Target className="w-4 h-4" />
-                  <span className="hidden sm:inline">Scorecard</span>
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span className="hidden sm:inline">History</span>
-                </TabsTrigger>
-              </>
-            )}
-          </TabsList>
+              {user && (
+                <>
+                  <TabsTrigger value="golfers" className="gap-1.5 px-3 py-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Golfers</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="tournaments" className="gap-1.5 px-3 py-2">
+                    <Trophy className="w-4 h-4" />
+                    <span className="hidden sm:inline">Tournaments</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="partners" className="gap-1.5 px-3 py-2 relative">
+                    <Calendar className="w-4 h-4" />
+                    <span className="hidden sm:inline">Partners</span>
+                    {showPartnerNotificationDot && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="scorecard" className="gap-1.5 px-3 py-2">
+                    <Target className="w-4 h-4" />
+                    <span className="hidden sm:inline">Scorecard</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-1.5 px-3 py-2">
+                    <Clock className="w-4 h-4" />
+                    <span className="hidden sm:inline">History</span>
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
 
           {/* Course Search Tab */}
           <TabsContent value="search" className="space-y-6">
@@ -7869,8 +7871,8 @@ export default function JazelApp() {
                         setShowGolfProsDialog(false);
                       }}
                     >
-                      {/* Pro Avatar - Small Thumbnail */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden bg-slate-100">
+                      {/* Pro Avatar - Round */}
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2">
                         {pro.avatar ? (
                           <img
                             src={pro.avatar}
@@ -7878,7 +7880,7 @@ export default function JazelApp() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center" 
+                          <div className="w-full h-full flex items-center justify-center rounded-full" 
                             style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
                             <GraduationCap className="w-8 h-8 text-white" />
                           </div>
