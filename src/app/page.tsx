@@ -7478,7 +7478,7 @@ export default function JazelApp() {
 
       {/* Repair Shops Dialog */}
       <Dialog open={showRepairShopsDialog} onOpenChange={setShowRepairShopsDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
@@ -7556,7 +7556,7 @@ export default function JazelApp() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {repairShops.map((shop) => (
                     <Card
                       key={shop.id}
@@ -7793,7 +7793,7 @@ export default function JazelApp() {
 
       {/* Find a Pro Dialog */}
       <Dialog open={showGolfProsDialog} onOpenChange={setShowGolfProsDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] w-[calc(100%-6px)] mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
@@ -7857,7 +7857,7 @@ export default function JazelApp() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {golfPros
                     .filter((pro) => !prosSearchQuery || pro.name.toLowerCase().includes(prosSearchQuery.toLowerCase()))
                     .map((pro) => (
