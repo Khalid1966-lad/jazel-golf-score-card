@@ -7556,7 +7556,7 @@ export default function JazelApp() {
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   {repairShops.map((shop) => (
                     <Card
                       key={shop.id}
@@ -7568,7 +7568,7 @@ export default function JazelApp() {
                       }}
                     >
                       {/* Shop Image - Square */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-lg m-2.5">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 relative overflow-hidden rounded-lg m-2">
                         {shop.imageUrl ? (
                           <img
                             src={shop.imageUrl}
@@ -7578,13 +7578,13 @@ export default function JazelApp() {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center rounded-lg" 
                             style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
-                            <Wrench className="w-8 h-8 text-white" />
+                            <Wrench className="w-6 h-6 text-white" />
                           </div>
                         )}
                       </div>
                       
                       {/* Shop Info */}
-                      <CardContent className="p-3 flex-1 min-w-0">
+                      <CardContent className="p-2 flex-1 min-w-0">
                         <h4 className="font-bold text-sm sm:text-base truncate" style={{color: '#39638b'}}>{shop.name}</h4>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                           <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -7602,8 +7602,8 @@ export default function JazelApp() {
                           </p>
                         )}
                       </CardContent>
-                      <div className="flex items-center pr-2.5">
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center pr-2">
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Card>
                   ))}
@@ -7857,7 +7857,7 @@ export default function JazelApp() {
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   {golfPros
                     .filter((pro) => !prosSearchQuery || pro.name.toLowerCase().includes(prosSearchQuery.toLowerCase()))
                     .map((pro) => (
@@ -7872,7 +7872,7 @@ export default function JazelApp() {
                       }}
                     >
                       {/* Pro Avatar - Round */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 relative overflow-hidden rounded-full m-2.5">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 relative overflow-hidden rounded-full m-2">
                         {pro.avatar ? (
                           <img
                             src={pro.avatar}
@@ -7882,13 +7882,13 @@ export default function JazelApp() {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center rounded-full" 
                             style={{background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'}}>
-                            <GraduationCap className="w-8 h-8 text-white" />
+                            <GraduationCap className="w-6 h-6 text-white" />
                           </div>
                         )}
                       </div>
                       
                       {/* Pro Info */}
-                      <CardContent className="p-3 flex-1 min-w-0">
+                      <CardContent className="p-2 flex-1 min-w-0">
                         <h4 className="font-bold text-sm sm:text-base truncate" style={{color: '#39638b'}}>{pro.name}</h4>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                           <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -7905,8 +7905,8 @@ export default function JazelApp() {
                           </p>
                         )}
                       </CardContent>
-                      <div className="flex items-center pr-2.5">
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center pr-2">
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Card>
                   ))}
