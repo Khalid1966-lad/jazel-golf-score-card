@@ -4033,7 +4033,34 @@ export default function JazelApp() {
             {!showScorecard || !selectedCourse ? (
               <Card className="bg-white/80 backdrop-blur">
                 <CardContent className="py-12 text-center">
-                  <Target className="w-16 h-16 mx-auto mb-4" style={{color: '#5d8cb8'}} />
+                  {/* Scorecard with Pen SVG Icon */}
+                  <div className="w-24 h-24 mx-auto mb-4 relative">
+                    <svg viewBox="0 0 100 100" className="w-full h-full">
+                      {/* Scorecard background */}
+                      <rect x="10" y="10" width="60" height="80" rx="4" fill="#f8fafc" stroke="#39638b" strokeWidth="2"/>
+                      {/* Scorecard header */}
+                      <rect x="10" y="10" width="60" height="12" rx="4" fill="#39638b"/>
+                      <rect x="10" y="18" width="60" height="4" fill="#39638b"/>
+                      {/* Scorecard lines */}
+                      <line x1="16" y1="30" x2="64" y2="30" stroke="#8ab0d1" strokeWidth="1.5"/>
+                      <line x1="16" y1="40" x2="64" y2="40" stroke="#8ab0d1" strokeWidth="1.5"/>
+                      <line x1="16" y1="50" x2="64" y2="50" stroke="#8ab0d1" strokeWidth="1.5"/>
+                      <line x1="16" y1="60" x2="64" y2="60" stroke="#8ab0d1" strokeWidth="1.5"/>
+                      <line x1="16" y1="70" x2="64" y2="70" stroke="#8ab0d1" strokeWidth="1.5"/>
+                      <line x1="16" y1="80" x2="64" y2="80" stroke="#8ab0d1" strokeWidth="1.5"/>
+                      {/* Small score numbers */}
+                      <text x="20" y="38" fontSize="6" fill="#5d8cb8">1</text>
+                      <text x="20" y="48" fontSize="6" fill="#5d8cb8">2</text>
+                      <text x="20" y="58" fontSize="6" fill="#5d8cb8">3</text>
+                      {/* Pen */}
+                      <g transform="rotate(45, 75, 50)">
+                        <rect x="65" y="25" width="8" height="55" rx="2" fill="#22c55e"/>
+                        <polygon points="65,80 69,90 73,80" fill="#22c55e"/>
+                        <rect x="65" y="25" width="8" height="8" rx="1" fill="#16a34a"/>
+                        <rect x="66" y="75" width="6" height="5" fill="#fbbf24"/>
+                      </g>
+                    </svg>
+                  </div>
                   <h3 className="text-xl font-semibold mb-2">No Active Round</h3>
                   <p className="text-muted-foreground mb-4">
                     Select a course from the Courses tab to start a new round
@@ -7594,7 +7621,11 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.22 • Made with ❤️ for Golfers
+
+              Version 1.4.23 • Made with ❤️ for Golfers
+
+              Version 1.4.23 • Made with ❤️ for Golfers
+
             </p>
           </div>
         </SheetContent>
@@ -8415,7 +8446,11 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.22</p>
+
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.23</p>
+
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.23</p>
+
             </div>
             
             {/* Description */}
@@ -8461,7 +8496,11 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.22</span>
+
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.23</span>
+
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.23</span>
+
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
