@@ -692,19 +692,92 @@ function RulesOverview({
 }) {
   return (
     <div className="space-y-6 pb-20 lg:pb-0">
-      {/* Welcome Card */}
-      <Card className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center">
-              <BookOpen className="w-6 h-6" />
+      {/* Welcome Card with USGA and R&A Logos */}
+      <Card className="overflow-hidden shadow-lg">
+        <CardContent className="p-0">
+          {/* Header with logos */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 relative">
+            {/* Decorative golf ball pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute top-4 right-4 w-32 h-32 rounded-full border-2 border-white"></div>
+              <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full border border-white"></div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold mb-2">Official Rules of Golf</h2>
-              <p className="text-slate-300 text-sm">
-                The official Rules of Golf as published by the USGA and R&A, effective January 2023. 
+            
+            {/* Logos Row */}
+            <div className="flex items-center justify-center gap-6 mb-5 relative z-10">
+              {/* USGA Logo */}
+              <div className="flex items-center">
+                <div className="bg-white rounded-xl px-5 py-3 shadow-xl">
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
+                      <circle cx="20" cy="20" r="18" stroke="#1e3a5f" strokeWidth="2" fill="none"/>
+                      <path d="M20 8 L20 32 M12 14 L28 14 M14 20 L26 20 M12 26 L28 26" stroke="#1e3a5f" strokeWidth="1.5"/>
+                    </svg>
+                    <div className="flex flex-col">
+                      <span className="text-xl font-bold tracking-tight" style={{ color: '#1e3a5f' }}>USGA</span>
+                      <span className="text-[8px] text-gray-500 tracking-widest">EST. 1894</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Ampersand separator */}
+              <div className="flex flex-col items-center">
+                <div className="w-px h-8 bg-gradient-to-b from-transparent via-amber-400 to-transparent"></div>
+                <div className="my-2 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
+                  <span className="text-white font-serif text-lg font-bold">&</span>
+                </div>
+                <div className="w-px h-8 bg-gradient-to-b from-transparent via-amber-400 to-transparent"></div>
+              </div>
+              
+              {/* R&A Logo */}
+              <div className="flex items-center">
+                <div className="bg-white rounded-xl px-5 py-3 shadow-xl">
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
+                      <circle cx="20" cy="20" r="18" stroke="#8B0000" strokeWidth="2" fill="none"/>
+                      <text x="20" y="26" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#8B0000">R</text>
+                    </svg>
+                    <div className="flex flex-col">
+                      <span className="text-xl font-bold tracking-tight" style={{ color: '#8B0000' }}>R&A</span>
+                      <span className="text-[8px] text-gray-500 tracking-widest">EST. 1754</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Title */}
+            <div className="text-center relative z-10">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <div className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400"></div>
+                <BookOpen className="w-5 h-5 text-amber-400" />
+                <div className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400"></div>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3 tracking-wide">
+                Official Rules of Golf
+              </h2>
+              <p className="text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
+                The official Rules of Golf as jointly published by the USGA and R&A. 
                 Search by keyword or browse by part to find the information you need.
               </p>
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <Badge 
+                  variant="outline" 
+                  className="border-amber-400/50 text-amber-400 bg-amber-400/10 hover:bg-amber-400/20"
+                >
+                  2023-2026 Edition
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="border-emerald-400/50 text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                  </svg>
+                  Official Source
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>
