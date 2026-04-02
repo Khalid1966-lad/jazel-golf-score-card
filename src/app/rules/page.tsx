@@ -30,7 +30,7 @@ interface RuleSection {
 
 interface Rule {
   id: string;
-  number: number;
+  number: string;
   title: string;
   purpose: string;
   sections: RuleSection[];
@@ -39,10 +39,10 @@ interface Rule {
 
 interface Part {
   id: string;
-  number: number;
+  number: string;
   title: string;
   description: string;
-  rules: number[];
+  rules: string[];
 }
 
 interface SearchResult {
@@ -54,7 +54,7 @@ interface SearchResult {
 
 export default function RulesPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPart, setSelectedPart] = useState<number | null>(null);
+  const [selectedPart, setSelectedPart] = useState<string | null>(null);
   const [selectedRule, setSelectedRule] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [highlightedText, setHighlightedText] = useState<string>('');
@@ -463,27 +463,6 @@ export default function RulesPage() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-2 z-50">
-        <div className="flex gap-1 overflow-x-auto">
-          {parts.map((part) => (
-            <button
-              key={part.id}
-              onClick={() => {
-                setSelectedPart(part.number);
-                setSelectedRule(null);
-              }}
-              className={`flex-shrink-0 px-3 py-2 text-xs rounded-lg transition-colors ${
-                selectedPart === part.number
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              Part {part.number}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
