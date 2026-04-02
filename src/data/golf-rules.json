@@ -386,7 +386,7 @@
     },
     {
       "id": "rule-10",
-      "number": 10,
+      "number": "10",
       "title": "Preparing for and Making a Stroke",
       "purpose": "Rule 10 covers how to prepare for and make a stroke, including the Rules for the set-up of the stance and how the ball is to be struck. The Rule also addresses the many ways in which a player may get advice or other help during a round.",
       "sections": [
@@ -415,7 +415,7 @@
     },
     {
       "id": "rule-11",
-      "number": 11,
+      "number": "11",
       "title": "Teeing Ground to Teeing Area",
       "purpose": "Rule 11 covers what to do if a player's ball in motion hits a person, animal, equipment or other object after being played from anywhere on the course. This Rule focuses on situations where the ball hits something or someone accidentally.",
       "sections": [
@@ -434,7 +434,7 @@
     },
     {
       "id": "rule-12",
-      "number": 12,
+      "number": "12",
       "title": "Bunkers",
       "purpose": "Rule 12 is a specific Rule for bunkers. A bunker is a specially prepared area of sand, which is often a hollow from which turf or soil was removed. A player must not touch the sand in a bunker with their hand or club before making a stroke at the ball.",
       "sections": [
@@ -458,7 +458,7 @@
     },
     {
       "id": "rule-13",
-      "number": 13,
+      "number": "13",
       "title": "Putting Greens",
       "purpose": "Rule 13 is a specific Rule for putting greens. Putting greens are specially prepared for playing the ball along the ground and there is a flagstick for the hole on each putting green. Certain things that are allowed on the putting green are not allowed elsewhere on the course.",
       "sections": [
@@ -492,7 +492,7 @@
     },
     {
       "id": "rule-14",
-      "number": 14,
+      "number": "14",
       "title": "Procedures for Ball: Marking, Lifting and Cleaning; Replacing on Spot; Dropping in Relief Area; Playing from Wrong Place",
       "purpose": "Rule 14 describes the procedures for: Marking the spot of a ball at rest and lifting and replacing the ball, How to take relief when a Rule requires dropping a ball in a relief area, and What happens when a ball is played from a wrong place.",
       "sections": [
@@ -536,7 +536,7 @@
     },
     {
       "id": "rule-15",
-      "number": 15,
+      "number": "15",
       "title": "Taking Relief",
       "purpose": "Rule 15 covers when and how the player may take free relief from loose impediments, movable obstructions, immovable obstructions and abnormal course conditions. These are the conditions that are different from the normal playing conditions on a course.",
       "sections": [
@@ -565,7 +565,7 @@
     },
     {
       "id": "rule-16",
-      "number": 16,
+      "number": "16",
       "title": "Taking Relief",
       "purpose": "Rule 16 covers when and how the player may take free relief from loose impediments, movable obstructions, immovable obstructions and abnormal course conditions. These are the conditions that are different from the normal playing conditions on a course.",
       "sections": [
@@ -594,7 +594,7 @@
     },
     {
       "id": "rule-17",
-      "number": 17,
+      "number": "17",
       "title": "Penalty Areas",
       "purpose": "Rule 17 is a specific Rule for penalty areas, which are bodies of water or other areas defined by the Committee where a ball is often lost or unable to be played. For one penalty stroke, players may take specific relief options.",
       "sections": [
@@ -623,7 +623,7 @@
     },
     {
       "id": "rule-18",
-      "number": 18,
+      "number": "18",
       "title": "Stroke-and-Distance Relief; Ball Lost or Out of Bounds; Provisional Ball",
       "purpose": "Rule 18 covers taking relief under stroke-and-distance. When a ball is lost outside a penalty area or comes to rest out of bounds, the required relief is stroke-and-distance. A player may play a provisional ball to save time when they believe their ball may be lost or out of bounds.",
       "sections": [
@@ -647,7 +647,7 @@
     },
     {
       "id": "rule-19",
-      "number": 19,
+      "number": "19",
       "title": "Unplayable Ball",
       "purpose": "Rule 19 covers the player's options for taking relief when the ball is unplayable. A player is the only judge of whether their ball is unplayable. If the player decides their ball is unplayable, they may take relief for one penalty stroke.",
       "sections": [
@@ -671,7 +671,7 @@
     },
     {
       "id": "rule-20",
-      "number": 20,
+      "number": "20",
       "title": "Resolving Issues During Round",
       "purpose": "Rule 20 covers how to handle various issues that may arise during a round, such as settling doubtful questions, making rulings, and dealing with breaches of Rules. The goal is to ensure fair play while keeping the game moving.",
       "sections": [
@@ -695,7 +695,7 @@
     },
     {
       "id": "rule-21",
-      "number": 21,
+      "number": "21",
       "title": "Other Forms of Individual Play",
       "purpose": "Rule 21 covers other forms of individual play, including maximum score, par/bogey competitions, and stableford. These are alternative scoring formats that can make the game more enjoyable for players of different skill levels.",
       "sections": [
@@ -719,7 +719,7 @@
     },
     {
       "id": "rule-22",
-      "number": 22,
+      "number": "22",
       "title": "Foursomes (Also Known as Alternate Shot)",
       "purpose": "Rule 22 covers foursomes (alternate shot) play, where two partners compete as a side by playing one ball in an order determined by them at the start of the round.",
       "sections": [
@@ -743,7 +743,7 @@
     },
     {
       "id": "rule-23",
-      "number": 23,
+      "number": "23",
       "title": "Four-Ball",
       "purpose": "Rule 23 covers four-ball play, where two players play as partners, each playing their own ball. A side's score for a hole is the lower score of the two partners.",
       "sections": [
@@ -772,7 +772,7 @@
     },
     {
       "id": "rule-24",
-      "number": 24,
+      "number": "24",
       "title": "Team Competitions",
       "purpose": "Rule 24 covers team competitions, where multiple players or sides compete as a team. The Rules that apply to each player's ball depend on the form of play being used by that player.",
       "sections": [
@@ -796,7 +796,7 @@
     },
     {
       "id": "rule-25",
-      "number": 25,
+      "number": "25",
       "title": "Adaptations for Players with Disabilities",
       "purpose": "Rule 25 covers modifications to the Rules that are available for players with disabilities. The goal is to allow players with disabilities to play fairly with players without disabilities.",
       "sections": [
