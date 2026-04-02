@@ -891,7 +891,7 @@ function RulesOverview({
             {definitions.slice(0, 8).map((def, idx) => (
               <div key={idx} className="p-3 rounded-lg bg-slate-50">
                 <p className="font-medium text-sm" style={{ color: '#39638b' }}>{def.term}</p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{def.definition}</p>
+                <p className="text-xs text-muted-foreground mt-1">{def.definition}</p>
               </div>
             ))}
           </div>
