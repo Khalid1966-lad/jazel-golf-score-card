@@ -588,6 +588,7 @@ function SectionCard({
 }) {
   const isExpanded = expandedSections.has(section.number);
   const hasSubsections = section.subsections && section.subsections.length > 0;
+  const isLongContent = section.content.length > 150;
 
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -595,12 +596,15 @@ function SectionCard({
     return text.replace(regex, '<mark class="bg-yellow-200 px-0.5 rounded">$1</mark>');
   };
 
+  // All sections can be expanded to read full content
+  const canExpand = isLongContent || hasSubsections;
+
   return (
     <Card className={depth === 0 ? '' : 'border-l-4 border-l-blue-200'}>
       <CardContent className="p-0">
         <button
-          onClick={() => hasSubsections && toggleSection(section.number)}
-          className={`w-full text-left p-4 ${hasSubsections ? 'hover:bg-slate-50' : ''}`}
+          onClick={() => canExpand && toggleSection(section.number)}
+          className={`w-full text-left p-4 transition-colors ${canExpand ? 'hover:bg-slate-50 cursor-pointer' : 'cursor-default'}`}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
@@ -616,6 +620,7 @@ function SectionCard({
                   {section.title}
                 </h4>
               </div>
+              {/* Show truncated content when not expanded */}
               {!isExpanded && (
                 <p 
                   className="text-sm text-muted-foreground mt-2 line-clamp-2"
@@ -625,10 +630,11 @@ function SectionCard({
                 />
               )}
             </div>
-            {hasSubsections && (
-              <ChevronRight 
-                className={`w-4 h-4 text-muted-foreground transition-transform ${
-                  isExpanded ? 'rotate-90' : ''
+            {/* Show chevron for expandable sections */}
+            {canExpand && (
+              <ChevronDown 
+                className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${
+                  isExpanded ? 'rotate-180' : ''
                 }`} 
               />
             )}
@@ -641,17 +647,20 @@ function SectionCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
               <div className="px-4 pb-4">
+                {/* Always show full content when expanded */}
                 <p 
-                  className="text-sm text-foreground"
+                  className="text-sm text-foreground leading-relaxed"
                   dangerouslySetInnerHTML={{ 
                     __html: highlightMatch(section.content, highlightedText) 
                   }}
                 />
                 
-                {section.subsections && section.subsections.length > 0 && (
+                {/* Show subsections if they exist */}
+                {hasSubsections && (
                   <div className="mt-4 space-y-2">
                     {section.subsections.map((sub) => (
                       <SectionCard
