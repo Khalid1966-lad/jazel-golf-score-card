@@ -676,6 +676,107 @@ function SectionCard({
   );
 }
 
+// Part Card Component - Expandable with rule titles
+function PartCard({ 
+  part, 
+  rules,
+  onSelectRule 
+}: { 
+  part: Part;
+  rules: Rule[];
+  onSelectRule: (id: string) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: part.number * 0.1 }}
+    >
+      <Card className="overflow-hidden hover:shadow-md transition-all">
+        {/* Part Header - Click to expand */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full text-left"
+        >
+          <CardHeader className="hover:bg-slate-50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                  style={{ background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)' }}
+                >
+                  {part.number}
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Part {part.number}: {part.title}</CardTitle>
+                  <CardDescription className="flex items-center gap-2 mt-1">
+                    <span>{part.description}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {part.rules.length} rules
+                    </Badge>
+                  </CardDescription>
+                </div>
+              </div>
+              <ChevronDown 
+                className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
+                  isExpanded ? 'rotate-180' : ''
+                }`} 
+              />
+            </div>
+          </CardHeader>
+        </button>
+
+        {/* Expanded Rules List */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <CardContent className="pt-0 pb-4 px-4">
+                <div className="border-t pt-3 space-y-1">
+                  {part.rules.map(ruleNum => {
+                    const rule = rules.find(r => r.number === ruleNum);
+                    if (!rule) return null;
+                    return (
+                      <button
+                        key={rule.id}
+                        onClick={() => onSelectRule(rule.id)}
+                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                      >
+                        <span 
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0"
+                          style={{ background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)' }}
+                        >
+                          {rule.number}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm group-hover:text-blue-700 transition-colors">
+                            {rule.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {rule.purpose}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-blue-500 transition-colors shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+    </motion.div>
+  );
+}
+
 // Rules Overview Component
 function RulesOverview({ 
   parts, 
@@ -783,56 +884,15 @@ function RulesOverview({
         </CardContent>
       </Card>
 
-      {/* Parts Grid */}
+      {/* Parts Grid - Expandable */}
       <div className="grid gap-4 md:grid-cols-2">
         {parts.map((part) => (
-          <motion.div
-            key={part.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: part.number * 0.1 }}
-          >
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
-              onSelectPart(part.number);
-              const firstRule = rules.find(r => r.number === part.rules[0]);
-              if (firstRule) onSelectRule(firstRule.id);
-            }}>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                    style={{ background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)' }}
-                  >
-                    {part.number}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Part {part.number}: {part.title}</CardTitle>
-                    <CardDescription>{part.description}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-1">
-                  {part.rules.map(ruleNum => {
-                    const rule = rules.find(r => r.number === ruleNum);
-                    return rule ? (
-                      <Badge 
-                        key={ruleNum} 
-                        variant="secondary"
-                        className="text-xs cursor-pointer hover:bg-slate-200"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectRule(rule.id);
-                        }}
-                      >
-                        {ruleNum}
-                      </Badge>
-                    ) : null;
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <PartCard 
+            key={part.id} 
+            part={part} 
+            rules={rules}
+            onSelectRule={onSelectRule}
+          />
         ))}
       </div>
 
