@@ -1,0 +1,964 @@
+{
+  "version": "2023-2026",
+  "source": "USGA / R&A Official Rules of Golf",
+  "lastUpdated": "2023-01-01",
+  "parts": [
+    {
+      "id": "part-1",
+      "number": 1,
+      "title": "The Player",
+      "description": "Rules about the player's conduct, responsibilities, and equipment",
+      "rules": [1, 2, 3, 4]
+    },
+    {
+      "id": "part-2",
+      "number": 2,
+      "title": "The Course",
+      "description": "Rules about the course and its defined areas",
+      "rules": [5, 6, 7, 8, 9, 10, 11]
+    },
+    {
+      "id": "part-3",
+      "number": 3,
+      "title": "Playing the Ball",
+      "description": "Rules about how to play the ball during a round",
+      "rules": [12, 13, 14, 15, 16, 17]
+    },
+    {
+      "id": "part-4",
+      "number": 4,
+      "title": "Specific Relief Situations",
+      "description": "Rules about taking relief in specific situations",
+      "rules": [18, 19, 20, 21, 22, 23, 24, 25]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule-1",
+      "number": 1,
+      "title": "The Game, Player Conduct and the Rules",
+      "purpose": "Rule 1 introduces these central principles of the game for the player: Play the course as you find it and play the ball as it lies. Play by the Rules and in the spirit of the game. You are responsible for applying your own penalties if you breach a Rule.",
+      "sections": [
+        {
+          "number": "1.1",
+          "title": "The Game of Golf",
+          "content": "Golf is played in a round of 18 (or fewer) holes on a course by striking a ball with a club. Each hole starts from the teeing area and ends when the ball is holed on the putting green (or when the Rules otherwise say the hole is completed). You must play each hole with a ball that conforms to the Requirements for Conforming Golf Balls. You must not use a ball that does not conform to these requirements."
+        },
+        {
+          "number": "1.2",
+          "title": "Standards of Player Conduct",
+          "content": "Golf is played, for the most part, without the supervision of a referee or umpire. The game relies on the integrity of the individual to show consideration for other players, care for the course, and to abide by the Rules. All players should conduct themselves in a disciplined manner, demonstrating courtesy and sportsmanship at all times, irrespective of how competitive they may be. This is the spirit of the game of golf.",
+          "subsections": [
+            {
+              "number": "1.2a",
+              "title": "Conduct Expected of All Players",
+              "content": "A player is expected to: Act with integrity – for example, by following the Rules, applying all penalties, and being honest in all aspects of play. Show consideration to others – for example, by playing at a prompt pace, looking out for the safety of others, and not distracting the play of another player. Take good care of the course – for example, by repairing ball-marks, replacing divots, and smoothing bunkers."
+            },
+            {
+              "number": "1.2b",
+              "title": "Code of Conduct",
+              "content": "The Committee may set a Code of Conduct that: Sets out standards by which players are expected to conduct themselves, and May set penalties for breach of that Code of Conduct."
+            }
+          ]
+        },
+        {
+          "number": "1.3",
+          "title": "Applying the Rules",
+          "content": "The Rules apply to all players and are not discretionary. You are responsible for knowing and applying the Rules correctly.",
+          "subsections": [
+            {
+              "number": "1.3a",
+              "title": "You Must Apply the Rules",
+              "content": "You must apply the Rules to yourself, even if that means applying a penalty or disqualifying yourself. You must not agree with another player to ignore a Rule or penalty. If you do, both players are disqualified."
+            },
+            {
+              "number": "1.3b",
+              "title": "Penalties",
+              "content": "A penalty applies when a breach of a Rule results in a player gaining a potential advantage. Penalties are structured to: Be proportionate to the breach, Act as a deterrent, and Be fair and consistent. The general penalty for a breach of a Rule is: Loss of hole in match play, or Two penalty strokes in stroke play."
+            },
+            {
+              "number": "1.3c",
+              "title": "Reasonable Judgment in Determining Facts",
+              "content": "When a player's ball comes to rest and the player has to make a judgment about something, the player must make a reasonable judgment. A reasonable judgment is one that is made in good faith based on what the player can see and other information available at the time."
+            }
+          ]
+        }
+      ],
+      "keywords": ["game", "conduct", "rules", "integrity", "sportsmanship", "penalty", "spirit of the game"]
+    },
+    {
+      "id": "rule-2",
+      "number": 2,
+      "title": "The Course",
+      "purpose": "Rule 2 introduces the basic things every player should know about the course: There are five defined areas of the course, and There are several types of defined objects and conditions that may affect how a ball is played or how relief is taken.",
+      "sections": [
+        {
+          "number": "2.1",
+          "title": "The Five Defined Areas of the Course",
+          "content": "The course is made up of five defined areas: The general area, The teeing area you must play from in starting the hole you are playing, All penalty areas, All bunkers, and The putting green of the hole you are playing."
+        },
+        {
+          "number": "2.2",
+          "title": "The General Area",
+          "content": "The general area covers the entire area of the course, except for the four specific areas defined above. It includes: The teeing area of any hole that the player is not playing at the time, All penalty areas, All bunkers, and All putting greens of any hole that the player is not playing at the time."
+        },
+        {
+          "number": "2.3",
+          "title": "Teeing Area",
+          "content": "The teeing area is a rectangular area two club-lengths deep, the front and sides of which are defined by the outside limits of two tee-markers. The ball must be played from within the teeing area. If the player's ball is outside the teeing area when the stroke is made, the player gets the general penalty."
+        },
+        {
+          "number": "2.4",
+          "title": "Penalty Areas",
+          "content": "Penalty areas are defined as bodies of water or other areas where a ball is often lost or unplayable. There are two types of penalty areas: Yellow penalty areas (marked with yellow lines or stakes) - the player has two relief options, and Red penalty areas (marked with red lines or stakes) - the player has three relief options."
+        },
+        {
+          "number": "2.5",
+          "title": "Bunkers",
+          "content": "A bunker is a specially prepared area of sand, often a hollow, from which turf or soil has been removed. A ball is in a bunker when any part of it touches the sand or is inside the outer edge of the bunker."
+        },
+        {
+          "number": "2.6",
+          "title": "Putting Green",
+          "content": "The putting green is the area on the hole being played that is specially prepared for putting or otherwise defined as such by the Committee. A ball is on the putting green when any part of it touches the putting green."
+        }
+      ],
+      "keywords": ["course", "areas", "general area", "teeing area", "penalty area", "bunker", "putting green", "sand", "water"]
+    },
+    {
+      "id": "rule-3",
+      "number": 3,
+      "title": "The Competition",
+      "purpose": "Rule 3 covers the three central elements of all golf competitions: Playing either match play or stroke play, Playing either as an individual or as part of a side, and Playing either a single round or multiple rounds.",
+      "sections": [
+        {
+          "number": "3.1",
+          "title": "Forms of Play",
+          "content": "There are two main forms of play in golf: Match play - where you play directly against an opponent or opponents in a head-to-head format, and Stroke play - where you compete against all other players in the competition by counting your total strokes for the round or rounds."
+        },
+        {
+          "number": "3.2",
+          "title": "Match Play",
+          "content": "In match play, the game is played by holes. A hole is won by the side that holes its ball in the fewer strokes. A match is won by the side that is leading by a number of holes greater than the number of holes remaining to be played.",
+          "subsections": [
+            {
+              "number": "3.2a",
+              "title": "Result of Hole and Match",
+              "content": "In match play, the result of a hole is: Won by the side that completes the hole in the fewest strokes, Lost by the side that takes more strokes than the opponent, or Halved if both sides take the same number of strokes."
+            },
+            {
+              "number": "3.2b",
+              "title": "Dormie",
+              "content": "A match is dormie when a side is as many holes up as there are holes remaining to be played."
+            },
+            {
+              "number": "3.2c",
+              "title": "Conceding a Hole, Match or Stroke",
+              "content": "A player may concede a hole at any time before the hole is completed. A player may concede a match at any time before the result of the match is decided. A player may concede an opponent's next stroke at any time before the opponent's ball is holed."
+            }
+          ]
+        },
+        {
+          "number": "3.3",
+          "title": "Stroke Play",
+          "content": "In stroke play, the player competes against all other players in the competition. The winner is the player who completes all rounds in the fewest total strokes.",
+          "subsections": [
+            {
+              "number": "3.3a",
+              "title": "Winner",
+              "content": "The player who plays the stipulated round or rounds in the fewest strokes is the winner."
+            },
+            {
+              "number": "3.3b",
+              "title": "Failure to Hole Out",
+              "content": "In stroke play, if a player fails to hole out at any hole and does not correct the mistake before making a stroke on the next teeing area or before leaving the final green, the player is disqualified."
+            }
+          ]
+        }
+      ],
+      "keywords": ["competition", "match play", "stroke play", "winner", "concede", "dormie", "halved", "strokes"]
+    },
+    {
+      "id": "rule-4",
+      "number": 4,
+      "title": "The Player's Equipment",
+      "purpose": "Rule 4 covers the equipment that players may use during a round. Based on the principle that golf is a challenging game in which success should depend on the player's skill, not equipment technology, the equipment rules are focused on ensuring that technological advances do not: Give a player an unfair advantage over other players, or Reduce the skill required to play the game.",
+      "sections": [
+        {
+          "number": "4.1",
+          "title": "Clubs",
+          "content": "A player may use a conforming club to make a stroke at a ball. A player must not use a non-conforming club. A club conforms if it: Is designed to be used to strike a ball, Has the required characteristics, and Has not been intentionally modified to change its playing characteristics.",
+          "subsections": [
+            {
+              "number": "4.1a",
+              "title": "Maximum of 14 Clubs",
+              "content": "A player must not start a round with more than 14 clubs or have more than 14 clubs during the round. If a player starts a round with fewer than 14 clubs, they may add clubs during the round up to the maximum of 14."
+            },
+            {
+              "number": "4.1b",
+              "title": "Use, Repair or Replacement of Clubs",
+              "content": "A player must not make a stroke with a club that has been intentionally modified during the round. A player may repair damage to a club that occurred during the round, but must not delay play unreasonably to do so."
+            }
+          ]
+        },
+        {
+          "number": "4.2",
+          "title": "Balls",
+          "content": "A player may use a conforming ball to make a stroke at a ball. A player must not use a non-conforming ball. A ball conforms if it: Meets the requirements in the Equipment Rules, Is on the List of Conforming Golf Balls, and Has not been intentionally modified to change its playing characteristics."
+        },
+        {
+          "number": "4.3",
+          "title": "Equipment That Measures Distance and Other Conditions",
+          "content": "During a round, a player may use equipment to measure distance only (not other conditions such as wind speed or direction). However, the Committee may adopt a Local Rule prohibiting the use of distance-measuring devices, requiring players to rely on distance information provided by the Committee."
+        },
+        {
+          "number": "4.4",
+          "title": "Restrictions on Other Equipment",
+          "content": "Equipment includes anything used, worn, held or carried by the player. A player must not use equipment that: Is designed to assist in making a stroke or in the swing, Is an artificial object used to align the feet or body, or Gives advice on club selection."
+        }
+      ],
+      "keywords": ["equipment", "clubs", "balls", "14 clubs", "distance measuring", "conforming", "non-conforming", "driver", "putter"]
+    },
+    {
+      "id": "rule-5",
+      "number": 5,
+      "title": "Playing the Round",
+      "purpose": "Rule 5 covers how to play a round – such as where and when a player may practise on the course before or during a round, when a round starts and ends and what happens when play has to stop or resume, and how a player may or may not play a provisional ball or another ball.",
+      "sections": [
+        {
+          "number": "5.1",
+          "title": "Meaning of Round",
+          "content": "A round is 18 or fewer holes played in the order set by the Committee. A round starts when the player makes a stroke from the teeing area on the first hole. A round ends when the player holes out on the final hole."
+        },
+        {
+          "number": "5.2",
+          "title": "Practising Before or Between Rounds",
+          "content": "In stroke play, a player may practise on the course before a round or between rounds of a competition that is to be played over more than one day. In match play, a player must not practise on the course before a round or between rounds that are to be played over more than one day. The Committee may adopt a Local Rule allowing or prohibiting practising on the course before or between rounds."
+        },
+        {
+          "number": "5.3",
+          "title": "Practising During Round",
+          "content": "While playing a hole, a player must not make a practice stroke at any ball on or off the course. Between two holes, a player may practise putting or chipping on or near: The putting green of the hole last played, Any practice putting green, or The teeing area of the next hole."
+        },
+        {
+          "number": "5.4",
+          "title": "Playing in Groups",
+          "content": "In stroke play, the player must play each hole with the other players in the group (unless the Committee approves a change to the group). In match play, the player must play each hole with the opponent."
+        },
+        {
+          "number": "5.5",
+          "title": "Playing a Provisional Ball",
+          "content": "If a ball might be lost outside a penalty area or might be out of bounds, the player may play a provisional ball to save time. The player must announce that they are playing a provisional ball. If the original ball is found in bounds and not lost, the player must continue with that ball and abandon the provisional ball."
+        },
+        {
+          "number": "5.6",
+          "title": "Stopping and Resuming Play",
+          "content": "When play is suspended by the Committee, a player must stop play immediately if they are between holes, or may choose to complete the hole if they have started play of a hole. When play resumes, the player must continue from where they stopped."
+        },
+        {
+          "number": "5.7",
+          "title": "Playing While Disqualified or Suspended",
+          "content": "A player must not play a stroke in a competition while disqualified or while their play has been suspended by the Committee."
+        }
+      ],
+      "keywords": ["round", "practise", "practice", "provisional ball", "suspend", "resume", "start", "end", "between holes"]
+    },
+    {
+      "id": "rule-6",
+      "number": 6,
+      "title": "Playing a Hole",
+      "purpose": "Rule 6 covers how to play a hole – such as the specific Rules for teeing off to start a hole, the requirement to use the same ball for the entire hole except when taking relief, and the order of play when playing a hole with others.",
+      "sections": [
+        {
+          "number": "6.1",
+          "title": "Starting Play of a Hole",
+          "content": "The ball must be played from within the teeing area. The player may tee the ball or play it from the ground. If the player plays a ball from outside the teeing area: In match play, there is no penalty and the opponent may require the stroke to be cancelled and replayed from within the teeing area, or In stroke play, the player gets the general penalty and must correct the mistake by playing a ball from within the teeing area."
+        },
+        {
+          "number": "6.2",
+          "title": "Playing Ball from Teeing Area",
+          "content": "When starting play of a hole, the ball must be played from within the teeing area. The ball may be placed on a tee or played from the ground. The player may move natural impediments in the teeing area."
+        },
+        {
+          "number": "6.3",
+          "title": "Ball Used in Play of Hole",
+          "content": "The player must use the same ball for the entire hole, except when taking relief under a Rule. If a player substitutes another ball when not allowed, the player gets the general penalty."
+        },
+        {
+          "number": "6.4",
+          "title": "Order of Play When Playing Hole",
+          "content": "After all players have started play of the hole, the player whose ball is farthest from the hole plays next. This applies to all forms of play."
+        }
+      ],
+      "keywords": ["hole", "teeing", "tee", "start", "same ball", "order of play", "farthest from hole", "substitute"]
+    },
+    {
+      "id": "rule-7",
+      "number": 7,
+      "title": "Ball Search: Finding and Identifying Ball",
+      "purpose": "Rule 7 allows the player to take reasonable actions to fairly search for their ball in each situation, but there are limits on what may be done during the search. The Rule also sets out the procedures for identifying a ball.",
+      "sections": [
+        {
+          "number": "7.1",
+          "title": "How to Search for Ball",
+          "content": "A player may fairly search for their ball. In searching for and identifying a ball, the player may: Move sand and water, and Move or bend grass, bushes, tree branches and other growing or attached natural objects, and also break such objects, but only if this results from fairly searching for or identifying the ball."
+        },
+        {
+          "number": "7.2",
+          "title": "How to Identify Ball",
+          "content": "A player may identify their ball by: Seeing the ball come to rest in a location, Seeing an identifying mark on the ball (such as a personal mark), or Using reasonable conclusions about its identity based on all the relevant information."
+        },
+        {
+          "number": "7.3",
+          "title": "Lifting Ball to Identify It",
+          "content": "If a ball cannot be identified as the player's ball while it is at rest, the player may lift the ball to identify it. The ball must not be cleaned except to the extent necessary to identify it, and must be replaced on its original spot."
+        },
+        {
+          "number": "7.4",
+          "title": "Ball Accidentally Moved in Search",
+          "content": "If a player accidentally moves their ball while searching for it, there is no penalty and the ball must be replaced on its original spot (which must be estimated if not known). However, if the player moves their ball intentionally or fails to replace it, the player gets one penalty stroke."
+        },
+        {
+          "number": "7.5",
+          "title": "Time Allowed for Search",
+          "content": "A player has three minutes to search for their ball. The search time starts when the player or their caddie begins to search for it. If the ball is not found within three minutes, it is lost."
+        }
+      ],
+      "keywords": ["search", "find", "identify", "lost ball", "three minutes", "lift", "mark", "accidentally moved"]
+    },
+    {
+      "id": "rule-8",
+      "number": 8,
+      "title": "Ball Played as It Lies",
+      "purpose": "Rule 8 covers a central principle of the game: Play the ball as you find it. When your ball comes to rest, you must accept the conditions affecting the stroke and play the ball as it lies, except when the Rules allow or require you to play it from somewhere else.",
+      "sections": [
+        {
+          "number": "8.1",
+          "title": "Ball Played as It Lies",
+          "content": "A ball at rest must be played as it lies, except when the Rules allow or require the player: To play a ball from another place, or To replace a ball on its original spot."
+        },
+        {
+          "number": "8.2",
+          "title": "Improving Conditions Affecting the Stroke",
+          "content": "A player must not improve or allow to be improved: The area of intended stance or swing, The lie of the ball, The area of intended play, The line of play, or The area where the player will drop or place a ball. This includes pressing down on the ground, moving or breaking growing objects, or removing sand or loose soil."
+        }
+      ],
+      "keywords": ["as it lies", "play the ball", "improve", "conditions", "stance", "swing", "line of play", "lie"]
+    },
+    {
+      "id": "rule-9",
+      "number": 9,
+      "title": "Ball Played While Moving",
+      "purpose": "Rule 9 covers the very rare situations where a ball is in motion and then comes to rest and the player then plays it. These situations are covered by other Rules, and Rule 9 gives the reference to those Rules.",
+      "sections": [
+        {
+          "number": "9.1",
+          "title": "Ball in Motion Accidentally Deflected or Stopped",
+          "content": "If a player's ball in motion is accidentally deflected or stopped by the player, their caddie, or their equipment, the player gets one penalty stroke and must play the ball as it lies. If the ball comes to rest on the player, their caddie, or their equipment, the ball must be dropped directly behind that location."
+        },
+        {
+          "number": "9.2",
+          "title": "Ball in Motion Deliberately Deflected or Stopped",
+          "content": "If a player deliberately stops or deflects their ball in motion, the player gets the general penalty. If this was done to influence where the ball will come to rest, the player is disqualified."
+        },
+        {
+          "number": "9.3",
+          "title": "Ball in Motion Accidentally Hits Person or Outside Influence",
+          "content": "If a player's ball in motion accidentally hits any person or outside influence, there is no penalty and the ball must be played as it lies. This is true even if the ball hits the player, their caddie, or their equipment."
+        },
+        {
+          "number": "9.4",
+          "title": "Ball in Motion Hits Another Ball at Rest or Ball-Marker",
+          "content": "If a player's ball in motion hits another ball at rest or a ball-marker, there is no penalty and the ball must be played as it lies. In stroke play, if the player's ball in motion hits another ball at rest on the putting green and both balls were on the putting green before the stroke, the player gets two penalty strokes."
+        },
+        {
+          "number": "9.5",
+          "title": "Ball in Motion Hits Another Ball in Motion",
+          "content": "If a player's ball in motion hits another ball in motion, there is no penalty and the ball must be played as it lies, unless the player's ball was on the putting green when the stroke was made."
+        },
+        {
+          "number": "9.6",
+          "title": "Ball in Motion Hits or Caught by Moving Animal",
+          "content": "If a player's ball in motion is hit or caught by a moving animal, the ball must be treated as if it were accidentally deflected or stopped by an outside influence."
+        }
+      ],
+      "keywords": ["moving", "in motion", "deflected", "stopped", "accidentally", "deliberately", "outside influence", "another ball"]
+    },
+    {
+      "id": "rule-10",
+      "number": 10,
+      "title": "Preparing for and Making a Stroke",
+      "purpose": "Rule 10 covers how to prepare for and make a stroke, including the Rules for the set-up of the stance and how the ball is to be struck. The Rule also addresses the many ways in which a player may get advice or other help during a round.",
+      "sections": [
+        {
+          "number": "10.1",
+          "title": "Making a Stroke",
+          "content": "A stroke is the forward movement of the club made to strike the ball. A stroke is made when: The player starts the forward movement of the club with the intention of striking the ball, and The clubhead is moving forward."
+        },
+        {
+          "number": "10.2",
+          "title": "Anchoring the Club",
+          "content": "In making a stroke, a player must not anchor the club: Directly, by holding the club or a gripping hand against any part of the body, or Indirectly, through use of an anchor point created by holding a forearm against the body."
+        },
+        {
+          "number": "10.3",
+          "title": "Advice and Other Help",
+          "content": "Advice is any counsel or suggestion that could influence a player in determining their play, the choice of a club or the method of making a stroke. A player must not give advice to anyone else playing on the course. A player must not ask for advice from anyone other than their caddie or partner."
+        },
+        {
+          "number": "10.4",
+          "title": "Caddies",
+          "content": "A player may have a caddie to carry, transport or handle their clubs and give advice. A player may have only one caddie at a time. A player may change caddies during a round."
+        }
+      ],
+      "keywords": ["stroke", "stance", "anchor", "advice", "caddie", "help", "forward movement", "club"]
+    },
+    {
+      "id": "rule-11",
+      "number": 11,
+      "title": "Teeing Ground to Teeing Area",
+      "purpose": "Rule 11 covers what to do if a player's ball in motion hits a person, animal, equipment or other object after being played from anywhere on the course. This Rule focuses on situations where the ball hits something or someone accidentally.",
+      "sections": [
+        {
+          "number": "11.1",
+          "title": "Ball in Motion Accidentally Hits Person or Outside Influence",
+          "content": "If a player's ball in motion accidentally hits any person or outside influence, there is no penalty and the ball must be played as it lies."
+        },
+        {
+          "number": "11.2",
+          "title": "Ball in Motion Deliberately Deflected or Stopped",
+          "content": "If a player deliberately stops or deflects their ball in motion, or deliberately moves or lifts an obstruction while the ball is in motion, the player gets the general penalty."
+        }
+      ],
+      "keywords": ["teeing ground", "teeing area", "accidentally hits", "deliberately deflected"]
+    },
+    {
+      "id": "rule-12",
+      "number": 12,
+      "title": "Bunkers",
+      "purpose": "Rule 12 is a specific Rule for bunkers. A bunker is a specially prepared area of sand, which is often a hollow from which turf or soil was removed. A player must not touch the sand in a bunker with their hand or club before making a stroke at the ball.",
+      "sections": [
+        {
+          "number": "12.1",
+          "title": "Ball in Bunker",
+          "content": "A ball is in a bunker when any part of it touches the sand or is inside the outer edge of the bunker. A ball that lies on or touches any growing object, rooted in the sand, is also in the bunker."
+        },
+        {
+          "number": "12.2",
+          "title": "Restrictions on Touching Sand in Bunker",
+          "content": "Before making a stroke at a ball in a bunker, a player must not: Deliberately touch the sand with a hand, club, rake or other object, Touch the sand with a club in the area right in front of or right behind the ball, or Touch the sand with a club in making a practice swing. There is no penalty if the player touches the sand in any other way."
+        },
+        {
+          "number": "12.3",
+          "title": "Removing Loose Impediments and Movable Obstructions",
+          "content": "Loose impediments and movable obstructions may be removed from a bunker without penalty. If the ball moves as a result, there is no penalty and the ball must be replaced on its original spot."
+        }
+      ],
+      "keywords": ["bunker", "sand", "touch sand", "loose impediments", "movable obstructions", "hazard"]
+    },
+    {
+      "id": "rule-13",
+      "number": 13,
+      "title": "Putting Greens",
+      "purpose": "Rule 13 is a specific Rule for putting greens. Putting greens are specially prepared for playing the ball along the ground and there is a flagstick for the hole on each putting green. Certain things that are allowed on the putting green are not allowed elsewhere on the course.",
+      "sections": [
+        {
+          "number": "13.1",
+          "title": "Ball on Putting Green",
+          "content": "A ball is on the putting green when any part of it touches the putting green. The putting green is all of the ground on the hole being played that is specially prepared for putting."
+        },
+        {
+          "number": "13.2",
+          "title": "Touching the Line of Play on the Putting Green",
+          "content": "The line of play on the putting green is the line that the player intends their ball to take after a stroke on the putting green. The player may: Touch the line of play in removing sand and loose soil, Repair damage on the putting green, and Place an object to show the line of play."
+        },
+        {
+          "number": "13.3",
+          "title": "Repairing Damage on Putting Green",
+          "content": "Damage on the putting green may be repaired without penalty. Damage includes: Ball-marks, Damage from shoes or flagsticks, Old hole plugs, Turf plugs, or Scrapes or indentations from maintenance equipment."
+        },
+        {
+          "number": "13.4",
+          "title": "Ball Overhanging Hole",
+          "content": "If any part of a player's ball overhangs the lip of the hole, the player is allowed a reasonable time to reach the hole and then ten seconds to determine whether the ball is at rest. If the ball falls into the hole during this time, the player has holed out with the last stroke. If the ball does not fall into the hole, the ball is treated as being at rest and must be played as it lies."
+        },
+        {
+          "number": "13.5",
+          "title": "Flagstick",
+          "content": "The player may leave the flagstick in the hole or have it removed before making a stroke from anywhere on the course. If the flagstick is left in and the ball in motion hits it, there is no penalty and the ball must be played as it lies."
+        }
+      ],
+      "keywords": ["putting green", "green", "flagstick", "hole", "ball-mark", "repair", "line of play", "overhanging"]
+    },
+    {
+      "id": "rule-14",
+      "number": 14,
+      "title": "Procedures for Ball: Marking, Lifting and Cleaning; Replacing on Spot; Dropping in Relief Area; Playing from Wrong Place",
+      "purpose": "Rule 14 describes the procedures for: Marking the spot of a ball at rest and lifting and replacing the ball, How to take relief when a Rule requires dropping a ball in a relief area, and What happens when a ball is played from a wrong place.",
+      "sections": [
+        {
+          "number": "14.1",
+          "title": "Marking, Lifting and Replacing Ball",
+          "content": "Before lifting a ball under a Rule that requires it to be replaced, the player must mark the spot. The spot is marked by placing a ball-marker, a small coin or other similar object immediately behind the ball. If the ball is accidentally moved in marking or lifting it, there is no penalty and the ball must be replaced."
+        },
+        {
+          "number": "14.2",
+          "title": "Dropping Ball in Relief Area",
+          "content": "When taking relief, the player must drop a ball in a specific way. The ball must be dropped from knee height so that it: Falls straight down, without the player throwing, spinning or rolling it, and Hits the ground in the relief area."
+        },
+        {
+          "number": "14.3",
+          "title": "Ball Dropped in Relief Area",
+          "content": "When a ball is dropped in a relief area, it must be dropped in the right way and come to rest in the relief area. If the ball is dropped in the wrong way or comes to rest outside the relief area, it must be redropped."
+        },
+        {
+          "number": "14.4",
+          "title": "Ball Comes to Rest Out of Bounds",
+          "content": "If a ball comes to rest out of bounds, the player must take stroke-and-distance relief by playing a ball from where the previous stroke was made."
+        },
+        {
+          "number": "14.5",
+          "title": "Playing Ball from Wrong Place",
+          "content": "If a player plays a ball from a wrong place, the player gets the general penalty (two strokes in stroke play or loss of hole in match play). If the breach was serious and the player did not correct it before playing from the next teeing area, the player is disqualified in stroke play."
+        },
+        {
+          "number": "14.6",
+          "title": "Making Next Stroke from Where Previous Stroke Made",
+          "content": "When taking stroke-and-distance relief, the player must play from where the previous stroke was made. If the previous stroke was made from the teeing area, the ball may be teed. If it was made from the general area, bunker or putting green, the ball must be dropped or placed."
+        },
+        {
+          "number": "14.7",
+          "title": "Playing from Wrong Place",
+          "content": "If a player plays a ball from a wrong place, they get the general penalty. In stroke play, if this is a serious breach, the player must correct the mistake before teeing off on the next hole or face disqualification."
+        }
+      ],
+      "keywords": ["marking", "lifting", "replacing", "dropping", "relief area", "wrong place", "knee height", "ball-marker"]
+    },
+    {
+      "id": "rule-15",
+      "number": 15,
+      "title": "Taking Relief",
+      "purpose": "Rule 15 covers when and how the player may take free relief from loose impediments, movable obstructions, immovable obstructions and abnormal course conditions. These are the conditions that are different from the normal playing conditions on a course.",
+      "sections": [
+        {
+          "number": "15.1",
+          "title": "Loose Impediments",
+          "content": "Loose impediments are natural objects that are not: Growing or fixed in the ground, Solidly embedded, or Adhering to the ball. Examples include: Stones, loose grass, leaves, branches, sticks, dead animals and animal waste. Loose impediments may be moved without penalty, anywhere on or off the course. If the ball moves as a result of moving a loose impediment, the player gets one penalty stroke and must replace the ball."
+        },
+        {
+          "number": "15.2",
+          "title": "Movable Obstructions",
+          "content": "An obstruction is anything artificial, except objects that define out of bounds or are immovable obstructions. Movable obstructions may be moved without penalty anywhere on or off the course. If the ball moves as a result of moving a movable obstruction, the ball must be replaced without penalty."
+        },
+        {
+          "number": "15.3",
+          "title": "Immovable Obstructions",
+          "content": "An immovable obstruction is an obstruction that cannot be moved without unreasonable effort or without damaging the obstruction or the course. Examples include: Sprinkler heads, cart paths, buildings, and maintenance sheds. Free relief is available when the ball lies on or in an immovable obstruction or when the obstruction interferes with the stance or area of intended swing."
+        },
+        {
+          "number": "15.4",
+          "title": "Abnormal Course Conditions",
+          "content": "Abnormal course conditions are: Animal holes, Ground under repair, or Immovable obstructions. Free relief is available when the ball lies in or on an abnormal course condition or when the condition interferes with the stance or area of intended swing."
+        }
+      ],
+      "keywords": ["relief", "loose impediments", "movable obstruction", "immovable obstruction", "abnormal course condition", "ground under repair", "animal hole"]
+    },
+    {
+      "id": "rule-16",
+      "number": 16,
+      "title": "Taking Relief",
+      "purpose": "Rule 16 covers when and how the player may take free relief from loose impediments, movable obstructions, immovable obstructions and abnormal course conditions. These are the conditions that are different from the normal playing conditions on a course.",
+      "sections": [
+        {
+          "number": "16.1",
+          "title": "Relief from Abnormal Course Condition",
+          "content": "When a ball lies in an abnormal course condition or when an abnormal course condition interferes with the player's stance or area of intended swing, the player may take free relief. The nearest point of complete relief must be determined and the ball must be dropped in the relief area within one club-length of that point."
+        },
+        {
+          "number": "16.2",
+          "title": "Relief from Dangerous Animal Condition",
+          "content": "If a player's ball lies in an area where there is a dangerous animal condition (such as near a snake, alligator, or bees), the player may take free relief whether or not the ball is in an abnormal course condition."
+        },
+        {
+          "number": "16.3",
+          "title": "Relief from Embedded Ball",
+          "content": "A ball is embedded if it is in its own pitch-mark made as a result of the player's previous stroke and where part of the ball is below the level of the ground. Free relief is available when a ball is embedded anywhere in the general area. The ball must be dropped in a relief area within one club-length of the spot right behind where the ball is embedded."
+        },
+        {
+          "number": "16.4",
+          "title": "Ball on Wrong Putting Green",
+          "content": "A ball is on a wrong putting green when any part of it touches a putting green of a hole other than the one the player is playing. The player must take free relief. The nearest point of complete relief is determined on the course and the ball must be dropped in the relief area."
+        }
+      ],
+      "keywords": ["relief", "embedded ball", "wrong putting green", "dangerous animal", "snake", "alligator", "bees", "pitch-mark"]
+    },
+    {
+      "id": "rule-17",
+      "number": 17,
+      "title": "Penalty Areas",
+      "purpose": "Rule 17 is a specific Rule for penalty areas, which are bodies of water or other areas defined by the Committee where a ball is often lost or unable to be played. For one penalty stroke, players may take specific relief options.",
+      "sections": [
+        {
+          "number": "17.1",
+          "title": "Ball in Penalty Area",
+          "content": "A ball is in a penalty area when any part of it lies on or touches the ground inside the edge of the penalty area, or is above the edge of the penalty area. Penalty areas are defined as either yellow or red. The color determines the relief options available."
+        },
+        {
+          "number": "17.2",
+          "title": "Relief Options for Ball in Yellow Penalty Area",
+          "content": "When a ball is in a yellow penalty area, the player has two relief options, each for one penalty stroke: Stroke-and-distance relief (play from where the previous stroke was made), or Back-on-the-line relief (drop a ball on a line going straight back from the hole through the point where the ball last crossed the edge of the penalty area)."
+        },
+        {
+          "number": "17.3",
+          "title": "Relief Options for Ball in Red Penalty Area",
+          "content": "When a ball is in a red penalty area, the player has three relief options, each for one penalty stroke: Stroke-and-distance relief, Back-on-the-line relief, or Lateral relief (drop a ball within two club-lengths of where the ball last crossed the edge of the penalty area, no nearer the hole)."
+        },
+        {
+          "number": "17.4",
+          "title": "Playing Prohibited from Penalty Area",
+          "content": "The Committee may adopt a Local Rule that prohibits playing a ball that lies in a penalty area. If a player plays a ball from a penalty area where this Local Rule applies, the player gets the general penalty."
+        }
+      ],
+      "keywords": ["penalty area", "water hazard", "yellow penalty area", "red penalty area", "lateral relief", "stroke and distance", "lateral water hazard"]
+    },
+    {
+      "id": "rule-18",
+      "number": 18,
+      "title": "Stroke-and-Distance Relief; Ball Lost or Out of Bounds; Provisional Ball",
+      "purpose": "Rule 18 covers taking relief under stroke-and-distance. When a ball is lost outside a penalty area or comes to rest out of bounds, the required relief is stroke-and-distance. A player may play a provisional ball to save time when they believe their ball may be lost or out of bounds.",
+      "sections": [
+        {
+          "number": "18.1",
+          "title": "Stroke-and-Distance Relief",
+          "content": "At any time, a player may take stroke-and-distance relief by adding one penalty stroke and playing a ball from where the previous stroke was made. This option is always available to the player."
+        },
+        {
+          "number": "18.2",
+          "title": "Ball Lost or Out of Bounds",
+          "content": "A ball is lost if not found in three minutes after the player or their caddie begins to search for it. A ball is out of bounds when all of it lies outside the boundary edge of the course. When a ball is lost or out of bounds, the player must take stroke-and-distance relief."
+        },
+        {
+          "number": "18.3",
+          "title": "Provisional Ball",
+          "content": "If a ball may be lost outside a penalty area or may be out of bounds, to save time the player may play a provisional ball. The player must announce that they are playing a provisional ball. The provisional ball must be played before the player goes forward to search for the original ball."
+        }
+      ],
+      "keywords": ["lost ball", "out of bounds", "provisional ball", "stroke and distance", "three minutes", "search", "lost outside penalty area"]
+    },
+    {
+      "id": "rule-19",
+      "number": 19,
+      "title": "Unplayable Ball",
+      "purpose": "Rule 19 covers the player's options for taking relief when the ball is unplayable. A player is the only judge of whether their ball is unplayable. If the player decides their ball is unplayable, they may take relief for one penalty stroke.",
+      "sections": [
+        {
+          "number": "19.1",
+          "title": "Player May Take Unplayable Ball Relief",
+          "content": "A player is the sole judge of whether their ball is unplayable. The player may declare their ball unplayable at any place on the course except when the ball is in a penalty area. The player may take unplayable ball relief for one penalty stroke."
+        },
+        {
+          "number": "19.2",
+          "title": "Unplayable Ball Relief Options",
+          "content": "The player has three options for unplayable ball relief, each for one penalty stroke: Stroke-and-distance relief (play from where the previous stroke was made), Back-on-the-line relief (drop a ball on a line going straight back from the hole through the spot where the ball lies), or Lateral relief (drop a ball within two club-lengths of where the ball lies, no nearer the hole)."
+        },
+        {
+          "number": "19.3",
+          "title": "Unplayable Ball in Bunker",
+          "content": "If a player declares their ball unplayable in a bunker, the player may take relief under any of the three options. However, if taking back-on-the-line relief or lateral relief, the ball must be dropped in the bunker. For two penalty strokes, the player may take back-on-the-line relief outside the bunker."
+        }
+      ],
+      "keywords": ["unplayable ball", "unplayable lie", "bunker", "relief options", "lateral relief", "stroke and distance", "back on the line"]
+    },
+    {
+      "id": "rule-20",
+      "number": 20,
+      "title": "Resolving Issues During Round",
+      "purpose": "Rule 20 covers how to handle various issues that may arise during a round, such as settling doubtful questions, making rulings, and dealing with breaches of Rules. The goal is to ensure fair play while keeping the game moving.",
+      "sections": [
+        {
+          "number": "20.1",
+          "title": "Making Rulings",
+          "content": "When a situation arises that is not covered by the Rules, a decision should be made in accordance with equity. The player must report the facts to the Committee, which will then make a ruling."
+        },
+        {
+          "number": "20.2",
+          "title": "Doubt as to Procedure",
+          "content": "In stroke play, if a player is doubtful about the right procedure, they may play two balls (one as the ball in play and one as a second ball under the procedure they believe is correct). The player must report the facts to the Committee before returning their scorecard."
+        },
+        {
+          "number": "20.3",
+          "title": "Deciding Tie",
+          "content": "If a match or competition ends in a tie, the Committee will decide how the tie will be decided. The Committee may use a playoff, a matching of scorecards, or any other method."
+        }
+      ],
+      "keywords": ["rulings", "doubtful", "two balls", "tie", "equity", "committee", "decision", "dispute"]
+    },
+    {
+      "id": "rule-21",
+      "number": 21,
+      "title": "Other Forms of Individual Play",
+      "purpose": "Rule 21 covers other forms of individual play, including maximum score, par/bogey competitions, and stableford. These are alternative scoring formats that can make the game more enjoyable for players of different skill levels.",
+      "sections": [
+        {
+          "number": "21.1",
+          "title": "Maximum Score",
+          "content": "Maximum score is a form of stroke play where a player's score for a hole is capped at a maximum number of strokes set by the Committee. Once a player reaches the maximum score on a hole, they may pick up their ball."
+        },
+        {
+          "number": "21.2",
+          "title": "Par/Bogey Competition",
+          "content": "A par/bogey competition is a form of stroke play where a player or side wins, loses, or halves each hole against a fixed score (usually par). The winner is the player or side with the most holes won."
+        },
+        {
+          "number": "21.3",
+          "title": "Stableford",
+          "content": "Stableford is a form of stroke play where points are awarded based on the number of strokes taken at each hole. Points are awarded as follows: 2 or more over par = 0 points, 1 over par = 1 point, Par = 2 points, 1 under par = 3 points, 2 under par = 4 points, etc."
+        }
+      ],
+      "keywords": ["maximum score", "par/bogey", "stableford", "points", "scoring format", "alternative format"]
+    },
+    {
+      "id": "rule-22",
+      "number": 22,
+      "title": "Foursomes (Also Known as Alternate Shot)",
+      "purpose": "Rule 22 covers foursomes (alternate shot) play, where two partners compete as a side by playing one ball in an order determined by them at the start of the round.",
+      "sections": [
+        {
+          "number": "22.1",
+          "title": "Overview of Foursomes",
+          "content": "In foursomes, two players compete as partners and play alternately from the teeing grounds and then alternately during the play of each hole. After each hole, the honor is determined by the side that has the lower score on the previous hole."
+        },
+        {
+          "number": "22.2",
+          "title": "Partners May Act for Side",
+          "content": "Partners may act for the side in any action that the Rules allow a player to take, such as marking, lifting, replacing, or dropping a ball."
+        },
+        {
+          "number": "22.3",
+          "title": "Penalties",
+          "content": "Penalties are applied to the side, not to individual players. If a player breaches a Rule, the penalty applies to the side."
+        }
+      ],
+      "keywords": ["foursomes", "alternate shot", "partners", "two players", "side", "penalties"]
+    },
+    {
+      "id": "rule-23",
+      "number": 23,
+      "title": "Four-Ball",
+      "purpose": "Rule 23 covers four-ball play, where two players play as partners, each playing their own ball. A side's score for a hole is the lower score of the two partners.",
+      "sections": [
+        {
+          "number": "23.1",
+          "title": "Overview of Four-Ball",
+          "content": "In four-ball, two players play as partners, each playing their own ball. A side's score for a hole is the lower score of the two partners on that hole. Either partner may play first for the side."
+        },
+        {
+          "number": "23.2",
+          "title": "Side's Score",
+          "content": "The side's score for a hole is the lower score of the two partners. If one partner does not complete the hole, there is no penalty as long as the other partner completes the hole."
+        },
+        {
+          "number": "23.3",
+          "title": "Partners May Act for Side",
+          "content": "Partners may act for the side in any action that the Rules allow a player to take, such as marking, lifting, replacing, or dropping a ball."
+        },
+        {
+          "number": "23.4",
+          "title": "Penalties",
+          "content": "A penalty on one partner does not apply to the other partner, unless the breach helps the other partner's play. However, if a penalty would result in the player being disqualified, the partner may continue to play."
+        }
+      ],
+      "keywords": ["four-ball", "partners", "lower score", "two balls", "side", "best ball"]
+    },
+    {
+      "id": "rule-24",
+      "number": 24,
+      "title": "Team Competitions",
+      "purpose": "Rule 24 covers team competitions, where multiple players or sides compete as a team. The Rules that apply to each player's ball depend on the form of play being used by that player.",
+      "sections": [
+        {
+          "number": "24.1",
+          "title": "Overview of Team Competitions",
+          "content": "A team competition is one in which multiple players or sides compete as a team, with the team's result normally determined by combining the results of all team members."
+        },
+        {
+          "number": "24.2",
+          "title": "Rules that Apply to Team Competitions",
+          "content": "In a team competition, each player or side competes under the Rules that apply to the form of play being used, and the result of the competition is determined by combining each player's or side's score or match result."
+        },
+        {
+          "number": "24.3",
+          "title": "Advice in Team Competitions",
+          "content": "In a team competition, players on the same team may give advice to each other. Each team may also have one person as an advice-giving coach during a round."
+        }
+      ],
+      "keywords": ["team competition", "team", "coach", "advice", "combined score", "multiple players"]
+    },
+    {
+      "id": "rule-25",
+      "number": 25,
+      "title": "Adaptations for Players with Disabilities",
+      "purpose": "Rule 25 covers modifications to the Rules that are available for players with disabilities. The goal is to allow players with disabilities to play fairly with players without disabilities.",
+      "sections": [
+        {
+          "number": "25.1",
+          "title": "Overview",
+          "content": "Rule 25 provides modifications to the Rules for players with disabilities. These modifications are designed to allow players with disabilities to compete fairly with players without disabilities."
+        },
+        {
+          "number": "25.2",
+          "title": "Use of Assistive Devices",
+          "content": "Players with disabilities may use assistive devices, such as canes, crutches, or specialized golf clubs, as long as they are used in a way that is consistent with the spirit of the game."
+        },
+        {
+          "number": "25.3",
+          "title": "Modified Relief Procedures",
+          "content": "Players with disabilities may be allowed modified relief procedures, such as dropping a ball from a height other than knee height, or taking relief in a larger relief area."
+        }
+      ],
+      "keywords": ["disability", "disabled", "assistive device", "adaptation", "wheelchair", "modified relief", "accessibility"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Abnormal Course Condition",
+      "definition": "Any of these four defined conditions: Animal hole, Ground under repair, Immovable obstruction, or Temporary water."
+    },
+    {
+      "term": "Animal Hole",
+      "definition": "Any hole dug in the ground by an animal, except for a hole made by a burrowing animal such as a rabbit, mole, groundhog, gopher or salamander."
+    },
+    {
+      "term": "Ball at Rest",
+      "definition": "A ball is at rest when it has come to a stop and is not moving, or if it is oscillating (moving slightly back and forth) it comes to rest when the oscillation stops."
+    },
+    {
+      "term": "Ball in Motion",
+      "definition": "A ball is in motion when it is not at rest. A ball is in motion until it comes to rest, even if it is still moving."
+    },
+    {
+      "term": "Bunker",
+      "definition": "A specially prepared area of sand, often a hollow from which turf or soil was removed, that is treated as part of the general area."
+    },
+    {
+      "term": "Caddie",
+      "definition": "Someone who helps a player during a round, including carrying, transporting or handling clubs and giving advice."
+    },
+    {
+      "term": "Committee",
+      "definition": "The person or group in charge of the competition or the course."
+    },
+    {
+      "term": "Embedded Ball",
+      "definition": "A ball that is in its own pitch-mark in the ground, other than in sand, where part of the ball is below the level of the ground."
+    },
+    {
+      "term": "Equipment",
+      "definition": "Anything used, worn, held or carried by the player, including clubs, balls, clothing, and accessories."
+    },
+    {
+      "term": "Flagstick",
+      "definition": "A movable pole provided by the Committee that is placed in the hole to show the player where the hole is."
+    },
+    {
+      "term": "General Area",
+      "definition": "The area of the course that covers all of the course except for the four specific areas: teeing area, penalty areas, bunkers, and putting green."
+    },
+    {
+      "term": "Ground Under Repair",
+      "definition": "Any part of the course the Committee defines to be ground under repair, whether marked or not."
+    },
+    {
+      "term": "Hole",
+      "definition": "The finish point on the putting green for the hole being played, which is a cylinder 4 1/4 inches (108 mm) in diameter and at least 4 inches (101.6 mm) deep."
+    },
+    {
+      "term": "Holed",
+      "definition": "When a ball is at rest inside the circumference of the hole and all of it is below the surface of the putting green."
+    },
+    {
+      "term": "Immovable Obstruction",
+      "definition": "An obstruction that cannot be moved without unreasonable effort or without damaging the obstruction or the course."
+    },
+    {
+      "term": "Loose Impediment",
+      "definition": "A natural, loose object that is not growing, fixed in place, solidly embedded or adhering to the ball, such as stones, leaves, twigs and branches."
+    },
+    {
+      "term": "Lost Ball",
+      "definition": "A ball that is not found within three minutes after the player or caddie begins to search for it."
+    },
+    {
+      "term": "Movable Obstruction",
+      "definition": "An obstruction that may be moved without unreasonable effort and without damaging the obstruction or the course."
+    },
+    {
+      "term": "Nearest Point of Complete Relief",
+      "definition": "The reference point for taking free relief from an abnormal course condition or wrong putting green. It is the estimated point where the ball would lie that is nearest to the ball's original location."
+    },
+    {
+      "term": "Obstruction",
+      "definition": "Any artificial object except for objects defining out of bounds, such as boundary fences or stakes."
+    },
+    {
+      "term": "Out of Bounds",
+      "definition": "All areas beyond the boundaries of the course or any part of the course so marked by the Committee."
+    },
+    {
+      "term": "Outside Influence",
+      "definition": "Any of these that are not part of the competition: Animals, Spectators, Objects, Other players, or Their equipment."
+    },
+    {
+      "term": "Partner",
+      "definition": "A player who competes together with another player as a side, in either match play or stroke play."
+    },
+    {
+      "term": "Penalty Area",
+      "definition": "An area from which relief with a one-stroke penalty is available if the player's ball comes to rest there."
+    },
+    {
+      "term": "Point of Maximum Available Relief",
+      "definition": "The reference point for taking relief from a wrong putting green or temporary water in a bunker. It is the estimated point that is nearest to the ball's original location where the interference is minimized."
+    },
+    {
+      "term": "Provisional Ball",
+      "definition": "A ball played under Rule 18.3 in case the ball just played is lost outside a penalty area or out of bounds."
+    },
+    {
+      "term": "Putting Green",
+      "definition": "The area on the hole being played that is specially prepared for putting, or otherwise defined as such by the Committee."
+    },
+    {
+      "term": "Relief Area",
+      "definition": "The area where a ball must be dropped and come to rest when taking relief under a Rule."
+    },
+    {
+      "term": "Round",
+      "definition": "18 or fewer holes played in the order set by the Committee."
+    },
+    {
+      "term": "Stance",
+      "definition": "The position of a player's feet and body in preparing for and making a stroke."
+    },
+    {
+      "term": "Stroke",
+      "definition": "The forward movement of the club made to strike the ball. A stroke has not been made if the player decides during the downswing not to strike the ball and consciously stops the club before it reaches the ball."
+    },
+    {
+      "term": "Teeing Area",
+      "definition": "A rectangular area two club-lengths deep, the front and sides of which are defined by the outside limits of two tee-markers."
+    },
+    {
+      "term": "Temporary Water",
+      "definition": "Any temporary accumulation of water on the surface of the ground that is not in a penalty area and can be seen before or after the player takes a stance."
+    },
+    {
+      "term": "Wrong Ball",
+      "definition": "Any ball other than the player's ball in play, provisional ball, or second ball played under Rule 14.2b or Rule 20.2."
+    },
+    {
+      "term": "Wrong Putting Green",
+      "definition": "Any putting green other than the one on the hole the player is playing."
+    }
+  ]
+}

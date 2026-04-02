@@ -7593,6 +7593,25 @@ export default function JazelApp() {
               <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
             
+            {/* Rules of Golf */}
+            <button
+              onClick={() => {
+                setShowSideMenu(false);
+                window.location.href = '/rules';
+              }}
+              className="flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-slate-100 transition-all text-left w-full group"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+                style={{background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'}}>
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">Rules of Golf</span>
+                <p className="text-xs text-muted-foreground">USGA & R&A official rules</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+            
             {/* User Guide */}
             <button
               onClick={() => {
@@ -7635,7 +7654,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.25 • Made with ❤️ for Golfers
+              Version 1.4.26 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -8456,7 +8475,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.25</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.26</p>
             </div>
             
             {/* Description */}
@@ -8502,7 +8521,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.25</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.26</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
