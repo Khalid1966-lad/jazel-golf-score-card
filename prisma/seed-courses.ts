@@ -45,7 +45,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 37 75 58 64",
     website: "https://royalgolfdaressalam.com",
     address: "Km 9, Avenue Mohamed VI, Rabat",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Mazagan Golf Club",
@@ -60,7 +60,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 23 34 90 00",
     website: "https://mazaganbeachresort.com",
     address: "Route de Casablanca, El Jadida",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Assoufid Golf Club",
@@ -75,7 +75,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 37 48 00",
     website: "https://assoufid.com",
     address: "Avenue Guemassa, Km 10, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Golf du Soleil",
@@ -90,7 +90,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 28 82 50 00",
     website: "https://golf-du-soleil.wheree.com",
     address: "BP 901 Chemin des Dunes, Agadir",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Royal Golf Marrakech",
@@ -105,7 +105,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 30 88 88",
     website: "https://royalgolfmarrakech.com",
     address: "Route de Ouarzazate, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Tazegzout Golf",
@@ -120,7 +120,7 @@ const moroccoGolfCourses = [
     phone: "+212 671 81 81 89",
     website: "https://tazegzout.com",
     address: "Taghazout Bay Resort, Route d'Essaouira, Agadir",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Fairmont Royal Palm Marrakech",
@@ -135,7 +135,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 48 78 00",
     website: "https://fairmont.com/marrakech",
     address: "Km 12 Route D'Amizmiz, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Samanah Golf Club",
@@ -150,7 +150,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 48 31 18",
     website: "https://mysamanah.com",
     address: "Km 14 Route d'Amizmiz, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "PalmGolf Marrakech Ourika",
@@ -165,7 +165,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 25 07 51 11",
     website: "https://palmgolfmarrakechourika.com",
     address: "Route de L'Ourika, Km 13, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Michlifen Golf & Country Club",
@@ -180,7 +180,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 35 86 40 00",
     website: "https://michlifen.com",
     address: "Avenue Hassan II, BP 18, Ifrane",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Al Maaden Golf Resort",
@@ -195,7 +195,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 25 50 65 06",
     website: "https://almaaden.golf",
     address: "Route d'Ouarzazate, Sidi Youssef Ben Ali, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Golf Les Dunes",
@@ -210,7 +210,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 28 83 45 59",
     website: "https://golflesdunesagadir.com",
     address: "Chemin Oued Souss, Agadir",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Royal Golf de Fès",
@@ -225,7 +225,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 35 66 52 10",
     website: "https://madaefgolfs.com",
     address: "Route Imouzar, Km 17, Fès",
-    status: "active",
+    isActive: true,
   },
   {
     name: "The Montgomerie Marrakech",
@@ -240,7 +240,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 39 06 44",
     website: "https://montgomeriemarrakech.com",
     address: "Avenue Guemassa, Route de l'Aéroport, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Royal Golf Agadir",
@@ -255,7 +255,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 28 82 51 00",
     website: "https://royalgolfagadir.com",
     address: "Km 12, Route Ait Melloul, Agadir",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Al Houara Golf Club",
@@ -270,7 +270,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 39 39 43 39",
     website: "https://alhouaragolf.com",
     address: "Km 19.8, Route Nationale Tangier-Asilah",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Royal Golf de Meknès",
@@ -285,7 +285,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 35 70 36 87",
     website: "https://royalgolfmeknes.ma",
     address: "J'nane Bahraouia - Bab Belkari, Meknès",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Amelkis Golf Club",
@@ -300,7 +300,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 40 43 43",
     website: "https://golfamelkis.com",
     address: "Km 12, Route de Ouarzazate, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Royal Golf Tangier",
@@ -315,7 +315,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 39 93 41 41",
     website: "https://royalgolftangier.com",
     address: "Route de Boubana, Tangier",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Palmeraie Golf Palace",
@@ -330,7 +330,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 33 90 00",
     website: "https://palmeraie-golf.com",
     address: "Route de Casablanca, Palmeraie, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Golf de Mogador",
@@ -345,7 +345,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 47 20 00",
     website: "https://mogadorgolf.com",
     address: "Route d'Agadir, Essaouira",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Noria Golf Club",
@@ -360,7 +360,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 32 32 32",
     website: "https://noriagolf.com",
     address: "Route de Casablanca, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Atlas Golf Marrakech",
@@ -375,7 +375,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 24 30 30 30",
     website: "https://atlasgolfmarrakech.com",
     address: "Route de l'Ourika, Marrakech",
-    status: "active",
+    isActive: true,
   },
   {
     name: "Ben Slimane Golf Club",
@@ -390,7 +390,7 @@ const moroccoGolfCourses = [
     phone: "+212 5 23 17 30 00",
     website: "https://benslimanegolf.com",
     address: "Route de Rabat, Ben Slimane",
-    status: "active",
+    isActive: true,
   }
 ];
 
@@ -449,7 +449,7 @@ async function main() {
           phone: courseData.phone,
           website: courseData.website,
           address: courseData.address,
-          status: courseData.status,
+          isActive: courseData.isActive,
         }
       });
       updated++;
@@ -471,7 +471,7 @@ async function main() {
           phone: courseData.phone,
           website: courseData.website,
           address: courseData.address,
-          status: courseData.status,
+          isActive: courseData.isActive,
         }
       });
       
