@@ -112,7 +112,7 @@ export async function PUT(
     }
     
     const body = await request.json();
-    const { name, city, region, country, latitude, longitude, totalHoles, description, designer, yearBuilt, phone, website, address, adminId: newAdminId } = body;
+    const { name, city, region, country, latitude, longitude, totalHoles, description, designer, yearBuilt, phone, website, address, isActive, adminId: newAdminId } = body;
 
     const course = await db.golfCourse.update({
       where: { id },
@@ -130,6 +130,7 @@ export async function PUT(
         phone,
         website,
         address,
+        isActive: isActive ?? true,
         // Only super admins can reassign courses
         ...(admin.isSuperAdmin && newAdminId !== undefined && { adminId: newAdminId || null })
       }
