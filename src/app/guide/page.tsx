@@ -147,10 +147,13 @@ export default function GuidePage() {
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => window.location.href = '/'}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to App</span>
-            </Link>
+            </button>
             <Separator orientation="vertical" className="h-6" />
             <h1 className="text-xl font-bold flex items-center gap-2">
               <BookOpen className="w-5 h-5" style={{ color: '#39638b' }} />
