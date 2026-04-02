@@ -1,6 +1,8 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSuperAdminEmail } from '@/lib/super-admin';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 
 // Map table names to Prisma model names
 const TABLE_TO_MODEL: Record<string, string> = {
@@ -410,6 +412,50 @@ async function insertRecords(
   return { count, errors, filteredFields };
 }
 
+// Restore static data files from backup
+function restoreStaticFiles(
+  staticFiles: Record<string, unknown>
+): { restored: string[]; errors: string[] } {
+  const restored: string[] = [];
+  const errors: string[] = [];
+
+  // Map static file names to their paths
+  const staticFilePaths: Record<string, string> = {
+    golf_rules: 'src/data/golf-rules.json',
+  };
+
+  for (const [name, data] of Object.entries(staticFiles)) {
+    if (!data) continue;
+
+    const filePath = staticFilePaths[name];
+    if (!filePath) {
+      errors.push(`Unknown static file: ${name}`);
+      continue;
+    }
+
+    try {
+      const fullPath = join(process.cwd(), filePath);
+      const dir = dirname(fullPath);
+
+      // Ensure directory exists
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+
+      // Write the file
+      writeFileSync(fullPath, JSON.stringify(data, null, 2), 'utf-8');
+      restored.push(name);
+      console.log(`Restored static file: ${name} -> ${filePath}`);
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+      errors.push(`Failed to restore ${name}: ${errorMsg}`);
+      console.error(`Error restoring static file ${name}:`, errorMsg);
+    }
+  }
+
+  return { restored, errors };
+}
+
 // POST /api/admin/restore - Restore database from JSON backup
 export async function POST(request: NextRequest) {
   try {
@@ -504,16 +550,27 @@ export async function POST(request: NextRequest) {
 
     // Calculate summary
     const totalImported = results.imported.reduce((sum, t) => sum + t.count, 0);
-    
+
+    // Step 3: Restore static files (if present in backup)
+    let staticFilesRestored: string[] = [];
+    if (backup.staticFiles) {
+      console.log('Restore: Restoring static files...');
+      const staticResult = restoreStaticFiles(backup.staticFiles as Record<string, unknown>);
+      staticFilesRestored = staticResult.restored;
+      results.errors.push(...staticResult.errors);
+      console.log('Restore: Static files restored:', staticFilesRestored);
+    }
+
     console.log('Restore: Complete. Total records imported:', totalImported);
-    
+
     return NextResponse.json({
       success: true,
-      message: `Database restored successfully! ${totalImported} records imported across ${results.imported.length} tables.`,
+      message: `Database restored successfully! ${totalImported} records imported across ${results.imported.length} tables.${staticFilesRestored.length > 0 ? ` ${staticFilesRestored.length} static files restored.` : ''}`,
       results: {
         tablesCleared: results.cleared.length,
         tablesImported: results.imported.length,
         totalRecords: totalImported,
+        staticFilesRestored,
         errors: results.errors.length,
         errorDetails: results.errors.slice(0, 20),
         filteredFields: [...new Set(results.filteredFields)],

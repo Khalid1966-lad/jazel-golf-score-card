@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,8 +57,6 @@ export default function RulesPage() {
   const [selectedPart, setSelectedPart] = useState<number | null>(null);
   const [selectedRule, setSelectedRule] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const [highlightedText, setHighlightedText] = useState<string>('');
 
   // Get data from imported JSON
@@ -66,12 +64,10 @@ export default function RulesPage() {
   const rules = golfRulesData.rules as Rule[];
   const definitions = golfRulesData.definitions;
 
-  // Search functionality
-  useEffect(() => {
+  // Search functionality - use useMemo instead of useEffect
+  const searchResults = useMemo(() => {
     if (searchQuery.trim().length < 2) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
+      return [];
     }
 
     const query = searchQuery.toLowerCase().trim();
@@ -123,7 +119,7 @@ export default function RulesPage() {
       // Search in sections
       const searchInSection = (section: RuleSection, parentNumber: string = '') => {
         const sectionKey = `${rule.id}-${section.number}`;
-        
+
         if (section.title.toLowerCase().includes(query)) {
           if (!seen.has(sectionKey)) {
             seen.add(sectionKey);
@@ -135,17 +131,17 @@ export default function RulesPage() {
             });
           }
         }
-        
+
         if (section.content.toLowerCase().includes(query)) {
           if (!seen.has(sectionKey)) {
             seen.add(sectionKey);
             const index = section.content.toLowerCase().indexOf(query);
             const start = Math.max(0, index - 50);
             const end = Math.min(section.content.length, index + query.length + 50);
-            const context = (start > 0 ? '...' : '') + 
-              section.content.substring(start, end) + 
+            const context = (start > 0 ? '...' : '') +
+              section.content.substring(start, end) +
               (end < section.content.length ? '...' : '');
-            
+
             results.push({
               rule,
               section,
@@ -161,14 +157,14 @@ export default function RulesPage() {
       rule.sections.forEach(section => searchInSection(section));
     });
 
-    setSearchResults(results.slice(0, 20));
-    setShowSearchResults(true);
+    return results.slice(0, 20);
   }, [searchQuery, rules]);
+
+  const showSearchResults = searchQuery.trim().length >= 2 && searchResults.length > 0;
 
   // Handle clicking on a search result
   const handleResultClick = (result: SearchResult) => {
     setSearchQuery('');
-    setShowSearchResults(false);
     setSelectedRule(result.rule.id);
     
     const part = parts.find(p => p.rules.includes(result.rule.number));
@@ -210,8 +206,6 @@ export default function RulesPage() {
   // Clear search
   const clearSearch = () => {
     setSearchQuery('');
-    setSearchResults([]);
-    setShowSearchResults(false);
   };
 
   return (
@@ -588,7 +582,6 @@ function SectionCard({
 }) {
   const isExpanded = expandedSections.has(section.number);
   const hasSubsections = section.subsections && section.subsections.length > 0;
-  const isLongContent = section.content.length > 150;
 
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -596,8 +589,8 @@ function SectionCard({
     return text.replace(regex, '<mark class="bg-yellow-200 px-0.5 rounded">$1</mark>');
   };
 
-  // All sections can be expanded to read full content
-  const canExpand = isLongContent || hasSubsections;
+  // All sections can be expanded to read full content - always allow expansion
+  const canExpand = true;
 
   return (
     <Card className={depth === 0 ? '' : 'border-l-4 border-l-blue-200'}>

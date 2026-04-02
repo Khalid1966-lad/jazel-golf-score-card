@@ -1,6 +1,8 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSuperAdminEmail } from '@/lib/super-admin';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 // Define table dependencies (child -> parent relationships)
 // Tables are restored in order: parents first, then children
@@ -328,6 +330,38 @@ async function fetchAllData() {
   return { data, statistics, errors };
 }
 
+// Fetch static data files (JSON files in src/data)
+async function fetchStaticDataFiles() {
+  const staticFiles: Record<string, unknown> = {};
+  const statistics: Record<string, number> = {};
+  const errors: string[] = [];
+
+  // List of static JSON files to backup
+  const staticFilePaths = [
+    { name: 'golf_rules', path: 'src/data/golf-rules.json' },
+  ];
+
+  for (const file of staticFilePaths) {
+    try {
+      const fullPath = join(process.cwd(), file.path);
+      if (existsSync(fullPath)) {
+        const content = readFileSync(fullPath, 'utf-8');
+        staticFiles[file.name] = JSON.parse(content);
+        statistics[file.name] = 1;
+      } else {
+        staticFiles[file.name] = null;
+        statistics[file.name] = 0;
+      }
+    } catch (e) {
+      errors.push(`${file.name}: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      staticFiles[file.name] = null;
+      statistics[file.name] = 0;
+    }
+  }
+
+  return { staticFiles, statistics, errors };
+}
+
 // GET /api/admin/backup - Export all database data as JSON
 export async function GET(request: NextRequest) {
   try {
@@ -366,20 +400,28 @@ export async function GET(request: NextRequest) {
     // Fetch all data
     const { data, statistics, errors } = await fetchAllData();
 
+    // Fetch static data files
+    const { staticFiles, statistics: staticStats, errors: staticErrors } = await fetchStaticDataFiles();
+
     console.log('Backup: Statistics:', statistics);
+    console.log('Backup: Static files:', staticStats);
     if (errors.length > 0) {
       console.log('Backup: Errors encountered:', errors);
+    }
+    if (staticErrors.length > 0) {
+      console.log('Backup: Static file errors:', staticErrors);
     }
 
     // Build backup object with metadata
     const backup = {
-      version: '2.0',
+      version: '2.1',
       schemaVersion: '2.0',
       exportDate: new Date().toISOString(),
       exportedBy: session.user.name || session.user.email,
-      statistics,
+      statistics: { ...statistics, ...staticStats },
       tableOrder: getTableRestoreOrder(),
       data,
+      staticFiles,
     };
 
     // Return as downloadable JSON file
