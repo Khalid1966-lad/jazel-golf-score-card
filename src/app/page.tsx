@@ -1231,7 +1231,7 @@ export default function JazelApp() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [golfers, setGolfers] = useState<Golfer[]>([]);
   const [golferSearch, setGolferSearch] = useState('');
-  const [golferSort, setGolferSort] = useState<'date' | 'rounds' | 'achievements'>('date');
+  const [golferSort, setGolferSort] = useState<'date' | 'rounds' | 'achievements'>('rounds');
   const [golferViewMode, setGolferViewMode] = useState<'cards' | 'list'>('cards');
   const [groups, setGroups] = useState<GolferGroup[]>([]);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
@@ -5241,7 +5241,7 @@ export default function JazelApp() {
                       Golfers
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Connect with other golfers in the community ({golfers.length} registered)
+                      Connect with the community ({golfers.length} registered)
                     </CardDescription>
                   </div>
                   {/* View Mode Toggle */}
@@ -5438,7 +5438,7 @@ export default function JazelApp() {
                           <TableHead className="font-semibold text-center hidden sm:table-cell" style={{color: '#39638b'}}>City</TableHead>
                           <TableHead className="font-semibold text-center hidden md:table-cell" style={{color: '#39638b'}}>Rounds</TableHead>
                           <TableHead className="font-semibold text-center hidden lg:table-cell" style={{color: '#39638b'}}>Level</TableHead>
-                          <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>Actions</TableHead>
+                          <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>Shared Card</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
