@@ -5440,7 +5440,9 @@ export default function JazelApp() {
                           <TableHead className="font-semibold text-center hidden sm:table-cell" style={{color: '#39638b'}}>City</TableHead>
                           <TableHead className="font-semibold text-center hidden md:table-cell" style={{color: '#39638b'}}>Rounds</TableHead>
                           <TableHead className="font-semibold text-center hidden lg:table-cell" style={{color: '#39638b'}}>Level</TableHead>
-                          <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>Shared Card</TableHead>
+                          <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>
+                            <span className="flex flex-col items-center leading-tight">Shared<br/>Card</span>
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -5515,8 +5517,7 @@ export default function JazelApp() {
                                         setViewingSharedScorecard(golfer);
                                       }}
                                     >
-                                      <ClipboardList className="w-3 h-3 mr-0.5" />
-                                      <span className="flex flex-col items-start"><span>Shared</span><span>Card</span></span>
+                                      <ClipboardList className="w-4 h-4" />
                                     </Button>
                                   )}
                                 </TableCell>
