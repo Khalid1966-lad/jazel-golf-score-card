@@ -493,6 +493,7 @@ function RoundHistoryCard({
   coursePar,
   relevantHoles,
   stablefordTotal,
+  roundHandicap,
   setRoundToView,
   downloadRoundAsXlsx,
   loadRoundForEditing,
