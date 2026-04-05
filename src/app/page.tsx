@@ -1219,7 +1219,7 @@ export default function JazelApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCountry, setFilterCountry] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
-  const [courseViewMode, setCourseViewMode] = useState<'cards' | 'list'>('cards');
+  const [courseViewMode, setCourseViewMode] = useState<'cards' | 'list'>('list');
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isNearbyMode, setIsNearbyMode] = useState(false);
@@ -1233,7 +1233,7 @@ export default function JazelApp() {
   const [golfers, setGolfers] = useState<Golfer[]>([]);
   const [golferSearch, setGolferSearch] = useState('');
   const [golferSort, setGolferSort] = useState<'date' | 'rounds' | 'achievements'>('rounds');
-  const [golferViewMode, setGolferViewMode] = useState<'cards' | 'list'>('cards');
+  const [golferViewMode, setGolferViewMode] = useState<'cards' | 'list'>('list');
   const [groups, setGroups] = useState<GolferGroup[]>([]);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
   const [viewingSharedScorecard, setViewingSharedScorecard] = useState<Golfer | null>(null);
