@@ -12,7 +12,7 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff
+  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -1215,6 +1215,8 @@ export default function JazelApp() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [courses, setCourses] = useState<GolfCourse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCountry, setFilterCountry] = useState<string>('all');
+  const [filterCity, setFilterCity] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isNearbyMode, setIsNearbyMode] = useState(false);
@@ -2055,6 +2057,26 @@ export default function JazelApp() {
     });
     return Array.from(cities).sort();
   }, [partnerRequests]);
+
+  // Course filter options derived from loaded courses
+  const courseCountries = useMemo(() => {
+    const countries = new Set<string>();
+    courses.forEach(c => { if (c.country) countries.add(c.country); });
+    return Array.from(countries).sort();
+  }, [courses]);
+
+  const courseCities = useMemo(() => {
+    const cities = new Set<string>();
+    courses.forEach(c => {
+      if (filterCountry === 'all' || c.country === filterCountry) {
+        if (c.city) cities.add(c.city);
+      }
+    });
+    return Array.from(cities).sort();
+  }, [courses, filterCountry]);
+
+  // Reset city filter when country changes
+  useEffect(() => { setFilterCity('all'); }, [filterCountry]);
 
   // Device orientation for compass - track which way device is facing
   useEffect(() => {
@@ -3521,22 +3543,53 @@ export default function JazelApp() {
           </div>
 
           {/* Course Search Tab */}
-          <TabsContent value="search" className="space-y-6">
-            {/* Search Bar */}
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search courses or cities (e.g., Marrakech, Rabat)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="pl-10 h-12 bg-white"
-                  style={{borderColor: '#a3c4e0'}}
-                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
-                  onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
-                />
+          <TabsContent value="search" className="space-y-4">
+            {/* Search Bar - full width */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder="Search courses or cities (e.g., Marrakech, Rabat)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-10 h-12 bg-white w-full"
+                style={{borderColor: '#a3c4e0'}}
+                onFocus={(e) => e.target.style.borderColor = '#39638b'}
+                onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
+              />
+            </div>
+
+            {/* Filters and Actions */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mr-1">
+                <Filter className="w-4 h-4" />
+                <span className="hidden sm:inline font-medium">Filter:</span>
               </div>
+              <Select value={filterCountry} onValueChange={setFilterCountry}>
+                <SelectTrigger className="w-auto min-w-[130px] h-9 text-sm" style={{borderColor: '#a3c4e0'}}>
+                  <SelectValue placeholder="Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {courseCountries.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterCity} onValueChange={setFilterCity}>
+                <SelectTrigger className="w-auto min-w-[130px] h-9 text-sm" style={{borderColor: '#a3c4e0'}}>
+                  <SelectValue placeholder="City" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cities</SelectItem>
+                  {courseCities.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex-1" />
+
               <Button
                 onClick={() => {
                   setShowFavoritesOnly(!showFavoritesOnly);
@@ -3545,21 +3598,23 @@ export default function JazelApp() {
                   }
                 }}
                 variant={showFavoritesOnly ? 'default' : 'outline'}
-                className={`h-12 px-4 ${showFavoritesOnly ? 'bg-red-500 hover:bg-red-600' : 'border-red-200 hover:bg-red-50'}`}
+                size="sm"
+                className={`h-9 px-3 ${showFavoritesOnly ? 'bg-red-500 hover:bg-red-600' : 'border-red-200 hover:bg-red-50'}`}
               >
-                <Heart className={`w-5 h-5 mr-2 ${showFavoritesOnly ? 'fill-white' : ''}`} />
+                <Heart className={`w-4 h-4 mr-1.5 ${showFavoritesOnly ? 'fill-white' : ''}`} />
                 Favorites
               </Button>
               <Button
                 onClick={getUserLocation}
                 variant="outline"
+                size="sm"
                 disabled={isGettingLocation}
-                className="h-12 px-4"
+                className="h-9 px-3"
                 style={{borderColor: '#a3c4e0'}}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d6e4ef'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <Navigation className={`w-5 h-5 mr-2 ${isGettingLocation ? 'animate-spin' : ''}`} />
+                <Navigation className={`w-4 h-4 mr-1.5 ${isGettingLocation ? 'animate-spin' : ''}`} />
                 {isGettingLocation ? 'Locating...' : 'Near Me'}
               </Button>
             </div>
@@ -3640,7 +3695,12 @@ export default function JazelApp() {
                   const aFav = favoriteIds.includes(a.id) ? 0 : 1;
                   const bFav = favoriteIds.includes(b.id) ? 0 : 1;
                   return aFav - bFav;
-                })).map((course, index) => (
+                }))
+                .filter(c => {
+                  if (filterCountry !== 'all' && c.country !== filterCountry) return false;
+                  if (filterCity !== 'all' && c.city !== filterCity) return false;
+                  return true;
+                }).map((course, index) => (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 20 }}
