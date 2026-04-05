@@ -3544,23 +3544,25 @@ export default function JazelApp() {
 
           {/* Course Search Tab */}
           <TabsContent value="search" className="space-y-4">
-            {/* Search Bar - full width */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search courses or cities (e.g., Marrakech, Rabat)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 h-12 bg-white w-full"
-                style={{borderColor: '#a3c4e0'}}
-                onFocus={(e) => e.target.style.borderColor = '#39638b'}
-                onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
-              />
+            {/* Search Bar - full width, centered */}
+            <div className="flex justify-center">
+              <div className="relative w-full max-w-lg">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search courses or cities (e.g., Marrakech, Rabat)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="pl-10 h-12 bg-white w-full"
+                  style={{borderColor: '#a3c4e0'}}
+                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
+                  onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
+                />
+              </div>
             </div>
 
-            {/* Filters and Actions */}
-            <div className="flex flex-wrap gap-2 items-center">
+            {/* Filters and Actions - centered */}
+            <div className="flex flex-wrap gap-2 items-center justify-center">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground mr-1">
                 <Filter className="w-4 h-4" />
                 <span className="hidden sm:inline font-medium">Filter:</span>
@@ -3588,7 +3590,7 @@ export default function JazelApp() {
                 </SelectContent>
               </Select>
 
-              <div className="flex-1" />
+              <div className="w-px h-6 bg-muted mx-1 hidden sm:block" />
 
               <Button
                 onClick={() => {
