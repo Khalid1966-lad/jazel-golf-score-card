@@ -5015,6 +5015,57 @@ export default function JazelApp() {
                     </CardContent>
                   </Card>
                 )}
+                {/* Stableford Summary for Additional Players */}
+                {additionalPlayers.filter(p => p.handicap && p.handicap > 0).map((player, idx) => {
+                  const pIdx = idx + 1;
+                  const pScores = playerScores.get(pIdx) || [];
+                  let pTotal = 0;
+                  let pStrokesRcvd = 0;
+                  let pHasScores = false;
+                  selectedCourse.holes.filter(h => {
+                    if (holesPlayed === 9) {
+                      return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
+                    }
+                    return true;
+                  }).forEach(h => {
+                    const strokesRcvd = getStrokesReceived(h.handicap || null, player.handicap || null);
+                    pStrokesRcvd += strokesRcvd;
+                    const pScore = pScores.find(s => s.holeNumber === h.holeNumber);
+                    if (pScore && pScore.strokes > 0) {
+                      pHasScores = true;
+                      pTotal += getStablefordPointsEarned(pScore.strokes, h.par || 4, strokesRcvd);
+                    }
+                  });
+                  if (!pHasScores) return null;
+                  return (
+                    <Card key={player.id} className="bg-white/80 backdrop-blur">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-amber-500" />
+                            <span className="text-sm font-semibold" style={{color: '#39638b'}}>
+                              {player.name || 'Player'} - Stableford
+                            </span>
+                            <Badge variant="outline" className="text-xs">HCP {player.handicap}</Badge>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-center">
+                              <p className="text-xl font-bold" style={{color: '#39638b'}}>
+                                {pTotal} points
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[10px] text-muted-foreground">Strokes Rcvd</p>
+                              <p className="text-xl font-bold text-gray-400">
+                                {pStrokesRcvd}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
