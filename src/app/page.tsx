@@ -1310,6 +1310,8 @@ export default function JazelApp() {
 
   // Player profile view state
   const [playerToView, setPlayerToView] = useState<{ name: string; avatar?: string | null; handicap?: number | null; userId?: string | null } | null>(null);
+  const [playerProfileStats, setPlayerProfileStats] = useState<{ timesPlayedTogether: number; totalPoints: number; earnedCount: number; level: string; nextLevel: string; pointsToNext: number } | null>(null);
+  const [playerProfileLoading, setPlayerProfileLoading] = useState(false);
 
   // Weather state
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -1992,6 +1994,25 @@ export default function JazelApp() {
       fetchWeather(userLocation);
     }
   }, [userLocation]);
+
+  // Fetch player profile stats when playerToView dialog opens
+  useEffect(() => {
+    if (playerToView?.userId && user?.id) {
+      setPlayerProfileLoading(true);
+      setPlayerProfileStats(null);
+      fetch(`/api/player-profile-stats?targetUserId=${playerToView.userId}&currentUserId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) {
+            setPlayerProfileStats(data);
+          }
+        })
+        .catch(err => console.error('Error fetching player profile stats:', err))
+        .finally(() => setPlayerProfileLoading(false));
+    } else {
+      setPlayerProfileStats(null);
+    }
+  }, [playerToView, user?.id]);
 
   // Refetch golfers when group filter changes
   useEffect(() => {
@@ -7826,14 +7847,88 @@ export default function JazelApp() {
               <h3 className="text-xl font-semibold mb-2">{playerToView.name}</h3>
               {/* Handicap */}
               {playerToView.handicap !== null && playerToView.handicap !== undefined && (
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 text-muted-foreground mb-3">
                   <Trophy className="w-4 h-4" />
                   <span>Handicap: {playerToView.handicap}</span>
                 </div>
               )}
+
+              {/* Stats Section - Loading */}
+              {playerProfileLoading && (
+                <div className="w-full mt-2 flex flex-col items-center gap-3 py-4">
+                  <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{borderColor: '#39638b', borderTopColor: 'transparent'}} />
+                  <span className="text-sm text-muted-foreground">Loading stats...</span>
+                </div>
+              )}
+
+              {/* Stats Section - Loaded */}
+              {!playerProfileLoading && playerProfileStats && (
+                <div className="w-full mt-2 space-y-3">
+                  {/* Times played together */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/60">
+                    <div className="flex items-center gap-2 text-sm">
+                      <svg className="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      <span className="text-muted-foreground">Played together</span>
+                    </div>
+                    <span className="font-semibold text-sm">{playerProfileStats.timesPlayedTogether} {playerProfileStats.timesPlayedTogether === 1 ? 'time' : 'times'}</span>
+                  </div>
+
+                  {/* Level */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/60">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-base">🏅</span>
+                      <span className="text-muted-foreground">Level</span>
+                    </div>
+                    <span className="font-semibold text-sm" style={{color: '#39638b'}}>{playerProfileStats.level}</span>
+                  </div>
+
+                  {/* Achievement points */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/60">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-base">⭐</span>
+                      <span className="text-muted-foreground">Achievement Pts</span>
+                    </div>
+                    <span className="font-semibold text-sm">{playerProfileStats.totalPoints} pts</span>
+                  </div>
+
+                  {/* Badges earned */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/60">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-base">🏆</span>
+                      <span className="text-muted-foreground">Badges Earned</span>
+                    </div>
+                    <span className="font-semibold text-sm">{playerProfileStats.earnedCount}</span>
+                  </div>
+
+                  {/* Progress to next level */}
+                  {playerProfileStats.level !== 'Immortal' && (
+                    <div className="px-3 py-2.5 rounded-lg bg-muted/60">
+                      <div className="flex items-center justify-between text-sm mb-1.5">
+                        <span className="text-muted-foreground">Next: {playerProfileStats.nextLevel}</span>
+                        <span className="text-xs text-muted-foreground">{playerProfileStats.pointsToNext} pts needed</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, ((playerProfileStats.totalPoints / (playerProfileStats.totalPoints + playerProfileStats.pointsToNext)) * 100))}%`,
+                            background: 'linear-gradient(to right, #39638b, #4a7aa8)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Profile link hint */}
               {playerToView.userId && (
-                <p className="text-xs text-muted-foreground mt-4 text-center">
+                <p className="text-xs text-muted-foreground mt-3 text-center">
                   Find this golfer in the Golfers tab to see their full profile
                 </p>
               )}
