@@ -1239,6 +1239,7 @@ export default function JazelApp() {
   const [viewingSharedScorecard, setViewingSharedScorecard] = useState<Golfer | null>(null);
   const [newBadges, setNewBadges] = useState<Array<{ code: string; name: string; description: string; icon: string; points: number; category: string }>>([]);
   const [showBadgeCongrats, setShowBadgeCongrats] = useState(false);
+  const [showNoBadges, setShowNoBadges] = useState(false);
   const [showAICaddie, setShowAICaddie] = useState(false);
   const [currentHoleInfo, setCurrentHoleInfo] = useState<{ par: number; distance: number } | null>(null);
   const [showMapScreen, setShowMapScreen] = useState(false);
@@ -2960,17 +2961,21 @@ export default function JazelApp() {
           await fetchRounds();
           await fetchStats();
           
+          // Switch to history tab
+          setActiveTab('history');
+          
           // Check for new badges on completed round
           if (completed && user) {
+            toast.loading('Looking for new badges won...', { id: 'badge-check' });
             try {
               const badgeRes = await fetch('/api/achievements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id }),
               });
+              toast.dismiss('badge-check');
               const badgeData = await badgeRes.json();
               if (badgeRes.ok && badgeData.awardedBadges && badgeData.awardedBadges.length > 0) {
-                // Fetch all achievements to get details for awarded badges
                 const allAchRes = await fetch(`/api/achievements?userId=${user.id}`);
                 const allAchData = await allAchRes.json();
                 const allDefs = allAchData.achievements || [];
@@ -2978,15 +2983,19 @@ export default function JazelApp() {
                 if (earned.length > 0) {
                   setNewBadges(earned);
                   setShowBadgeCongrats(true);
+                } else {
+                  setShowNoBadges(true);
+                  setTimeout(() => setShowNoBadges(false), 3000);
                 }
+              } else {
+                setShowNoBadges(true);
+                setTimeout(() => setShowNoBadges(false), 3000);
               }
             } catch (e) {
+              toast.dismiss('badge-check');
               console.error('Badge check error:', e);
             }
           }
-          
-          // Switch to history tab
-          setActiveTab('history');
         } else {
           toast.error(data.error || 'Failed to update round');
         }
@@ -3031,14 +3040,19 @@ export default function JazelApp() {
           await fetchRounds();
           await fetchStats();
           
+          // Switch to history tab
+          setActiveTab('history');
+          
           // Check for new badges on completed round
           if (completed && user) {
+            toast.loading('Looking for new badges won...', { id: 'badge-check' });
             try {
               const badgeRes = await fetch('/api/achievements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id }),
               });
+              toast.dismiss('badge-check');
               const badgeData = await badgeRes.json();
               if (badgeRes.ok && badgeData.awardedBadges && badgeData.awardedBadges.length > 0) {
                 const allAchRes = await fetch(`/api/achievements?userId=${user.id}`);
@@ -3048,15 +3062,19 @@ export default function JazelApp() {
                 if (earned.length > 0) {
                   setNewBadges(earned);
                   setShowBadgeCongrats(true);
+                } else {
+                  setShowNoBadges(true);
+                  setTimeout(() => setShowNoBadges(false), 3000);
                 }
+              } else {
+                setShowNoBadges(true);
+                setTimeout(() => setShowNoBadges(false), 3000);
               }
             } catch (e) {
+              toast.dismiss('badge-check');
               console.error('Badge check error:', e);
             }
           }
-          
-          // Switch to history tab
-          setActiveTab('history');
         } else {
           toast.error(data.error || 'Failed to save round');
         }
@@ -9217,6 +9235,30 @@ export default function JazelApp() {
           {user && (
             <BadgeCollection userId={user.id} />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* No New Badges Found Dialog */}
+      <Dialog open={showNoBadges} onOpenChange={() => setShowNoBadges(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                className="text-4xl"
+              >
+                🔍
+              </motion.div>
+            </div>
+            <DialogTitle className="text-lg" style={{color: '#39638b'}}>
+              No new badges found
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground mt-1">
+              Keep playing and improving to unlock more achievements!
+            </DialogDescription>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
 
