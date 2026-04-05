@@ -554,27 +554,28 @@ function RoundHistoryCard({
               </p>
               <p className="text-xs mt-0.5" style={{color: '#39638b'}}>{holesInfo}</p>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-base font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
-                <p className="text-xs text-muted-foreground">strokes</p>
-              </div>
-              <div className="text-center">
-                <p className={`text-sm font-bold ${
-                  vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'
-                }`}>
-                  {(vsPar > 0 ? '+' : '') + vsPar}
-                </p>
-                <p className="text-xs text-muted-foreground">+/-</p>
-              </div>
-              {stablefordTotal !== null && (
-                <div className="text-center">
-                  <p className="text-sm font-bold text-amber-600">{stablefordTotal}</p>
-                  <p className="text-xs text-muted-foreground">Stableford</p>
-                </div>
-              )}
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          </div>
+          {/* Stats row - bottom, centered */}
+          <div className="flex items-center justify-center gap-8 mt-2">
+            <div className="text-center">
+              <p className="text-2xl font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
+              <p className="text-xs text-muted-foreground">strokes</p>
             </div>
+            <div className="text-center">
+              <p className={`text-xl font-bold ${
+                vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'
+              }`}>
+                {(vsPar > 0 ? '+' : '') + vsPar}
+              </p>
+              <p className="text-xs text-muted-foreground">+/-</p>
+            </div>
+            {stablefordTotal !== null && (
+              <div className="text-center">
+                <p className="text-xl font-bold text-amber-600">{stablefordTotal}</p>
+                <p className="text-xs text-muted-foreground">Stableford</p>
+              </div>
+            )}
           </div>
 
           {/* Expanded content */}
@@ -4282,7 +4283,7 @@ export default function JazelApp() {
                           </div>
                           {/* Stableford: Points Earned */}
                           <div className="text-center flex flex-col items-center gap-0.5">
-                            <span className="text-[10px] text-white/70 leading-tight">Pts</span>
+                            <span className="text-[10px] text-white/70 leading-tight">Stbfd</span>
                             <span className="text-[9px] text-white/50 leading-tight">Earned</span>
                           </div>
                         </div>
@@ -7137,7 +7138,7 @@ export default function JazelApp() {
                                 {user?.handicap && user.handicap > 0 && (
                                   <tr className="bg-emerald-50/50">
                                     <td className="px-1 py-1 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#065f46'}}>
-                                      <span className="text-[10px] leading-tight">Pts<br/>Earned</span>
+                                      <span className="text-[10px] leading-tight">Stbfd<br/>Earned</span>
                                     </td>
                                     {filteredHoles.map(hole => {
                                       const score = mainScores.find(s => s.holeNumber === hole.holeNumber);
