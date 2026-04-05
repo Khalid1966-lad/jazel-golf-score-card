@@ -13,7 +13,7 @@ import {
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
   Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
-  LayoutGrid, List as ListIcon
+  LayoutGrid, List as ListIcon, ClipboardList
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -5241,7 +5241,9 @@ export default function JazelApp() {
                       Golfers
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Connect with the community ({golfers.length} registered)
+                      Connect with the community
+                      <br />
+                      <span className="text-xs">({golfers.length} registered)</span>
                     </CardDescription>
                   </div>
                   {/* View Mode Toggle */}
@@ -5506,15 +5508,15 @@ export default function JazelApp() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="text-xs"
+                                      className="text-xs whitespace-normal leading-tight h-auto py-1.5 px-2"
                                       style={{borderColor: '#8ab0d1', color: '#39638b'}}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setViewingSharedScorecard(golfer);
                                       }}
                                     >
-                                      <BookOpen className="w-3 h-3 mr-1" />
-                                      View
+                                      <ClipboardList className="w-3 h-3 mr-0.5" />
+                                      <span className="flex flex-col items-start"><span>Shared</span><span>Card</span></span>
                                     </Button>
                                   )}
                                 </TableCell>
