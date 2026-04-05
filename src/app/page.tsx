@@ -4281,10 +4281,9 @@ export default function JazelApp() {
                             <span className="text-[10px] text-white/70 leading-tight">Strokes</span>
                             <span className="text-[9px] text-white/50 leading-tight">Given</span>
                           </div>
-                          {/* Stableford: Points Earned */}
-                          <div className="text-center flex flex-col items-center gap-0.5">
+                          {/* Stableford: Stbfd points */}
+                          <div className="text-center">
                             <span className="text-[10px] text-white/70 leading-tight">Stbfd</span>
-                            <span className="text-[9px] text-white/50 leading-tight">Earned</span>
                           </div>
                         </div>
 
@@ -4669,7 +4668,7 @@ export default function JazelApp() {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-center">
-                            <p className="text-[10px] text-muted-foreground">Earned</p>
+                            <p className="text-[10px] text-muted-foreground">Stbfd</p>
                             <p className="text-xl font-bold" style={{color: '#39638b'}}>
                               {(() => {
                                 let total = 0;
@@ -7138,7 +7137,7 @@ export default function JazelApp() {
                                 {user?.handicap && user.handicap > 0 && (
                                   <tr className="bg-emerald-50/50">
                                     <td className="px-1 py-1 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#065f46'}}>
-                                      <span className="text-[10px] leading-tight">Stbfd<br/>Earned</span>
+                                      <span className="text-[10px] leading-tight">Stbfd</span>
                                     </td>
                                     {filteredHoles.map(hole => {
                                       const score = mainScores.find(s => s.holeNumber === hole.holeNumber);
@@ -7207,7 +7206,7 @@ export default function JazelApp() {
                                           const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null);
                                           return sum + getStablefordPointsEarned(score.strokes, h.par, strokesRcvd);
                                         }, 0);
-                                      })()} Points Earned
+                                      })()} Stbfd
                                     </td>
                                     <td className="px-1 py-1.5 text-center font-bold text-amber-700 bg-amber-50">
                                       {(() => {
