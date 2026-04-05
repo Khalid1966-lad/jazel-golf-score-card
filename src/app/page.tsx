@@ -5016,12 +5016,12 @@ export default function JazelApp() {
                   </Card>
                 )}
                 {/* Stableford Summary for Additional Players */}
-                {additionalPlayers.filter(p => p.handicap && p.handicap > 0).map((player, idx) => {
+                {additionalPlayers.map((player, idx) => {
+                  if (!player.handicap || player.handicap <= 0) return null;
                   const pIdx = idx + 1;
                   const pScores = playerScores.get(pIdx) || [];
                   let pTotal = 0;
                   let pStrokesRcvd = 0;
-                  let pHasScores = false;
                   selectedCourse.holes.filter(h => {
                     if (holesPlayed === 9) {
                       return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
@@ -5032,11 +5032,9 @@ export default function JazelApp() {
                     pStrokesRcvd += strokesRcvd;
                     const pScore = pScores.find(s => s.holeNumber === h.holeNumber);
                     if (pScore && pScore.strokes > 0) {
-                      pHasScores = true;
                       pTotal += getStablefordPointsEarned(pScore.strokes, h.par || 4, strokesRcvd);
                     }
                   });
-                  if (!pHasScores) return null;
                   return (
                     <Card key={player.id} className="bg-white/80 backdrop-blur">
                       <CardContent className="p-3">
