@@ -48,8 +48,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // --- Times played together ---
-    // Case 1: current user's rounds where target is in playerNames
+    // --- Times played together (only from current user's rounds) ---
     const myRounds = await db.round.findMany({
       where: {
         userId: currentUserId,
@@ -58,35 +57,14 @@ export async function GET(request: NextRequest) {
       select: { id: true, playerNames: true },
     });
 
-    // Case 2: target user's rounds where current user is in playerNames
-    const theirRounds = await db.round.findMany({
-      where: {
-        userId: targetUserId,
-        playerNames: { not: null },
-      },
-      select: { id: true, playerNames: true },
-    });
-
     let timesPlayedTogether = 0;
 
-    // Count from my rounds: check if targetUserId appears in playerNames JSON
+    // Count from current user's rounds: check if targetUserId appears in playerNames JSON
     for (const round of myRounds) {
       if (round.playerNames) {
         try {
           const players: Array<{ userId?: string | null }> = JSON.parse(round.playerNames);
           if (players.some((p) => p.userId === targetUserId)) {
-            timesPlayedTogether++;
-          }
-        } catch {}
-      }
-    }
-
-    // Count from their rounds: check if currentUserId appears in playerNames JSON
-    for (const round of theirRounds) {
-      if (round.playerNames) {
-        try {
-          const players: Array<{ userId?: string | null }> = JSON.parse(round.playerNames);
-          if (players.some((p) => p.userId === currentUserId)) {
             timesPlayedTogether++;
           }
         } catch {}
