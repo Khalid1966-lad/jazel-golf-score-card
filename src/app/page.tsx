@@ -5579,7 +5579,8 @@ export default function JazelApp() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.03 }}
                       >
-                        <Card className={`transition-all overflow-hidden border-l-4 ${levelStyle.border}`}
+                        <Card className={`transition-all overflow-hidden border-l-4 cursor-pointer ${levelStyle.border}`}
+                          onClick={() => setPlayerToView({ name: golfer.name || 'Anonymous Golfer', avatar: golfer.avatar, handicap: golfer.handicap, userId: golfer.id })}
                           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
                           <div className={`px-3 py-1.5 ${levelStyle.bg} flex items-center justify-between`}>
@@ -5653,7 +5654,7 @@ export default function JazelApp() {
                                   setViewingSharedScorecard(golfer);
                                 }}
                               >
-                                <BookOpen className="w-3 h-3 mr-1" />
+                                <ClipboardList className="w-4 h-4 mr-1" />
                                 View Shared Scorecard
                               </Button>
                             )}
@@ -5699,7 +5700,7 @@ export default function JazelApp() {
                             const levelStyle = getLevelStyle(golfer.achievementLevel || 'Beginner');
                             return (
                               <TableRow key={golfer.id} className="hover:bg-muted/50 cursor-pointer transition-colors"
-                                onClick={() => golfer.lastSharedRound && setViewingSharedScorecard(golfer)}>
+                                onClick={() => setPlayerToView({ name: golfer.name || 'Anonymous Golfer', avatar: golfer.avatar, handicap: golfer.handicap, userId: golfer.id })}>
                                 <TableCell>
                                   <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
