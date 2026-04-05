@@ -12,7 +12,8 @@ import {
   BarChart3, TrendingDown, Download, CloudRain, CloudSnow,
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
-  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter
+  Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
+  LayoutGrid, List as ListIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -31,6 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   formatTemperature, 
   convertWindSpeed, 
@@ -1230,6 +1232,7 @@ export default function JazelApp() {
   const [golfers, setGolfers] = useState<Golfer[]>([]);
   const [golferSearch, setGolferSearch] = useState('');
   const [golferSort, setGolferSort] = useState<'date' | 'rounds' | 'achievements'>('date');
+  const [golferViewMode, setGolferViewMode] = useState<'cards' | 'list'>('cards');
   const [groups, setGroups] = useState<GolferGroup[]>([]);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
   const [viewingSharedScorecard, setViewingSharedScorecard] = useState<Golfer | null>(null);
@@ -5231,13 +5234,34 @@ export default function JazelApp() {
           <TabsContent value="golfers" className="space-y-4">
             <Card className="bg-white/80 backdrop-blur">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" style={{color: '#39638b'}} />
-                  Golfers
-                </CardTitle>
-                <CardDescription>
-                  Connect with other golfers in the community ({golfers.length} registered)
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5" style={{color: '#39638b'}} />
+                      Golfers
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Connect with other golfers in the community ({golfers.length} registered)
+                    </CardDescription>
+                  </div>
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center border rounded-lg overflow-hidden" style={{borderColor: '#a3c4e0'}}>
+                    <button
+                      onClick={() => setGolferViewMode('cards')}
+                      className={`p-2 transition-colors ${golferViewMode === 'cards' ? 'bg-[#39638b] text-white' : 'bg-white text-muted-foreground hover:bg-muted'}`}
+                      title="Cards view"
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setGolferViewMode('list')}
+                      className={`p-2 transition-colors ${golferViewMode === 'list' ? 'bg-[#39638b] text-white' : 'bg-white text-muted-foreground hover:bg-muted'}`}
+                      title="List view"
+                    >
+                      <ListIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {/* Filter and Search Row */}
@@ -5293,7 +5317,7 @@ export default function JazelApp() {
                         : 'No golfers registered yet'}
                     </p>
                   </div>
-                ) : (
+                ) : golferViewMode === 'cards' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {golfers
                       .filter((golfer) => 
@@ -5309,7 +5333,7 @@ export default function JazelApp() {
                         if (golferSort === 'achievements') {
                           return (b.achievementPoints || 0) - (a.achievementPoints || 0);
                         }
-                        return 0; // Default order (by date from API)
+                        return 0;
                       })
                       .map((golfer, index) => {
                         const levelStyle = getLevelStyle(golfer.achievementLevel || 'Beginner');
@@ -5323,7 +5347,6 @@ export default function JazelApp() {
                         <Card className={`transition-all overflow-hidden border-l-4 ${levelStyle.border}`}
                           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                          {/* Achievement Level Banner */}
                           <div className={`px-3 py-1.5 ${levelStyle.bg} flex items-center justify-between`}>
                             <div className="flex items-center gap-1.5">
                               <Star className={`w-4 h-4 ${levelStyle.text} ${golfer.achievementLevel === 'Immortal' ? 'fill-amber-500' : ''}`} />
@@ -5384,7 +5407,6 @@ export default function JazelApp() {
                                 })}
                               </span>
                             </div>
-                            {/* Shared Scorecard Button */}
                             {golfer.lastSharedRound && (
                               <Button
                                 variant="outline"
@@ -5404,6 +5426,103 @@ export default function JazelApp() {
                         </Card>
                       </motion.div>
                     );})}
+                  </div>
+                ) : (
+                  /* LIST VIEW - Table */
+                  <div className="rounded-lg border overflow-hidden" style={{borderColor: '#a3c4e0'}}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow style={{backgroundColor: '#f0f6fc'}}>
+                          <TableHead className="font-semibold" style={{color: '#39638b'}}>Player</TableHead>
+                          <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>Handicap</TableHead>
+                          <TableHead className="font-semibold text-center hidden sm:table-cell" style={{color: '#39638b'}}>City</TableHead>
+                          <TableHead className="font-semibold text-center hidden md:table-cell" style={{color: '#39638b'}}>Rounds</TableHead>
+                          <TableHead className="font-semibold text-center hidden lg:table-cell" style={{color: '#39638b'}}>Level</TableHead>
+                          <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {golfers
+                          .filter((golfer) => 
+                            golferSearch === '' || 
+                            golfer.name?.toLowerCase().includes(golferSearch.toLowerCase()) ||
+                            golfer.city?.toLowerCase().includes(golferSearch.toLowerCase()) ||
+                            golfer.country?.toLowerCase().includes(golferSearch.toLowerCase())
+                          )
+                          .sort((a, b) => {
+                            if (golferSort === 'rounds') {
+                              return (b._count?.rounds || 0) - (a._count?.rounds || 0);
+                            }
+                            if (golferSort === 'achievements') {
+                              return (b.achievementPoints || 0) - (a.achievementPoints || 0);
+                            }
+                            return 0;
+                          })
+                          .map((golfer) => {
+                            const levelStyle = getLevelStyle(golfer.achievementLevel || 'Beginner');
+                            return (
+                              <TableRow key={golfer.id} className="hover:bg-muted/50 cursor-pointer transition-colors"
+                                onClick={() => golfer.lastSharedRound && setViewingSharedScorecard(golfer)}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                                      style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                                      {golfer.avatar ? (
+                                        <img src={golfer.avatar} alt={golfer.name || 'Golfer'} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-sm font-bold text-white">{golfer.name?.charAt(0).toUpperCase() || '?'}</span>
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-sm truncate">{golfer.name || 'Anonymous Golfer'}</p>
+                                      <p className="text-xs text-muted-foreground truncate sm:hidden">
+                                        {golfer.city || golfer.country || '-'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className="text-sm font-medium" style={{color: '#39638b'}}>
+                                    {golfer.handicap !== null ? golfer.handicap : '-'}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-center hidden sm:table-cell">
+                                  <span className="text-sm text-muted-foreground">
+                                    {golfer.city || '-'}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-center hidden md:table-cell">
+                                  <span className="text-sm text-muted-foreground">
+                                    {golfer._count?.rounds || 0}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-center hidden lg:table-cell">
+                                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${levelStyle.bg} ${levelStyle.text}`}>
+                                    {golfer.achievementLevel || 'Beginner'}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {golfer.lastSharedRound && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs"
+                                      style={{borderColor: '#8ab0d1', color: '#39638b'}}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setViewingSharedScorecard(golfer);
+                                      }}
+                                    >
+                                      <BookOpen className="w-3 h-3 mr-1" />
+                                      View
+                                    </Button>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </CardContent>

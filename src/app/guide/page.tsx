@@ -1818,6 +1818,33 @@ function AchievementsSection() {
         </CardContent>
       </Card>
 
+      {/* FAIRWAY BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🎯</span> Fairway Badges
+          </CardTitle>
+          <CardDescription>Fairways hit per round</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🎯', name: 'Fairway Sharp', desc: 'Hit 5 fairways in a single round', pts: '10 pts' },
+              { icon: '🏆', name: 'Fairway Master', desc: 'Hit 10 fairways in a single round', pts: '25 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* GIR BADGES */}
       <Card>
         <CardHeader>

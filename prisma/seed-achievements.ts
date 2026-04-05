@@ -469,6 +469,28 @@ const achievements = [
     sortOrder: 112,
   },
 
+  // ==================== FAIRWAY BADGES ====================
+  {
+    code: 'fairway_5_round',
+    name: 'Fairway Sharp',
+    description: 'Hit 5 fairways in a single round',
+    icon: '🎯',
+    category: 'fairway',
+    points: 10,
+    threshold: 5,
+    sortOrder: 113,
+  },
+  {
+    code: 'fairway_10_round',
+    name: 'Fairway Master',
+    description: 'Hit 10 fairways in a single round',
+    icon: '🏆',
+    category: 'fairway',
+    points: 25,
+    threshold: 10,
+    sortOrder: 114,
+  },
+
   // ==================== GIR (GREEN IN REGULATION) BADGES ====================
   {
     code: 'gir_5_round',
