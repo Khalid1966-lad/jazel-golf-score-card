@@ -321,8 +321,8 @@ async function revokeAchievement(userId: string, code: string): Promise<boolean>
   }
 }
 
-// POST - Re-check, validate, and award all eligible achievements for a user
-// Note: Badges are validated against actual round data and may be removed if not deserved
+// POST - Re-check and award all eligible achievements for a user
+// Note: Badges are permanent once earned and never removed
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json();
@@ -688,126 +688,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ==================== VALIDATE ALL BADGES ====================
-    // Check each earned badge against actual data and revoke if not deserved
-    const revokedBadges: string[] = [];
-    const earnedCodes = await db.userAchievement.findMany({
-      where: { userId },
-      select: { achievementId: true }
-    });
-    const earnedAchievements = await db.achievement.findMany({
-      where: { id: { in: earnedCodes.map(e => e.achievementId) } },
-      select: { id: true, code: true }
-    });
-    const earnedCodeSet = new Set(earnedAchievements.map(a => a.code));
-
-    // Helper: revoke if earned but not deserved
-    const revokeIfUnearned = async (code: string, deserved: boolean) => {
-      if (!deserved && earnedCodeSet.has(code)) {
-        if (await revokeAchievement(userId, code)) revokedBadges.push(code);
-      }
-    };
-
-    // Profile badges
-    await revokeIfUnearned('profile_complete', !!(user?.name && user?.city && user?.country));
-    await revokeIfUnearned('photo_added', !!user?.avatar);
-    await revokeIfUnearned('handicap_set', user?.handicap !== null && user?.handicap !== undefined);
-
-    // Club badges
-    await revokeIfUnearned('first_club', clubCount >= 1);
-    await revokeIfUnearned('bag_ready', clubCount >= 5);
-
-    // Round count badges
-    await revokeIfUnearned('first_round', roundCount >= 1);
-    await revokeIfUnearned('rounds_5', roundCount >= 5);
-    await revokeIfUnearned('rounds_10', roundCount >= 10);
-    await revokeIfUnearned('rounds_25', roundCount >= 25);
-    await revokeIfUnearned('rounds_50', roundCount >= 50);
-    await revokeIfUnearned('rounds_100', roundCount >= 100);
-
-    // Scoring badges
-    await revokeIfUnearned('under_100_18', best18 !== null && best18 < 100);
-    await revokeIfUnearned('under_90_18', best18 !== null && best18 < 90);
-    await revokeIfUnearned('under_80_18', best18 !== null && best18 < 80);
-    await revokeIfUnearned('par_18', best18 !== null && best18 <= 72);
-    await revokeIfUnearned('under_50_9', best9 !== null && best9 < 50);
-    await revokeIfUnearned('under_45_9', best9 !== null && best9 < 45);
-    await revokeIfUnearned('under_40_9', best9 !== null && best9 < 40);
-
-    // Birdie badges
-    await revokeIfUnearned('first_birdie', totalBirdies >= 1);
-    await revokeIfUnearned('birdie_hunter', totalBirdies >= 5);
-    await revokeIfUnearned('birdie_bonanza', totalBirdies >= 10);
-    await revokeIfUnearned('birdie_master', totalBirdies >= 25);
-    await revokeIfUnearned('birdie_king', totalBirdies >= 50);
-    await revokeIfUnearned('birdie_streak', hasBirdieStreak);
-
-    // Par badges
-    await revokeIfUnearned('first_par', totalPars >= 1);
-    await revokeIfUnearned('par_collector', totalPars >= 10);
-    await revokeIfUnearned('par_machine', totalPars >= 25);
-    await revokeIfUnearned('par_streak', hasParStreak3);
-    await revokeIfUnearned('par_perfect', hasParStreak5);
-
-    // Steady Eddy - must have at least one round where totalStrokes === coursePar
-    const hasSteadyEddy = rounds.some(r => {
-      if (!r.totalStrokes || !r.holesPlayed || !r.course?.holes) return false;
-      const coursePar = r.course.holes.slice(0, r.holesPlayed).reduce((sum, h) => sum + h.par, 0);
-      return r.totalStrokes === coursePar;
-    });
-    await revokeIfUnearned('steady_eddy', hasSteadyEddy);
-
-    // On-course badges
-    await revokeIfUnearned('fairway_finder', totalFairways >= 10);
-    await revokeIfUnearned('green_machine', totalGreens >= 10);
-    await revokeIfUnearned('bogey_free_9', hasBogeyFree9);
-
-    // Course badges
-    await revokeIfUnearned('courses_3', uniqueCourses.length >= 3);
-    await revokeIfUnearned('courses_5', uniqueCourses.length >= 5);
-    await revokeIfUnearned('courses_10', uniqueCourses.length >= 10);
-    await revokeIfUnearned('home_course', Object.values(courseCounts).some(count => count >= 5));
-
-    // Consistency badges
-    await revokeIfUnearned('week_warrior', rounds.length >= 3 && Object.values(roundsByWeek).some(c => c >= 3));
-    await revokeIfUnearned('monthly_regular', rounds.length >= 3 && Object.values(roundsByMonth).some(c => c >= 5));
-    await revokeIfUnearned('streak_starter', consecutiveWeeks >= 3);
-    const weekendRounds = Object.values(roundsByDay).reduce((sum, count) => sum + count, 0);
-    await revokeIfUnearned('weekend_golfer', rounds.length >= 3 && weekendRounds >= 5);
-
-    // Tournament badges
-    await revokeIfUnearned('first_tournament', tournamentCount >= 1);
-    await revokeIfUnearned('tournaments_3', tournamentCount >= 3);
-    await revokeIfUnearned('tournaments_5', tournamentCount >= 5);
-
-    // Social badges
-    await revokeIfUnearned('group_member', groupMembership >= 1);
-    await revokeIfUnearned('friendly_golfer', allPlayerNames.size >= 3);
-
-    // App badges
-    await revokeIfUnearned('stat_tracker', roundCount >= 1);
-    await revokeIfUnearned('guide_reader', !!(user?.name && user?.city && user?.country));
-
-    // Special badges
-    const hasEarlyBird = rounds.some(r => {
-      const t = r.completedAt || r.date;
-      return t && new Date(t).getHours() < 11;
-    });
-    const hasSunsetGolfer = rounds.some(r => {
-      const t = r.completedAt || r.date;
-      return t && new Date(t).getHours() >= 18;
-    });
-    await revokeIfUnearned('early_bird', hasEarlyBird);
-    await revokeIfUnearned('sunset_golfer', hasSunsetGolfer);
+    // ==================== BADGES ARE PERMANENT ====================
+    // Once earned, badges are never removed. This ensures players don't lose
+    // progress even if they delete rounds or their stats change.
 
     return NextResponse.json({
       success: true,
       awardedBadges,
-      revokedBadges,
-      message: [
-        awardedBadges.length > 0 ? `Awarded ${awardedBadges.length} new achievement(s)` : null,
-        revokedBadges.length > 0 ? `Removed ${revokedBadges.length} unearned achievement(s)` : null,
-      ].filter(Boolean).join(', ') || 'All badges validated - no changes'
+      message: awardedBadges.length > 0
+        ? `Awarded ${awardedBadges.length} new achievement(s)!`
+        : 'No new achievements to award'
     });
   } catch (error) {
     console.error('Error rechecking achievements:', error);
