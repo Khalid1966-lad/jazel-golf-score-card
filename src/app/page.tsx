@@ -508,7 +508,7 @@ function RoundHistoryCard({
   displayTotalStrokes: number;
   vsPar: number;
   coursePar: number;
-  relevantHoles: { holeNumber: number; par: number }[];
+  relevantHoles: { holeNumber: number; par: number; handicap?: number | null }[];
   stablefordTotal: number | null;
   setRoundToView: (round: SavedRound) => void;
   downloadRoundAsXlsx: (round: SavedRound) => void;
@@ -518,6 +518,31 @@ function RoundHistoryCard({
   onToggleShare?: (roundId: string, isShared: boolean) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Calculate Stableford total for an additional player
+  const calcPlayerStableford = (playerIndex: number, playerHcp: number | null): number | null => {
+    if (!playerHcp || playerHcp <= 0) return null;
+    const hcp = Math.floor(playerHcp);
+    const playerScores = round.scores?.filter(s => s.playerIndex === playerIndex) || [];
+    let total = 0;
+    let hasAny = false;
+    playerScores.forEach(score => {
+      if (score.strokes > 0) {
+        const hole = relevantHoles.find(h => h.holeNumber === score.holeNumber);
+        if (hole?.handicap) {
+          hasAny = true;
+          const strokesRcvd = Math.floor(hcp / 18) + (hole.handicap <= (hcp % 18) ? 1 : 0);
+          const netVsPar = (score.strokes - strokesRcvd) - (hole.par || 4);
+          if (netVsPar <= -3) total += 5;
+          else if (netVsPar === -2) total += 4;
+          else if (netVsPar === -1) total += 3;
+          else if (netVsPar === 0) total += 2;
+          else if (netVsPar === 1) total += 1;
+        }
+      }
+    });
+    return hasAny ? total : null;
+  };
 
   return (
     <motion.div
@@ -666,7 +691,7 @@ function RoundHistoryCard({
                       return (
                         <div
                           key={idx}
-                          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs bg-muted ${hasProfile && onViewPlayerProfile ? 'cursor-pointer hover:bg-muted/80' : ''}`}
+                          className={`flex flex-col gap-0.5 px-2.5 py-1.5 rounded-lg text-xs bg-muted ${hasProfile && onViewPlayerProfile ? 'cursor-pointer hover:bg-muted/80' : ''}`}
                           onClick={(e) => {
                             if (hasProfile && onViewPlayerProfile && typeof playerInfo !== 'string') {
                               e.stopPropagation();
@@ -676,6 +701,7 @@ function RoundHistoryCard({
                           title={hasProfile ? 'Click to view profile' : undefined}
                         >
                           {/* Player avatar */}
+                          <div className="flex items-center gap-1.5">
                           <div className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
                             style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                             {playerAvatar ? (
@@ -694,6 +720,14 @@ function RoundHistoryCard({
                           {playerHandicap !== null && playerHandicap !== undefined && (
                             <span className="text-muted-foreground text-[10px]">(hcp {playerHandicap})</span>
                           )}
+                          </div>
+                          {(() => {
+                            const sf = calcPlayerStableford(idx + 1, playerHandicap);
+                            if (sf !== null) {
+                              return <span className="text-amber-600 text-[10px] font-semibold pl-6">{sf} stbfd</span>;
+                            }
+                            return null;
+                          })()}
                         </div>
                       );
                     })}
@@ -4668,7 +4702,6 @@ export default function JazelApp() {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-center">
-                            <p className="text-[10px] text-muted-foreground">Stbfd</p>
                             <p className="text-xl font-bold" style={{color: '#39638b'}}>
                               {(() => {
                                 let total = 0;
@@ -4684,7 +4717,7 @@ export default function JazelApp() {
                                     total += getStablefordPointsEarned(s.strokes, hole?.par || 4, strokesRcvd);
                                   }
                                 });
-                                return total;
+                                return total + ' points';
                               })()}
                             </p>
                           </div>
