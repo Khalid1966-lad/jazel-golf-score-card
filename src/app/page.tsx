@@ -3274,6 +3274,42 @@ export default function JazelApp() {
     return 'bg-yellow-200 text-yellow-900 font-bold'; // Double bogey or worse
   };
 
+  // Stableford: Calculate how many extra strokes a player receives on a hole
+  const getStrokesReceived = (holeHandicap: number | null, playerHandicap: number | null, totalHoles: number): number => {
+    if (!playerHandicap || !holeHandicap || playerHandicap <= 0) return 0;
+    const hcp = Math.floor(playerHandicap);
+    const fullStrokes = Math.floor(hcp / totalHoles);
+    const remainder = hcp % totalHoles;
+    return fullStrokes + (holeHandicap <= remainder ? 1 : 0);
+  };
+
+  // Stableford: Max points achievable on a hole based on strokes received
+  const getStablefordPointsGiven = (strokesReceived: number): number => {
+    return Math.min(2 + strokesReceived, 5);
+  };
+
+  // Stableford: Calculate points earned based on gross strokes, par, and strokes received
+  const getStablefordPointsEarned = (grossStrokes: number, par: number, strokesReceived: number): number => {
+    if (grossStrokes <= 0) return 0;
+    const netVsPar = (grossStrokes - strokesReceived) - par;
+    if (netVsPar <= -3) return 5; // Albatross
+    if (netVsPar === -2) return 4; // Eagle
+    if (netVsPar === -1) return 3; // Birdie
+    if (netVsPar === 0) return 2;  // Par
+    if (netVsPar === 1) return 1;  // Bogey
+    return 0;                       // Double bogey or worse
+  };
+
+  // Stableford: Color for points earned
+  const getStablefordPointsColor = (points: number): string => {
+    if (points === 0) return 'text-gray-400';
+    if (points === 1) return 'text-amber-600';
+    if (points === 2) return 'text-gray-700';
+    if (points === 3) return 'text-blue-600';
+    if (points === 4) return 'text-emerald-600';
+    return 'text-emerald-700 font-bold'; // 5 points
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col">
       {/* Header */}
@@ -4190,7 +4226,7 @@ export default function JazelApp() {
                       <div className="min-w-[500px]">
                         {/* Header Row - Sticky */}
                         <div className="sticky top-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
-                        style={{backgroundColor: '#39638b', gridTemplateColumns: `32px 28px 28px repeat(${6 + additionalPlayers.length}, minmax(0, 1fr))`}}>
+                        style={{backgroundColor: '#39638b', gridTemplateColumns: `32px 28px 28px repeat(${8 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Hole</div>
                           <div className="text-center">Par</div>
                           <div className="text-center">HCP</div>
@@ -4204,6 +4240,16 @@ export default function JazelApp() {
                               </div>
                             )}
                             <span className="max-w-[60px]">{(() => { const n = user?.name?.split(' ')[0] || 'You'; return n.length > 6 ? n.slice(0, 3) + '..' : n; })()}</span>
+                          </div>
+                          {/* Stableford: Points Given */}
+                          <div className="text-center flex flex-col items-center gap-0.5">
+                            <span className="text-[10px] text-white/70 leading-tight">Pts</span>
+                            <span className="text-[9px] text-white/50 leading-tight">Given</span>
+                          </div>
+                          {/* Stableford: Points Earned */}
+                          <div className="text-center flex flex-col items-center gap-0.5">
+                            <span className="text-[10px] text-white/70 leading-tight">Pts</span>
+                            <span className="text-[9px] text-white/50 leading-tight">Earned</span>
                           </div>
                           {/* Additional players columns with photos and delete button */}
                           {additionalPlayers.map((player) => (
@@ -4261,7 +4307,7 @@ export default function JazelApp() {
                               className={`grid gap-1 p-1.5 text-sm ${index % 2 === 0 ? 'bg-white' : ''}`}
                               style={{
                                 ...(index % 2 !== 0 ? {backgroundColor: 'rgba(232, 245, 237, 0.5)'} : {}),
-                                gridTemplateColumns: `32px 28px 28px repeat(${6 + additionalPlayers.length}, minmax(0, 1fr))`
+                                gridTemplateColumns: `32px 28px 28px repeat(${8 + additionalPlayers.length}, minmax(0, 1fr))`
                               }}
                             >
                               {/* Hole number - sticky */}
@@ -4297,6 +4343,23 @@ export default function JazelApp() {
                                   onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                   onBlur={(e) => e.target.style.borderColor = '#6b7280'}
                                 />
+                              </div>
+                              {/* Stableford: Points Given */}
+                              <div className="flex items-center justify-center">
+                                <span className="text-xs text-gray-500 font-medium">
+                                  {(() => {
+                                    const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null, holesPlayed);
+                                    return getStablefordPointsGiven(strokesRcvd);
+                                  })()}
+                                </span>
+                              </div>
+                              {/* Stableford: Points Earned */}
+                              <div className="flex items-center justify-center">
+                                <span className={`text-sm font-semibold ${score.strokes > 0 ? getStablefordPointsColor(
+                                  getStablefordPointsEarned(score.strokes, holePar, getStrokesReceived(hole?.handicap || null, user?.handicap || null, holesPlayed))
+                                ) : 'text-gray-300'}`}>
+                                  {score.strokes > 0 ? getStablefordPointsEarned(score.strokes, holePar, getStrokesReceived(hole?.handicap || null, user?.handicap || null, holesPlayed)) : '-'}
+                                </span>
                               </div>
                               {/* Additional players scores */}
                               {additionalPlayers.map((player, playerIdx) => {
@@ -4384,7 +4447,7 @@ export default function JazelApp() {
 
                         {/* Total Row - Sticky */}
                         <div className="sticky bottom-0 z-30 grid gap-1 p-2 text-white text-sm font-medium"
-                          style={{backgroundColor: '#39638b', gridTemplateColumns: `32px 28px 28px repeat(${6 + additionalPlayers.length}, minmax(0, 1fr))`}}>
+                          style={{backgroundColor: '#39638b', gridTemplateColumns: `32px 28px 28px repeat(${8 + additionalPlayers.length}, minmax(0, 1fr))`}}>
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Total</div>
                           <div className="text-center">{
                             // Calculate par for played holes only
@@ -4408,6 +4471,39 @@ export default function JazelApp() {
                                 return true;
                               })
                               .reduce((sum, s) => sum + (s.strokes || 0), 0) || '-'
+                          }</div>
+                          {/* Stableford Total Points Given */}
+                          <div className="text-center text-white/70">{
+                            selectedCourse.holes
+                              .filter(h => {
+                                if (holesPlayed === 9) {
+                                  return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
+                                }
+                                return true;
+                              })
+                              .reduce((sum, h) => {
+                                const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null, holesPlayed);
+                                return sum + getStablefordPointsGiven(strokesRcvd);
+                              }, 0)
+                          }</div>
+                          {/* Stableford Total Points Earned */}
+                          <div className="text-center font-bold text-yellow-300">{
+                            (() => {
+                              let total = 0;
+                              scores.filter(s => {
+                                if (holesPlayed === 9) {
+                                  return holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10;
+                                }
+                                return true;
+                              }).forEach(s => {
+                                if (s.strokes > 0) {
+                                  const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
+                                  const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null, holesPlayed);
+                                  total += getStablefordPointsEarned(s.strokes, hole?.par || 4, strokesRcvd);
+                                }
+                              });
+                              return total || '-';
+                            })()
                           }</div>
                           {additionalPlayers.map((player, playerIdx) => {
                             // Calculate player total for played holes only
@@ -4552,6 +4648,47 @@ export default function JazelApp() {
                     <p className="text-2xl font-bold text-center" style={{color: '#39638b'}}>{calculateTotals().gir}</p>
                   </Card>
                 </div>
+                {/* Stableford Points Summary */}
+                {user?.handicap && user.handicap > 0 && (
+                  <Card className="bg-white/80 backdrop-blur">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="w-5 h-5 text-amber-500" />
+                          <span className="text-sm font-semibold" style={{color: '#39638b'}}>Stableford Points</span>
+                          <Badge variant="outline" className="text-xs">HCP {user.handicap}</Badge>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-center">
+                            <p className="text-[10px] text-muted-foreground">Earned</p>
+                            <p className="text-xl font-bold" style={{color: '#39638b'}}>
+                              {(() => {
+                                let total = 0;
+                                scores.forEach(s => {
+                                  if (s.strokes > 0) {
+                                    const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
+                                    const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null, holesPlayed);
+                                    total += getStablefordPointsEarned(s.strokes, hole?.par || 4, strokesRcvd);
+                                  }
+                                });
+                                return total;
+                              })()}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-muted-foreground">Max</p>
+                            <p className="text-xl font-bold text-gray-400">
+                              {selectedCourse.holes.reduce((sum, h) => {
+                                const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null, holesPlayed);
+                                return sum + getStablefordPointsGiven(strokesRcvd);
+                              }, 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </TabsContent>
@@ -6932,6 +7069,54 @@ export default function JazelApp() {
                                   })}
                                   <td className="px-1 py-1 text-center font-bold" style={{color: '#39638b'}}>{totalPutts || '-'}</td>
                                 </tr>
+                                {/* Stableford Points Given Row */}
+                                {user?.handicap && user.handicap > 0 && (
+                                  <tr className="bg-amber-50/50">
+                                    <td className="px-1 py-1 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#92400e'}}>
+                                      <span className="text-[10px] leading-tight">Pts<br/>Given</span>
+                                    </td>
+                                    {filteredHoles.map(hole => {
+                                      const strokesRcvd = getStrokesReceived(hole.handicap || null, user?.handicap || null, holesPlayedCount);
+                                      return (
+                                        <td key={hole.holeNumber} className="px-0.5 py-1 text-center border-r text-xs text-amber-700" style={{borderColor: '#d6e4ef'}}>
+                                          {getStablefordPointsGiven(strokesRcvd)}
+                                        </td>
+                                      );
+                                    })}
+                                    <td className="px-1 py-1 text-center font-bold text-xs text-amber-700">
+                                      {filteredHoles.reduce((sum, h) => {
+                                        const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null, holesPlayedCount);
+                                        return sum + getStablefordPointsGiven(strokesRcvd);
+                                      }, 0)}
+                                    </td>
+                                  </tr>
+                                )}
+                                {/* Stableford Points Earned Row */}
+                                {user?.handicap && user.handicap > 0 && (
+                                  <tr className="bg-emerald-50/50">
+                                    <td className="px-1 py-1 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#065f46'}}>
+                                      <span className="text-[10px] leading-tight">Pts<br/>Earned</span>
+                                    </td>
+                                    {filteredHoles.map(hole => {
+                                      const score = mainScores.find(s => s.holeNumber === hole.holeNumber);
+                                      const strokesRcvd = getStrokesReceived(hole.handicap || null, user?.handicap || null, holesPlayedCount);
+                                      const pts = score?.strokes ? getStablefordPointsEarned(score.strokes, hole.par, strokesRcvd) : 0;
+                                      return (
+                                        <td key={hole.holeNumber} className={`px-0.5 py-1 text-center border-r text-xs font-medium ${getStablefordPointsColor(pts)}`} style={{borderColor: '#d6e4ef'}}>
+                                          {score?.strokes ? pts : '-'}
+                                        </td>
+                                      );
+                                    })}
+                                    <td className="px-1 py-1 text-center font-bold text-xs" style={{color: '#065f46'}}>
+                                      {filteredHoles.reduce((sum, h) => {
+                                        const score = mainScores.find(s => s.holeNumber === h.holeNumber);
+                                        if (!score?.strokes) return sum;
+                                        const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null, holesPlayedCount);
+                                        return sum + getStablefordPointsEarned(score.strokes, h.par, strokesRcvd);
+                                      }, 0) || '-'}
+                                    </td>
+                                  </tr>
+                                )}
                               </tbody>
                             </table>
                           </div>
@@ -6965,6 +7150,33 @@ export default function JazelApp() {
                                     {roundToView.totalPutts || '-'} Putts
                                   </td>
                                 </tr>
+                                {user?.handicap && user.handicap > 0 && (
+                                  <tr className="bg-emerald-100">
+                                    <td className="px-1 py-1.5 font-medium text-center w-8" style={{color: '#065f46'}}>
+                                      <span className="text-[10px]">Stableford</span>
+                                    </td>
+                                    <td className="px-1 py-1.5 text-center font-bold" colSpan={10} style={{color: '#065f46'}}>
+                                      {(() => {
+                                        const allHoles = holes.filter(h => h.holeNumber >= 1 && h.holeNumber <= 18);
+                                        return allHoles.reduce((sum, h) => {
+                                          const score = mainScores.find(s => s.holeNumber === h.holeNumber);
+                                          if (!score?.strokes) return sum;
+                                          const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null, 18);
+                                          return sum + getStablefordPointsEarned(score.strokes, h.par, strokesRcvd);
+                                        }, 0);
+                                      })()} Points Earned
+                                    </td>
+                                    <td className="px-1 py-1.5 text-center font-bold text-amber-700 bg-amber-50">
+                                      Max {(() => {
+                                        const allHoles = holes.filter(h => h.holeNumber >= 1 && h.holeNumber <= 18);
+                                        return allHoles.reduce((sum, h) => {
+                                          const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null, 18);
+                                          return sum + getStablefordPointsGiven(strokesRcvd);
+                                        }, 0);
+                                      })()}
+                                    </td>
+                                  </tr>
+                                )}
                               </tbody>
                             </table>
                           </div>
