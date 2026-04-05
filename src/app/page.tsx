@@ -491,6 +491,7 @@ function RoundHistoryCard({
   vsPar,
   coursePar,
   relevantHoles,
+  stablefordTotal,
   setRoundToView,
   downloadRoundAsXlsx,
   loadRoundForEditing,
@@ -508,6 +509,7 @@ function RoundHistoryCard({
   vsPar: number;
   coursePar: number;
   relevantHoles: { holeNumber: number; par: number }[];
+  stablefordTotal: number | null;
   setRoundToView: (round: SavedRound) => void;
   downloadRoundAsXlsx: (round: SavedRound) => void;
   loadRoundForEditing: (round: SavedRound) => void;
@@ -565,6 +567,12 @@ function RoundHistoryCard({
                 </p>
                 <p className="text-xs text-muted-foreground">+/-</p>
               </div>
+              {stablefordTotal !== null && (
+                <div className="text-center">
+                  <p className="text-xl font-bold text-amber-600">{stablefordTotal}</p>
+                  <p className="text-xs text-muted-foreground">Stableford</p>
+                </div>
+              )}
               <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
             </div>
           </div>
@@ -4784,6 +4792,29 @@ export default function JazelApp() {
                           ? 'Back 9 (10-18)' 
                           : 'Front 9 (1-9)';
                       
+                      // Calculate Stableford total (only if user has handicap)
+                      let stablefordTotal: number | null = null;
+                      if (user?.handicap && user.handicap > 0) {
+                        let sfTotal = 0;
+                        const hcp = Math.floor(user.handicap);
+                        mainPlayerScores.forEach(score => {
+                          if (score.strokes > 0) {
+                            const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
+                            const holeHcp = (hole as { holeNumber: number; par: number; handicap?: number | null } | undefined)?.handicap;
+                            if (holeHcp) {
+                              const strokesRcvd = Math.floor(hcp / 18) + (holeHcp <= (hcp % 18) ? 1 : 0);
+                              const netVsPar = (score.strokes - strokesRcvd) - (hole?.par || 4);
+                              if (netVsPar <= -3) sfTotal += 5;
+                              else if (netVsPar === -2) sfTotal += 4;
+                              else if (netVsPar === -1) sfTotal += 3;
+                              else if (netVsPar === 0) sfTotal += 2;
+                              else if (netVsPar === 1) sfTotal += 1;
+                            }
+                          }
+                        });
+                        stablefordTotal = sfTotal;
+                      }
+                      
                       return (
                       <RoundHistoryCard
                         key={round.id}
@@ -4797,6 +4828,7 @@ export default function JazelApp() {
                         vsPar={vsPar}
                         coursePar={coursePar}
                         relevantHoles={relevantHoles}
+                        stablefordTotal={stablefordTotal}
                         setRoundToView={setRoundToView}
                         downloadRoundAsXlsx={downloadRoundAsXlsx}
                         loadRoundForEditing={loadRoundForEditing}
