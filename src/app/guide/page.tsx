@@ -735,6 +735,119 @@ function RoundsSection() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Trophy className="w-5 h-5" style={{ color: '#39638b' }} />
+            Stableford Scoring
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Jazel automatically calculates Stableford points for you based on your handicap. This gives you a fair scoring system no matter your skill level.
+          </p>
+
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <h4 className="font-medium text-emerald-800 mb-2">How It Works</h4>
+            <p className="text-sm text-emerald-700">
+              Stableford awards points based on your <strong>net score</strong> (your strokes minus the strokes you receive based on your handicap). 
+              The harder the hole (lower Stroke Index), the more strokes you receive. Your handicap is <strong>locked at the time you play</strong> — 
+              so even if your handicap changes later, your Stableford scores stay exactly as earned.
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">Points System</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {[
+                { label: 'Albatross or better', pts: '5 pts', color: 'text-green-600' },
+                { label: 'Eagle', pts: '4 pts', color: 'text-green-600' },
+                { label: 'Birdie', pts: '3 pts', color: 'text-blue-600' },
+                { label: 'Par', pts: '2 pts', color: 'text-gray-800' },
+                { label: 'Bogey', pts: '1 pt', color: 'text-amber-600' },
+                { label: 'Double Bogey+', pts: '0 pts', color: 'text-gray-400' },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                  <span>{item.label}</span>
+                  <span className={`font-bold ${item.color}`}>{item.pts}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">Stroke Allocation</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Your handicap is distributed across holes based on their <strong>Stroke Index (HCP column)</strong>:
+            </p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Holes with the lowest Stroke Index (hardest holes) receive strokes first</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Always distributed across all 18 holes (even for 9-hole rounds)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Example: HCP 10 → 1 stroke received on holes with SI 1-10</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Example: HCP 22 → 2 strokes on holes SI 1-4, 1 stroke on holes SI 5-18</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">On the Scorecard</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="font-medium">Strk Rcv</span>
+                <span>— Shows strokes received for each hole (displays "-" when 0)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">Stbfd</span>
+                <span>— Shows the Stableford points earned per hole</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">Score badge</span>
+                <span>— A small number inside each score cell showing points earned</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">Total</span>
+                <span>— Summary at bottom shows total Stableford points as "X points"</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <h4 className="font-medium text-amber-800 flex items-center gap-2 mb-2">
+              <Star className="w-4 h-4" />
+              For All Players
+            </h4>
+            <p className="text-sm text-amber-700">
+              Stableford points are shown for <strong>all players</strong> — you and up to 3 additional players. 
+              Each player's points are calculated using their own individual handicap. Add a player's handicap when 
+              adding them to the round to see their Stableford points.
+            </p>
+          </div>
+
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-800 flex items-center gap-2 mb-2">
+              <Lock className="w-4 h-4" />
+              Handicap Lock
+            </h4>
+            <p className="text-sm text-blue-700">
+              When you save a round, your handicap is <strong>permanently recorded</strong> with that round. 
+              If you later change your handicap, all previously saved rounds will still show the original Stableford points 
+              calculated with the handicap you had at the time of play. Your history is always accurate.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-xl">Playing with Friends</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
