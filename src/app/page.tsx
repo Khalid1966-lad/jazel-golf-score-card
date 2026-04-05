@@ -4397,7 +4397,7 @@ export default function JazelApp() {
                                   const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null);
                                   const pts = getStablefordPointsEarned(score.strokes, holePar, strokesRcvd);
                                   return pts > 0 ? (
-                                    <span className="absolute bottom-2 right-2 text-[10px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
+                                    <span className="absolute bottom-1 right-2 text-[11px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
                                   ) : null;
                                 })()}
                               </div>
@@ -4422,7 +4422,7 @@ export default function JazelApp() {
                                       const strokesRcvd = getStrokesReceived(hole?.handicap || null, player.handicap || null);
                                       const pts = getStablefordPointsEarned(pStrokes, holePar, strokesRcvd);
                                       return pts > 0 ? (
-                                        <span className="absolute bottom-2 right-2 text-[10px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
+                                        <span className="absolute bottom-1 right-2 text-[11px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
                                       ) : null;
                                     })()}
                                   </div>
@@ -7152,15 +7152,8 @@ export default function JazelApp() {
                                     const strokes = score?.strokes || 0;
                                     const style = getScoreStyle(strokes, hole.par);
                                     return (
-                                      <td key={hole.holeNumber} className="px-0.5 py-1 text-center border-r font-medium relative" style={{borderColor: '#d6e4ef', background: style.bg, color: style.color}}>
+                                      <td key={hole.holeNumber} className="px-0.5 py-1 text-center border-r font-medium" style={{borderColor: '#d6e4ef', background: style.bg, color: style.color}}>
                                         {strokes || '-'}
-                                        {roundViewHcp && roundViewHcp > 0 && strokes > 0 && (() => {
-                                          const strokesRcvd = getStrokesReceived(hole.handicap || null, roundViewHcp);
-                                          const pts = getStablefordPointsEarned(strokes, hole.par, strokesRcvd);
-                                          return pts > 0 ? (
-                                            <span className="absolute bottom-1 right-1 text-[9px] font-bold leading-none text-gray-400">{pts}</span>
-                                          ) : null;
-                                        })()}
                                       </td>
                                     );
                                   })}
