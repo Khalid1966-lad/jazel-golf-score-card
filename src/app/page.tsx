@@ -4381,7 +4381,7 @@ export default function JazelApp() {
                                 </Badge>
                               </div>
                               {/* Main player score */}
-                              <div className="flex items-center justify-center">
+                              <div className="flex items-center justify-center relative">
                                 <Input
                                   type="number"
                                   min={1}
@@ -4393,23 +4393,38 @@ export default function JazelApp() {
                                   onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                   onBlur={(e) => e.target.style.borderColor = '#6b7280'}
                                 />
+                                {user?.handicap && user.handicap > 0 && score.strokes > 0 && (() => {
+                                  const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null);
+                                  const pts = getStablefordPointsEarned(score.strokes, holePar, strokesRcvd);
+                                  return pts > 0 ? (
+                                    <span className="absolute bottom-0 right-0.5 text-[8px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
+                                  ) : null;
+                                })()}
                               </div>
                               {/* Additional players scores */}
                               {additionalPlayers.map((player, playerIdx) => {
                                 const playerScore = playerScores.get(playerIdx)?.find(s => s.holeNumber === score.holeNumber);
+                                const pStrokes = playerScore?.strokes || 0;
                                 return (
-                                  <div key={player.id} className="flex items-center justify-center">
+                                  <div key={player.id} className="flex items-center justify-center relative">
                                     <Input
                                       type="number"
                                       min={1}
                                       max={15}
-                                      value={playerScore?.strokes || ''}
+                                      value={pStrokes || ''}
                                       onChange={(e) => updatePlayerScore(playerIdx, score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                      className={`h-10 w-12 text-center text-base font-semibold border border-gray-400 ${getScoreColor(playerScore?.strokes || 0, holePar)}`}
+                                      className={`h-10 w-12 text-center text-base font-semibold border border-gray-400 ${getScoreColor(pStrokes, holePar)}`}
                                       style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
                                       onFocus={(e) => e.target.style.borderColor = '#39638b'}
                                       onBlur={(e) => e.target.style.borderColor = '#6b7280'}
                                     />
+                                    {player.handicap && player.handicap > 0 && pStrokes > 0 && (() => {
+                                      const strokesRcvd = getStrokesReceived(hole?.handicap || null, player.handicap || null);
+                                      const pts = getStablefordPointsEarned(pStrokes, holePar, strokesRcvd);
+                                      return pts > 0 ? (
+                                        <span className="absolute bottom-0 right-0.5 text-[8px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
+                                      ) : null;
+                                    })()}
                                   </div>
                                 );
                               })}
@@ -7137,8 +7152,15 @@ export default function JazelApp() {
                                     const strokes = score?.strokes || 0;
                                     const style = getScoreStyle(strokes, hole.par);
                                     return (
-                                      <td key={hole.holeNumber} className="px-0.5 py-1 text-center border-r font-medium" style={{borderColor: '#d6e4ef', background: style.bg, color: style.color}}>
+                                      <td key={hole.holeNumber} className="px-0.5 py-1 text-center border-r font-medium relative" style={{borderColor: '#d6e4ef', background: style.bg, color: style.color}}>
                                         {strokes || '-'}
+                                        {roundViewHcp && roundViewHcp > 0 && strokes > 0 && (() => {
+                                          const strokesRcvd = getStrokesReceived(hole.handicap || null, roundViewHcp);
+                                          const pts = getStablefordPointsEarned(strokes, hole.par, strokesRcvd);
+                                          return pts > 0 ? (
+                                            <span className="absolute bottom-0 right-0.5 text-[7px] font-bold leading-none text-gray-400">{pts}</span>
+                                          ) : null;
+                                        })()}
                                       </td>
                                     );
                                   })}
