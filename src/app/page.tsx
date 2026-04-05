@@ -1240,6 +1240,7 @@ export default function JazelApp() {
   const [newBadges, setNewBadges] = useState<Array<{ code: string; name: string; description: string; icon: string; points: number; category: string }>>([]);
   const [showBadgeCongrats, setShowBadgeCongrats] = useState(false);
   const [showNoBadges, setShowNoBadges] = useState(false);
+  const [showBadgeChecking, setShowBadgeChecking] = useState(false);
   const [showAICaddie, setShowAICaddie] = useState(false);
   const [currentHoleInfo, setCurrentHoleInfo] = useState<{ par: number; distance: number } | null>(null);
   const [showMapScreen, setShowMapScreen] = useState(false);
@@ -2966,14 +2967,14 @@ export default function JazelApp() {
           
           // Check for new badges on completed round
           if (completed && user) {
-            toast.loading('Looking for new badges won...', { id: 'badge-check' });
+            setShowBadgeChecking(true);
             try {
               const badgeRes = await fetch('/api/achievements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id }),
               });
-              toast.dismiss('badge-check');
+              setShowBadgeChecking(false);
               const badgeData = await badgeRes.json();
               if (badgeRes.ok && badgeData.awardedBadges && badgeData.awardedBadges.length > 0) {
                 const allAchRes = await fetch(`/api/achievements?userId=${user.id}`);
@@ -2992,7 +2993,7 @@ export default function JazelApp() {
                 setTimeout(() => setShowNoBadges(false), 3000);
               }
             } catch (e) {
-              toast.dismiss('badge-check');
+              setShowBadgeChecking(false);
               console.error('Badge check error:', e);
             }
           }
@@ -3045,14 +3046,14 @@ export default function JazelApp() {
           
           // Check for new badges on completed round
           if (completed && user) {
-            toast.loading('Looking for new badges won...', { id: 'badge-check' });
+            setShowBadgeChecking(true);
             try {
               const badgeRes = await fetch('/api/achievements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id }),
               });
-              toast.dismiss('badge-check');
+              setShowBadgeChecking(false);
               const badgeData = await badgeRes.json();
               if (badgeRes.ok && badgeData.awardedBadges && badgeData.awardedBadges.length > 0) {
                 const allAchRes = await fetch(`/api/achievements?userId=${user.id}`);
@@ -3071,7 +3072,7 @@ export default function JazelApp() {
                 setTimeout(() => setShowNoBadges(false), 3000);
               }
             } catch (e) {
-              toast.dismiss('badge-check');
+              setShowBadgeChecking(false);
               console.error('Badge check error:', e);
             }
           }
@@ -9235,6 +9236,23 @@ export default function JazelApp() {
           {user && (
             <BadgeCollection userId={user.id} />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Badge Checking Dialog */}
+      <Dialog open={showBadgeChecking} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-sm" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              <Loader2 className="w-10 h-10 animate-spin" style={{color: '#39638b'}} />
+            </div>
+            <DialogTitle className="text-lg" style={{color: '#39638b'}}>
+              Looking for new badges won...
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground mt-1">
+              Checking your round performance
+            </DialogDescription>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
 
