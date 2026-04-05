@@ -4397,7 +4397,7 @@ export default function JazelApp() {
                                   const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null);
                                   const pts = getStablefordPointsEarned(score.strokes, holePar, strokesRcvd);
                                   return pts > 0 ? (
-                                    <span className="absolute bottom-1 left-3 text-[11px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
+                                    <span className="absolute bottom-1 right-3 text-[11px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
                                   ) : null;
                                 })()}
                               </div>
@@ -4422,7 +4422,7 @@ export default function JazelApp() {
                                       const strokesRcvd = getStrokesReceived(hole?.handicap || null, player.handicap || null);
                                       const pts = getStablefordPointsEarned(pStrokes, holePar, strokesRcvd);
                                       return pts > 0 ? (
-                                        <span className="absolute bottom-1 left-3 text-[11px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
+                                        <span className="absolute bottom-1 right-3 text-[11px] font-bold leading-none text-gray-400 pointer-events-none">{pts}</span>
                                       ) : null;
                                     })()}
                                   </div>
