@@ -225,7 +225,7 @@ model Round {
   completed      Boolean  @default(false)
   completedAt    DateTime?  // When the round was actually finished
   playerNames    String?  // JSON array of additional player names (up to 3)
-  playerHandicap Float?  // Main player's handicap at time of round
+  playerHandicap Float?   // Main player's handicap at time of round (locked)
   holesPlayed    Int      @default(18) // 9 or 18
   holesType      String?  // "front" or "back" for 9-hole rounds, null for 18
   isShared       Boolean  @default(false) // Whether the round is shared publicly

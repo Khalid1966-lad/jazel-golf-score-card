@@ -124,7 +124,7 @@ interface SavedRound {
   courseId?: string;
   teeId?: string;
   playerNames?: string;
-  playerHandicap?: number | null;  // Main player's handicap at time of round
+  playerHandicap?: number | null;  // Main player's handicap at time of round (locked)
   holesPlayed?: number; // 9 or 18
   holesType?: string | null; // "front" or "back" for 9-hole rounds
   isShared?: boolean; // Whether the round is shared publicly
@@ -4832,7 +4832,7 @@ export default function JazelApp() {
                           ? 'Back 9 (10-18)' 
                           : 'Front 9 (1-9)';
                       
-                      // Calculate Stableford total (only if round has saved handicap)
+                      // Calculate Stableford total (using saved round handicap, locked at time of play)
                       let stablefordTotal: number | null = null;
                       const roundHandicap = round.playerHandicap ?? user?.handicap;
                       if (roundHandicap && roundHandicap > 0) {
