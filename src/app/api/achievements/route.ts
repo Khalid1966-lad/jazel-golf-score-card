@@ -68,6 +68,11 @@ const ACHIEVEMENT_DEFINITIONS = [
   { code: 'green_machine', name: 'Green Machine', description: 'Hit 10 greens in regulation', icon: '🏌️', category: 'oncourse', points: 15, threshold: 10, sortOrder: 111 },
   { code: 'bogey_free_9', name: 'Bogey Free 9', description: 'Complete 9 holes without a bogey', icon: '🛡️', category: 'oncourse', points: 25, sortOrder: 112 },
 
+  // ==================== GIR (GREEN IN REGULATION) BADGES ====================
+  { code: 'gir_5_round', name: 'GIR Ace', description: 'Hit 5 greens in regulation in a single round', icon: '🟢', category: 'gir', points: 10, threshold: 5, sortOrder: 115 },
+  { code: 'gir_10_round', name: 'GIR Pro', description: 'Hit 10 greens in regulation in a single round', icon: '💎', category: 'gir', points: 25, threshold: 10, sortOrder: 116 },
+  { code: 'gir_18_round', name: 'GIR Perfect', description: 'Hit all 18 greens in regulation in a single round', icon: '🌟', category: 'gir', points: 50, threshold: 18, sortOrder: 117 },
+
   // ==================== CONSISTENCY BADGES ====================
   { code: 'week_warrior', name: 'Week Warrior', description: 'Play 3 rounds in one week', icon: '📅', category: 'consistency', points: 20, sortOrder: 120 },
   { code: 'monthly_regular', name: 'Monthly Regular', description: 'Play 5 rounds in one month', icon: '📆', category: 'consistency', points: 25, sortOrder: 121 },
@@ -537,6 +542,27 @@ export async function POST(request: NextRequest) {
     if (totalFairways >= 10 && await awardAchievement(userId, 'fairway_finder')) awardedBadges.push('fairway_finder');
     if (totalGreens >= 10 && await awardAchievement(userId, 'green_machine')) awardedBadges.push('green_machine');
     if (hasBogeyFree9 && await awardAchievement(userId, 'bogey_free_9')) awardedBadges.push('bogey_free_9');
+
+    // ==================== GIR (GREEN IN REGULATION) BADGES ====================
+    // Count GIR per round - these badges require hitting GIR in a single round
+    for (const round of rounds) {
+      if (round.scores && Array.isArray(round.scores)) {
+        const scores = round.scores as Array<{
+          strokes: number;
+          par?: number;
+          fairwayHit?: boolean;
+          greenInReg?: boolean;
+          playerIndex?: number;
+          holeNumber?: number;
+        }>;
+        const userScores = scores.filter(s => (s.playerIndex ?? 0) === 0);
+        const roundGIR = userScores.filter(s => s.greenInReg === true).length;
+
+        if (roundGIR >= 5 && await awardAchievement(userId, 'gir_5_round')) awardedBadges.push('gir_5_round');
+        if (roundGIR >= 10 && await awardAchievement(userId, 'gir_10_round')) awardedBadges.push('gir_10_round');
+        if (roundGIR >= 18 && await awardAchievement(userId, 'gir_18_round')) awardedBadges.push('gir_18_round');
+      }
+    }
 
     // ==================== COURSES BADGES ====================
     const uniqueCourses = [...new Set(rounds.map(r => r.courseId))];

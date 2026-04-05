@@ -1818,6 +1818,34 @@ function AchievementsSection() {
         </CardContent>
       </Card>
 
+      {/* GIR BADGES */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">🟢</span> GIR Badges
+          </CardTitle>
+          <CardDescription>Greens in Regulation per round</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2">
+            {[
+              { icon: '🟢', name: 'GIR Ace', desc: 'Hit 5 GIR in a single round', pts: '10 pts' },
+              { icon: '💎', name: 'GIR Pro', desc: 'Hit 10 GIR in a single round', pts: '25 pts' },
+              { icon: '🌟', name: 'GIR Perfect', desc: 'Hit all 18 GIR in a single round', pts: '50 pts' },
+            ].map((badge) => (
+              <div key={badge.name} className="flex items-center gap-3 p-2 border rounded-lg">
+                <span className="text-xl">{badge.icon}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{badge.name}</span>
+                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                </div>
+                <Badge variant="secondary" className="text-xs">{badge.pts}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* CONSISTENCY BADGES */}
       <Card>
         <CardHeader>

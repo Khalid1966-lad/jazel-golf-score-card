@@ -469,6 +469,38 @@ const achievements = [
     sortOrder: 112,
   },
 
+  // ==================== GIR (GREEN IN REGULATION) BADGES ====================
+  {
+    code: 'gir_5_round',
+    name: 'GIR Ace',
+    description: 'Hit 5 greens in regulation in a single round',
+    icon: '🟢',
+    category: 'gir',
+    points: 10,
+    threshold: 5,
+    sortOrder: 115,
+  },
+  {
+    code: 'gir_10_round',
+    name: 'GIR Pro',
+    description: 'Hit 10 greens in regulation in a single round',
+    icon: '💎',
+    category: 'gir',
+    points: 25,
+    threshold: 10,
+    sortOrder: 116,
+  },
+  {
+    code: 'gir_18_round',
+    name: 'GIR Perfect',
+    description: 'Hit all 18 greens in regulation in a single round',
+    icon: '🌟',
+    category: 'gir',
+    points: 50,
+    threshold: 18,
+    sortOrder: 117,
+  },
+
   // ==================== CONSISTENCY BADGES ====================
   {
     code: 'week_warrior',
