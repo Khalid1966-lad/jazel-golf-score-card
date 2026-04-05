@@ -1219,6 +1219,7 @@ export default function JazelApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCountry, setFilterCountry] = useState<string>('all');
   const [filterCity, setFilterCity] = useState<string>('all');
+  const [courseViewMode, setCourseViewMode] = useState<'cards' | 'list'>('cards');
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isNearbyMode, setIsNearbyMode] = useState(false);
@@ -3686,17 +3687,40 @@ export default function JazelApp() {
               </div>
             )}
 
+            {/* View Mode Toggle */}
+            <div className="flex justify-end">
+              <div className="flex items-center border rounded-lg overflow-hidden" style={{borderColor: '#a3c4e0'}}>
+                <button
+                  onClick={() => setCourseViewMode('cards')}
+                  className={`p-2 transition-colors ${courseViewMode === 'cards' ? 'bg-[#39638b] text-white' : 'bg-white text-muted-foreground hover:bg-muted'}`}
+                  title="Cards view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCourseViewMode('list')}
+                  className={`p-2 transition-colors ${courseViewMode === 'list' ? 'bg-[#39638b] text-white' : 'bg-white text-muted-foreground hover:bg-muted'}`}
+                  title="List view"
+                >
+                  <ListIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
             {/* Course Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {loading ? (
-                Array.from({ length: 6 }).map((_, i) => (
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
                   <Card key={i} className="animate-pulse bg-white/50">
                     <CardHeader className="h-24" style={{backgroundColor: 'rgba(197, 230, 209, 0.5)'}} />
                     <CardContent className="h-32" />
                   </Card>
-                ))
-              ) : (
-                (showFavoritesOnly ? courses.filter(c => favoriteIds.includes(c.id)) : [...courses].sort((a, b) => {
+                ))}
+              </div>
+            ) : courseViewMode === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(() => {
+                const filteredCourses = (showFavoritesOnly ? courses.filter(c => favoriteIds.includes(c.id)) : [...courses].sort((a, b) => {
                   const aFav = favoriteIds.includes(a.id) ? 0 : 1;
                   const bFav = favoriteIds.includes(b.id) ? 0 : 1;
                   return aFav - bFav;
@@ -3705,7 +3729,8 @@ export default function JazelApp() {
                   if (filterCountry !== 'all' && c.country !== filterCountry) return false;
                   if (filterCity !== 'all' && c.city !== filterCity) return false;
                   return true;
-                }).map((course, index) => (
+                });
+                return filteredCourses.map((course, index) => (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -3897,9 +3922,101 @@ export default function JazelApp() {
                       </CardContent>
                     </Card>
                   </motion.div>
-                ))
-              )}
+                ));
+              })()}
             </div>
+            ) : (
+            /* LIST VIEW - Table */
+            <div className="rounded-lg border overflow-hidden" style={{borderColor: '#a3c4e0'}}>
+              <Table>
+                <TableHeader>
+                  <TableRow style={{backgroundColor: '#f0f6fc'}}>
+                    <TableHead className="font-semibold" style={{color: '#39638b'}}>Course</TableHead>
+                    <TableHead className="font-semibold text-center hidden sm:table-cell" style={{color: '#39638b'}}>City</TableHead>
+                    <TableHead className="font-semibold text-center hidden md:table-cell" style={{color: '#39638b'}}>Holes</TableHead>
+                    <TableHead className="font-semibold text-center hidden lg:table-cell" style={{color: '#39638b'}}>Distance</TableHead>
+                    <TableHead className="font-semibold text-center" style={{color: '#39638b'}}>Play</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const filteredCourses = (showFavoritesOnly ? courses.filter(c => favoriteIds.includes(c.id)) : [...courses].sort((a, b) => {
+                      const aFav = favoriteIds.includes(a.id) ? 0 : 1;
+                      const bFav = favoriteIds.includes(b.id) ? 0 : 1;
+                      return aFav - bFav;
+                    }))
+                    .filter(c => {
+                      if (filterCountry !== 'all' && c.country !== filterCountry) return false;
+                      if (filterCity !== 'all' && c.city !== filterCity) return false;
+                      return true;
+                    });
+                    return filteredCourses.map((course) => (
+                      <TableRow key={course.id} className="hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedCourse(course)}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={(e) => toggleFavorite(course.id, e)}
+                              className="flex-shrink-0"
+                            >
+                              <Heart 
+                                className={`w-4 h-4 transition-colors ${
+                                  favoriteIds.includes(course.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-400'
+                                }`} 
+                              />
+                            </button>
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{course.name}</p>
+                              <p className="text-xs text-muted-foreground truncate sm:hidden">
+                                {course.city}, {course.region}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center hidden sm:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {course.city}{course.region ? `, ${course.region}` : ''}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center hidden md:table-cell">
+                          <Badge variant="secondary" className="text-xs" style={{backgroundColor: '#d6e4ef', color: '#39638b'}}>
+                            {course.totalHoles}H
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center hidden lg:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {course.distance !== undefined
+                              ? (distanceUnit === 'yards'
+                                ? `${(course.distance * 0.621371).toFixed(1)} mi`
+                                : `${course.distance.toFixed(1)} km`)
+                              : '-'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {course.isActive ? (
+                            <Button
+                              size="sm"
+                              className="text-xs"
+                              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)', color: 'white'}}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startNewRound(course);
+                              }}
+                            >
+                              <Plus className="w-3 h-3 mr-1" />
+                              Play
+                            </Button>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs bg-red-100 text-red-600">Soon</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+            )}
 
             {!loading && courses.length === 0 && (
               <div className="text-center py-12">
