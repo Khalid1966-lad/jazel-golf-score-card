@@ -556,11 +556,11 @@ function RoundHistoryCard({
             </div>
             <div className="flex items-center gap-6">
               <div className="text-center">
-                <p className="text-2xl font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
+                <p className="text-base font-bold" style={{color: '#39638b'}}>{displayTotalStrokes}</p>
                 <p className="text-xs text-muted-foreground">strokes</p>
               </div>
               <div className="text-center">
-                <p className={`text-xl font-bold ${
+                <p className={`text-sm font-bold ${
                   vsPar < 0 ? 'text-red-600' : vsPar > 0 ? 'text-amber-600' : 'text-green-600'
                 }`}>
                   {(vsPar > 0 ? '+' : '') + vsPar}
@@ -569,7 +569,7 @@ function RoundHistoryCard({
               </div>
               {stablefordTotal !== null && (
                 <div className="text-center">
-                  <p className="text-xl font-bold text-amber-600">{stablefordTotal}</p>
+                  <p className="text-sm font-bold text-amber-600">{stablefordTotal}</p>
                   <p className="text-xs text-muted-foreground">Stableford</p>
                 </div>
               )}
