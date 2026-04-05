@@ -124,6 +124,7 @@ interface SavedRound {
   courseId?: string;
   teeId?: string;
   playerNames?: string;
+  playerHandicap?: number | null;  // Main player's handicap at time of round
   holesPlayed?: number; // 9 or 18
   holesType?: string | null; // "front" or "back" for 9-hole rounds
   isShared?: boolean; // Whether the round is shared publicly
@@ -510,6 +511,7 @@ function RoundHistoryCard({
   coursePar: number;
   relevantHoles: { holeNumber: number; par: number; handicap?: number | null }[];
   stablefordTotal: number | null;
+  roundHandicap: number | null;
   setRoundToView: (round: SavedRound) => void;
   downloadRoundAsXlsx: (round: SavedRound) => void;
   loadRoundForEditing: (round: SavedRound) => void;
@@ -578,6 +580,9 @@ function RoundHistoryCard({
                 })}
               </p>
               <p className="text-xs mt-0.5" style={{color: '#39638b'}}>{holesInfo}</p>
+              {roundHandicap !== null && (
+                <p className="text-xs text-muted-foreground">HCP {roundHandicap}</p>
+              )}
             </div>
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
           </div>
@@ -2895,6 +2900,7 @@ export default function JazelApp() {
             roundId: editingRoundId,
             teeId: selectedTee,
             playerNames: playerData,
+            playerHandicap: user?.handicap || null,
             scores: scores,
             playerScores: playerScoresArray,
             holesPlayed: holesPlayed,
@@ -2941,6 +2947,7 @@ export default function JazelApp() {
             teeId: selectedTee,
             scores: scoresWithStrokes,
             playerNames: playerData,
+            playerHandicap: user?.handicap || null,
             playerScores: playerScoresArray,
             holesPlayed: holesPlayed,
             holesType: holesPlayed === 9 ? holesType : null,
@@ -4825,11 +4832,12 @@ export default function JazelApp() {
                           ? 'Back 9 (10-18)' 
                           : 'Front 9 (1-9)';
                       
-                      // Calculate Stableford total (only if user has handicap)
+                      // Calculate Stableford total (only if round has saved handicap)
                       let stablefordTotal: number | null = null;
-                      if (user?.handicap && user.handicap > 0) {
+                      const roundHandicap = round.playerHandicap ?? user?.handicap;
+                      if (roundHandicap && roundHandicap > 0) {
                         let sfTotal = 0;
-                        const hcp = Math.floor(user.handicap);
+                        const hcp = Math.floor(roundHandicap);
                         mainPlayerScores.forEach(score => {
                           if (score.strokes > 0) {
                             const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
@@ -4862,6 +4870,7 @@ export default function JazelApp() {
                         coursePar={coursePar}
                         relevantHoles={relevantHoles}
                         stablefordTotal={stablefordTotal}
+                        roundHandicap={roundHandicap}
                         setRoundToView={setRoundToView}
                         downloadRoundAsXlsx={downloadRoundAsXlsx}
                         loadRoundForEditing={loadRoundForEditing}
@@ -7074,6 +7083,7 @@ export default function JazelApp() {
                       const holes = roundToView.course?.holes || [];
                       const scores = roundToView.scores || [];
                       const mainScores = scores.filter(s => s.playerIndex === 0 || !s.playerIndex);
+                      const roundViewHcp = roundToView.playerHandicap ?? user?.handicap ?? null;
                       
                       const getScoreStyle = (strokes: number, par: number) => {
                         if (strokes === 0) return { bg: '', color: '#39638b' };
@@ -7145,13 +7155,13 @@ export default function JazelApp() {
                                   <td className="px-1 py-1 text-center font-bold" style={{color: '#39638b'}}>{totalPutts || '-'}</td>
                                 </tr>
                                 {/* Stableford Strokes Given Row */}
-                                {user?.handicap && user.handicap > 0 && (
+                                {roundViewHcp && roundViewHcp > 0 && (
                                   <tr className="bg-amber-50/50">
                                     <td className="px-1 py-1 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#92400e'}}>
                                       <span className="text-[10px] leading-tight">Strokes<br/>Given</span>
                                     </td>
                                     {filteredHoles.map(hole => {
-                                      const strokesRcvd = getStrokesReceived(hole.handicap || null, user?.handicap || null);
+                                      const strokesRcvd = getStrokesReceived(hole.handicap || null, roundViewHcp);
                                       return (
                                         <td key={hole.holeNumber} className="px-0.5 py-1 text-center border-r text-xs text-amber-700" style={{borderColor: '#d6e4ef'}}>
                                           {strokesRcvd > 0 ? strokesRcvd : '-'}
@@ -7160,21 +7170,21 @@ export default function JazelApp() {
                                     })}
                                     <td className="px-1 py-1 text-center font-bold text-xs text-amber-700">
                                       {filteredHoles.reduce((sum, h) => {
-                                        const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null);
+                                        const strokesRcvd = getStrokesReceived(h.handicap || null, roundViewHcp);
                                         return sum + strokesRcvd;
                                       }, 0) || '-'}
                                     </td>
                                   </tr>
                                 )}
                                 {/* Stableford Points Earned Row */}
-                                {user?.handicap && user.handicap > 0 && (
+                                {roundViewHcp && roundViewHcp > 0 && (
                                   <tr className="bg-emerald-50/50">
                                     <td className="px-1 py-1 font-medium text-center border-r" style={{borderColor: '#d6e4ef', color: '#065f46'}}>
                                       <span className="text-[10px] leading-tight">Stbfd</span>
                                     </td>
                                     {filteredHoles.map(hole => {
                                       const score = mainScores.find(s => s.holeNumber === hole.holeNumber);
-                                      const strokesRcvd = getStrokesReceived(hole.handicap || null, user?.handicap || null);
+                                      const strokesRcvd = getStrokesReceived(hole.handicap || null, roundViewHcp);
                                       const pts = score?.strokes ? getStablefordPointsEarned(score.strokes, hole.par, strokesRcvd) : 0;
                                       return (
                                         <td key={hole.holeNumber} className={`px-0.5 py-1 text-center border-r text-xs font-medium ${getStablefordPointsColor(pts)}`} style={{borderColor: '#d6e4ef'}}>
@@ -7186,7 +7196,7 @@ export default function JazelApp() {
                                       {filteredHoles.reduce((sum, h) => {
                                         const score = mainScores.find(s => s.holeNumber === h.holeNumber);
                                         if (!score?.strokes) return sum;
-                                        const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null);
+                                        const strokesRcvd = getStrokesReceived(h.handicap || null, roundViewHcp);
                                         return sum + getStablefordPointsEarned(score.strokes, h.par, strokesRcvd);
                                       }, 0) || '-'}
                                     </td>
@@ -7225,7 +7235,7 @@ export default function JazelApp() {
                                     {roundToView.totalPutts || '-'} Putts
                                   </td>
                                 </tr>
-                                {user?.handicap && user.handicap > 0 && (
+                                {roundViewHcp && roundViewHcp > 0 && (
                                   <tr className="bg-emerald-100">
                                     <td className="px-1 py-1.5 font-medium text-center w-8" style={{color: '#065f46'}}>
                                       <span className="text-[10px]">Stableford</span>
@@ -7236,7 +7246,7 @@ export default function JazelApp() {
                                         return allHoles.reduce((sum, h) => {
                                           const score = mainScores.find(s => s.holeNumber === h.holeNumber);
                                           if (!score?.strokes) return sum;
-                                          const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null);
+                                          const strokesRcvd = getStrokesReceived(h.handicap || null, roundViewHcp);
                                           return sum + getStablefordPointsEarned(score.strokes, h.par, strokesRcvd);
                                         }, 0);
                                       })()} Stbfd
@@ -7245,7 +7255,7 @@ export default function JazelApp() {
                                       {(() => {
                                         const allHoles = holes.filter(h => h.holeNumber >= 1 && h.holeNumber <= 18);
                                         const totalRcvd = allHoles.reduce((sum, h) => {
-                                          const strokesRcvd = getStrokesReceived(h.handicap || null, user?.handicap || null);
+                                          const strokesRcvd = getStrokesReceived(h.handicap || null, roundViewHcp);
                                           return sum + strokesRcvd;
                                         }, 0);
                                         return totalRcvd > 0 ? `${totalRcvd} Strokes Rcvd` : '-';

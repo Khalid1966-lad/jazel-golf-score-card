@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
       scores,
       playerNames,
       playerScores,
+      playerHandicap,
       holesPlayed = 18,
       holesType = null,
       completed = true,  // Allow saving as draft (completed: false)
@@ -234,6 +235,7 @@ export async function POST(request: NextRequest) {
         completed,
         completedAt: completed ? new Date() : null,  // Only set if completing
         playerNames,
+        playerHandicap,
         scores: {
           create: allScores,
         },
@@ -297,7 +299,7 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { roundId, scores, playerNames, playerScores, teeId, holesPlayed, holesType, completed } = body;
+    const { roundId, scores, playerNames, playerScores, playerHandicap, teeId, holesPlayed, holesType, completed } = body;
 
     if (!roundId) {
       return NextResponse.json(
@@ -422,6 +424,7 @@ export async function PUT(request: NextRequest) {
       data: {
         teeId,
         playerNames,
+        playerHandicap: playerHandicap !== undefined ? playerHandicap : existingRound.playerHandicap,
         holesPlayed: holesPlayed || existingRound.holesPlayed,
         holesType: holesType !== undefined ? holesType : existingRound.holesType,
         totalStrokes,
