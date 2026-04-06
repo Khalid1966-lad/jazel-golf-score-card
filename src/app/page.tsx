@@ -1300,6 +1300,40 @@ export default function JazelApp() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customInputValue, setCustomInputValue] = useState('');
 
+  // Helper: advance to next field horizontally (strokes → putts → penalties → next hole)
+  const advanceScorePad = useCallback((current: NonNullable<typeof activeScorePad>) => {
+    if (current.type === 'player') {
+      // For additional players, only strokes field - advance to next hole
+      const maxHole = holesPlayed === 9
+        ? (holesType === 'back' ? 18 : 9)
+        : (scorecardView === 'back' ? 18 : 9);
+      const nextHole = current.holeNumber + 1;
+      if (nextHole <= maxHole) {
+        setActiveScorePad({ ...current, holeNumber: nextHole });
+      } else {
+        setActiveScorePad(null);
+      }
+      return;
+    }
+    // Main player: strokes → putts → penalties → next hole strokes
+    if (current.field === 'strokes') {
+      setActiveScorePad({ ...current, field: 'putts', min: 0, max: 8 });
+    } else if (current.field === 'putts') {
+      setActiveScorePad({ ...current, field: 'penalties', min: 0, max: 5 });
+    } else {
+      // After penalties, go to next hole strokes
+      const maxHole = holesPlayed === 9
+        ? (holesType === 'back' ? 18 : 9)
+        : (scorecardView === 'back' ? 18 : 9);
+      const nextHole = current.holeNumber + 1;
+      if (nextHole <= maxHole) {
+        setActiveScorePad({ ...current, holeNumber: nextHole, field: 'strokes', min: 1, max: 8 });
+      } else {
+        setActiveScorePad(null);
+      }
+    }
+  }, [holesPlayed, holesType, scorecardView]);
+
   // Round edit/delete state
   const [roundToDelete, setRoundToDelete] = useState<SavedRound | null>(null);
   const [editingRoundId, setEditingRoundId] = useState<string | null>(null); // Track if we're editing an existing round
@@ -4898,7 +4932,7 @@ export default function JazelApp() {
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5 items-center">
                             {Array.from({ length: activeScorePad.max - activeScorePad.min + 1 }, (_, i) => {
                               const val = activeScorePad.min + i;
                               const isActive = (() => {
@@ -4933,15 +4967,9 @@ export default function JazelApp() {
                                     } else {
                                       updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', val);
                                     }
-                                    const nextHole = activeScorePad.holeNumber + 1;
-                                    const maxHole = holesPlayed === 9
-                                      ? (holesType === 'back' ? 18 : 9)
-                                      : (scorecardView === 'back' ? 18 : 9);
-                                    if (nextHole <= maxHole) {
-                                      setActiveScorePad(prev => prev ? { ...prev, holeNumber: nextHole } : null);
-                                    }
+                                    advanceScorePad(activeScorePad);
                                   }}
-                                  className="flex-1 h-11 rounded-lg border-2 text-base font-bold transition-all active:scale-95"
+                                  className="flex-1 h-12 rounded-lg border-2 text-lg font-bold transition-all active:scale-95"
                                   style={{
                                     ...btnStyle,
                                     ...(isActive ? { boxShadow: '0 0 0 2px #39638b' } : {})
@@ -4951,14 +4979,14 @@ export default function JazelApp() {
                                 </button>
                               );
                             })}
-                            {/* Custom number button */}
+                            {/* Custom number button - smaller */}
                             <button
                               onClick={() => { setShowCustomInput(true); setCustomInputValue(''); }}
-                              className="h-11 w-11 flex-shrink-0 rounded-lg border-2 border-blue-300 text-blue-600 text-lg font-bold hover:bg-blue-50 transition-all active:scale-95"
+                              className="h-9 w-9 flex-shrink-0 rounded-lg border-2 border-blue-300 text-blue-600 text-base font-bold hover:bg-blue-50 transition-all active:scale-95"
                             >
                               +
                             </button>
-                            {/* Clear button */}
+                            {/* Clear button - smaller */}
                             <button
                               onClick={() => {
                                 if (activeScorePad.type === 'main') {
@@ -4968,7 +4996,7 @@ export default function JazelApp() {
                                 }
                                 setActiveScorePad(null);
                               }}
-                              className="h-11 px-3 flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
+                              className="h-9 px-2 flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-xs font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
                             >
                               Clear
                             </button>
@@ -5011,15 +5039,7 @@ export default function JazelApp() {
                                     }
                                   }
                                   setShowCustomInput(false);
-                                  const nextHole = activeScorePad.holeNumber + 1;
-                                  const maxHole = holesPlayed === 9
-                                    ? (holesType === 'back' ? 18 : 9)
-                                    : (scorecardView === 'back' ? 18 : 9);
-                                  if (nextHole <= maxHole) {
-                                    setActiveScorePad(prev => prev ? { ...prev, holeNumber: nextHole } : null);
-                                  } else {
-                                    setActiveScorePad(null);
-                                  }
+                                  advanceScorePad(activeScorePad);
                                 }
                                 if (e.key === 'Escape') {
                                   setShowCustomInput(false);
@@ -5036,15 +5056,7 @@ export default function JazelApp() {
                                     updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', val);
                                   }
                                   setShowCustomInput(false);
-                                  const nextHole = activeScorePad.holeNumber + 1;
-                                  const maxHole = holesPlayed === 9
-                                    ? (holesType === 'back' ? 18 : 9)
-                                    : (scorecardView === 'back' ? 18 : 9);
-                                  if (nextHole <= maxHole) {
-                                    setActiveScorePad(prev => prev ? { ...prev, holeNumber: nextHole } : null);
-                                  } else {
-                                    setActiveScorePad(null);
-                                  }
+                                  advanceScorePad(activeScorePad);
                                 }
                               }}
                               className="h-11 px-5 text-white flex-shrink-0"
