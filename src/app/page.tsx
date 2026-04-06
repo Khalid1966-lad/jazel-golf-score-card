@@ -1288,6 +1288,16 @@ export default function JazelApp() {
   const [canScrollLeftState, setCanScrollLeft] = useState(false);
   const [canScrollRightState, setCanScrollRight] = useState(false);
 
+  // Custom score pad state
+  const [activeScorePad, setActiveScorePad] = useState<{
+    type: 'main' | 'player';
+    playerIndex?: number;
+    holeNumber: number;
+    field: 'strokes' | 'putts' | 'penalties';
+    min: number;
+    max: number;
+  } | null>(null);
+
   // Round edit/delete state
   const [roundToDelete, setRoundToDelete] = useState<SavedRound | null>(null);
   const [editingRoundId, setEditingRoundId] = useState<string | null>(null); // Track if we're editing an existing round
@@ -4655,17 +4665,13 @@ export default function JazelApp() {
                               </div>
                               {/* Main player score */}
                               <div className="flex items-center justify-center relative">
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  max={15}
-                                  value={score.strokes || ''}
-                                  onChange={(e) => updateScore(score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                  className={`h-10 w-12 text-center text-base font-semibold border border-gray-400 ${getScoreColor(score.strokes, holePar)}`}
-                                  style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
-                                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
-                                  onBlur={(e) => e.target.style.borderColor = '#6b7280'}
-                                />
+                                <div
+                                  className={`h-10 w-12 flex items-center justify-center text-base font-semibold border rounded-md cursor-pointer select-none ${getScoreColor(score.strokes, holePar)}`}
+                                  style={{borderColor: '#6b7280'}}
+                                  onClick={() => setActiveScorePad({ type: 'main', holeNumber: score.holeNumber, field: 'strokes', min: 1, max: 8 })}
+                                >
+                                  {score.strokes > 0 ? score.strokes : ''}
+                                </div>
                                 {user?.handicap && user.handicap > 0 && score.strokes > 0 && (() => {
                                   const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null);
                                   const pts = getStablefordPointsEarned(score.strokes, holePar, strokesRcvd);
@@ -4680,17 +4686,13 @@ export default function JazelApp() {
                                 const pStrokes = playerScore?.strokes || 0;
                                 return (
                                   <div key={player.id} className="flex items-center justify-center relative">
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      max={15}
-                                      value={pStrokes || ''}
-                                      onChange={(e) => updatePlayerScore(playerIdx, score.holeNumber, 'strokes', parseInt(e.target.value) || 0)}
-                                      className={`h-10 w-12 text-center text-base font-semibold border border-gray-400 ${getScoreColor(pStrokes, holePar)}`}
-                                      style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
-                                      onFocus={(e) => e.target.style.borderColor = '#39638b'}
-                                      onBlur={(e) => e.target.style.borderColor = '#6b7280'}
-                                    />
+                                    <div
+                                      className={`h-10 w-12 flex items-center justify-center text-base font-semibold border rounded-md cursor-pointer select-none ${getScoreColor(pStrokes, holePar)}`}
+                                      style={{borderColor: '#6b7280'}}
+                                      onClick={() => setActiveScorePad({ type: 'player', playerIndex: playerIdx, holeNumber: score.holeNumber, field: 'strokes', min: 1, max: 8 })}
+                                    >
+                                      {pStrokes > 0 ? pStrokes : ''}
+                                    </div>
                                     {player.handicap && player.handicap > 0 && pStrokes > 0 && (() => {
                                       const strokesRcvd = getStrokesReceived(hole?.handicap || null, player.handicap || null);
                                       const pts = getStablefordPointsEarned(pStrokes, holePar, strokesRcvd);
@@ -4703,16 +4705,13 @@ export default function JazelApp() {
                               })}
                               {/* Putts */}
                               <div className="flex items-center justify-center">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  max={10}
-                                  value={score.putts || ''}
-                                  onChange={(e) => updateScore(score.holeNumber, 'putts', parseInt(e.target.value) || 0)}
-                                  className="h-10 w-12 text-center text-base font-semibold border border-gray-400"
-                                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
-                                  onBlur={(e) => e.target.style.borderColor = '#9ca3af'}
-                                />
+                                <div
+                                  className="h-10 w-12 flex items-center justify-center text-base font-semibold border rounded-md cursor-pointer select-none"
+                                  style={{borderColor: '#6b7280'}}
+                                  onClick={() => setActiveScorePad({ type: 'main', holeNumber: score.holeNumber, field: 'putts', min: 0, max: 8 })}
+                                >
+                                  {score.putts > 0 ? score.putts : ''}
+                                </div>
                               </div>
                               {/* FWY */}
                               <div className="flex items-center justify-center">
@@ -4742,16 +4741,13 @@ export default function JazelApp() {
                               </div>
                               {/* Penalties */}
                               <div className="flex items-center justify-center">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  max={5}
-                                  value={score.penalties || ''}
-                                  onChange={(e) => updateScore(score.holeNumber, 'penalties', parseInt(e.target.value) || 0)}
-                                  className="h-10 w-12 text-center text-base font-semibold border border-gray-400"
-                                  onFocus={(e) => e.target.style.borderColor = '#39638b'}
-                                  onBlur={(e) => e.target.style.borderColor = '#9ca3af'}
-                                />
+                                <div
+                                  className="h-10 w-12 flex items-center justify-center text-base font-semibold border rounded-md cursor-pointer select-none"
+                                  style={{borderColor: '#6b7280'}}
+                                  onClick={() => setActiveScorePad({ type: 'main', holeNumber: score.holeNumber, field: 'penalties', min: 0, max: 5 })}
+                                >
+                                  {score.penalties > 0 ? score.penalties : ''}
+                                </div>
                               </div>
                               {/* +/- */}
                               <div className="flex items-center justify-center">
@@ -5061,6 +5057,87 @@ export default function JazelApp() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Custom Score Pad */}
+            {activeScorePad && (
+              <div className="mt-3 p-3 rounded-xl bg-white border-2 shadow-lg" style={{borderColor: '#39638b'}}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold" style={{color: '#39638b'}}>
+                    Hole {activeScorePad.holeNumber} — {activeScorePad.field === 'strokes' ? 'Strokes' : activeScorePad.field === 'putts' ? 'Putts' : 'Penalties'}
+                  </span>
+                  <button onClick={() => setActiveScorePad(null)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex gap-1.5">
+                  {Array.from({ length: activeScorePad.max - activeScorePad.min + 1 }, (_, i) => {
+                    const val = activeScorePad.min + i;
+                    const isActive = (() => {
+                      if (activeScorePad.type === 'main') {
+                        return (activeScorePad.field === 'strokes' ? scores.find(s => s.holeNumber === activeScorePad.holeNumber)?.strokes
+                          : activeScorePad.field === 'putts' ? scores.find(s => s.holeNumber === activeScorePad.holeNumber)?.putts
+                          : scores.find(s => s.holeNumber === activeScorePad.holeNumber)?.penalties) === val;
+                      } else {
+                        return playerScores.get(activeScorePad.playerIndex!)?.find(s => s.holeNumber === activeScorePad.holeNumber)?.strokes === val;
+                      }
+                    })();
+
+                    let btnStyle: React.CSSProperties = {};
+                    if (activeScorePad.field === 'strokes') {
+                      const hole = selectedCourse.holes.find(h => h.holeNumber === activeScorePad.holeNumber);
+                      const par = hole?.par || 4;
+                      const diff = val - par;
+                      if (diff <= -2) btnStyle = { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#86efac' };
+                      else if (diff === -1) btnStyle = { backgroundColor: '#ecfccb', color: '#3f6212', borderColor: '#bef264' };
+                      else if (diff === 0) btnStyle = { backgroundColor: '#39638b', color: 'white', borderColor: '#39638b' };
+                      else if (diff === 1) btnStyle = { backgroundColor: '#fef9c3', color: '#854d0e', borderColor: '#fde047' };
+                      else if (diff === 2) btnStyle = { backgroundColor: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5' };
+                      else btnStyle = { backgroundColor: '#fff1f2', color: '#9f1239', borderColor: '#fecdd3' };
+                    }
+
+                    return (
+                      <button
+                        key={val}
+                        onClick={() => {
+                          if (activeScorePad.type === 'main') {
+                            updateScore(activeScorePad.holeNumber, activeScorePad.field, val);
+                          } else {
+                            updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', val);
+                          }
+                          const nextHole = activeScorePad.holeNumber + 1;
+                          const maxHole = holesPlayed === 9
+                            ? (holesType === 'back' ? 18 : 9)
+                            : (scorecardView === 'back' ? 18 : 9);
+                          if (nextHole <= maxHole) {
+                            setActiveScorePad(prev => prev ? { ...prev, holeNumber: nextHole } : null);
+                          }
+                        }}
+                        className={`flex-1 h-11 rounded-lg border-2 text-base font-bold transition-all active:scale-95 ${isActive ? '' : ''}`}
+                        style={{
+                          ...btnStyle,
+                          ...(isActive ? { boxShadow: '0 0 0 2px #39638b' } : {})
+                        }}
+                      >
+                        {val}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => {
+                      if (activeScorePad.type === 'main') {
+                        updateScore(activeScorePad.holeNumber, activeScorePad.field, 0);
+                      } else {
+                        updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', 0);
+                      }
+                      setActiveScorePad(null);
+                    }}
+                    className="h-11 px-4 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
             )}
           </TabsContent>
