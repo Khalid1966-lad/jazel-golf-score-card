@@ -13,7 +13,7 @@ import {
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
   Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
-  LayoutGrid, List as ListIcon, ClipboardList
+  LayoutGrid, List as ListIcon, ClipboardList, MessageCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -482,6 +482,132 @@ function getLevelStyle(level: string) {
   return LEVEL_STYLES[level] || LEVEL_STYLES['Beginner'];
 }
 
+// Generate WhatsApp share text for a full scorecard
+function generateWhatsAppScorecard(
+  round: SavedRound,
+  mainPlayerName: string,
+  playerNames: (string | { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null })[],
+  additionalPlayerTotals: Map<number, number>,
+  holesPlayedCount: number,
+  displayTotalStrokes: number,
+  vsPar: number,
+  coursePar: number,
+  relevantHoles: { holeNumber: number; par: number; handicap?: number | null }[],
+  roundHandicap: number | null
+): string {
+  const courseName = round.course?.name || 'Unknown Course';
+  const dateStr = new Date(round.date).toLocaleDateString('en-US', { 
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' 
+  });
+  const totalPutts = round.totalPutts || 0;
+  const gir = round.greensInReg || 0;
+  const fairwaysHit = round.fairwaysHit || 0;
+  const fairwaysTotal = round.fairwaysTotal || 0;
+  const penalties = round.penalties || 0;
+
+  // Build player list names
+  const allPlayerNames = [mainPlayerName, ...playerNames.map(p => typeof p === 'string' ? p : p.name)];
+
+  // Get scores grouped by hole for each player
+  const mainScores = (round.scores || []).filter(s => !s.playerIndex || s.playerIndex === 0);
+  const playerScoresMap = new Map<number, typeof round.scores>();
+  (round.scores || []).forEach(s => {
+    if (s.playerIndex && s.playerIndex > 0) {
+      const existing = playerScoresMap.get(s.playerIndex) || [];
+      existing.push(s);
+      playerScoresMap.set(s.playerIndex, existing);
+    }
+  });
+
+  const sortedHoles = [...relevantHoles].sort((a, b) => a.holeNumber - b.holeNumber);
+
+  // Build hole numbers row
+  const holeNums = sortedHoles.map(h => String(h.holeNumber).padStart(2));
+  const parRow = sortedHoles.map(h => String(h.par).padStart(2));
+  
+  // Main player strokes
+  const mainStrokes = sortedHoles.map(h => {
+    const s = mainScores.find(sc => sc.holeNumber === h.holeNumber);
+    return s && s.strokes > 0 ? String(s.strokes).padStart(2) : ' -';
+  });
+
+  // Additional players strokes
+  const playerRows: string[][] = [];
+  for (let i = 0; i < playerNames.length; i++) {
+    const pScores = playerScoresMap.get(i + 1) || [];
+    playerRows.push(sortedHoles.map(h => {
+      const s = pScores.find(sc => sc.holeNumber === h.holeNumber);
+      return s && s.strokes > 0 ? String(s.strokes).padStart(2) : ' -';
+    }));
+  }
+
+  // Build WhatsApp text message
+  let text = `⛳ *${courseName}*\n`;
+  text += `📅 ${dateStr}\n`;
+  text += `${'─'.repeat(30)}\n\n`;
+
+  // Hole numbers header
+  text += `      ${holeNums.join(' ')}  *Tot*\n`;
+  // Par row
+  text += `*Par*  ${parRow.join(' ')}  *${String(coursePar).padStart(2)}*\n`;
+  text += `${'─'.repeat(30)}\n`;
+
+  // Main player row
+  const mainLabel = '*Me*'.padEnd(5);
+  const mainTotal = String(displayTotalStrokes).padStart(2);
+  text += `${mainLabel} ${mainStrokes.join(' ')}  *${mainTotal}*\n`;
+
+  // Additional player rows
+  for (let i = 0; i < playerRows.length; i++) {
+    const pName = (allPlayerNames[i + 1] || `P${i + 2}`).substring(0, 4);
+    const pLabel = pName.padEnd(5);
+    const pTotal = String(additionalPlayerTotals.get(i + 1) || 0).padStart(2);
+    text += `${pLabel} ${playerRows[i].join(' ')}  *${pTotal}*\n`;
+  }
+
+  text += `${'─'.repeat(30)}\n\n`;
+
+  // Summary stats
+  const vsParStr = vsPar > 0 ? `+${vsPar}` : vsPar === 0 ? 'E' : String(vsPar);
+  text += `🏌️ Score: ${displayTotalStrokes} (${vsParStr})\n`;
+  text += `🏌️ Par: ${coursePar}\n`;
+  if (totalPutts > 0) text += `⛳ Putts: ${totalPutts}\n`;
+  if (gir > 0) text += `🟢 GIR: ${gir}/${sortedHoles.length}\n`;
+  if (fairwaysTotal > 0) text += `↔️ Fairways: ${fairwaysHit}/${fairwaysTotal}\n`;
+  if (penalties > 0) text += `⚠️ Penalties: ${penalties}\n`;
+
+  // Players
+  if (allPlayerNames.length > 1) {
+    text += `\n👥 Players: ${allPlayerNames.join(', ')}\n`;
+  }
+
+  text += `\n📱 Shared via Jazel Golf`;
+
+  return text;
+}
+
+// Open WhatsApp with pre-filled scorecard text
+function shareRoundViaWhatsApp(
+  round: SavedRound,
+  mainPlayerName: string,
+  playerNames: (string | { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null })[],
+  additionalPlayerTotals: Map<number, number>,
+  holesPlayedCount: number,
+  displayTotalStrokes: number,
+  vsPar: number,
+  coursePar: number,
+  relevantHoles: { holeNumber: number; par: number; handicap?: number | null }[],
+  roundHandicap: number | null
+) {
+  const text = generateWhatsAppScorecard(
+    round, mainPlayerName, playerNames, additionalPlayerTotals,
+    holesPlayedCount, displayTotalStrokes, vsPar,
+    coursePar, relevantHoles, roundHandicap
+  );
+  const encodedText = encodeURIComponent(text);
+  window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+}
+
 // Round History Card Component - Expandable
 function RoundHistoryCard({ 
   round,
@@ -501,7 +627,8 @@ function RoundHistoryCard({
   loadRoundForEditing,
   setRoundToDelete,
   onViewPlayerProfile,
-  onToggleShare
+  onToggleShare,
+  onShareWhatsApp
 }: { 
   round: SavedRound;
   index: number;
@@ -521,6 +648,7 @@ function RoundHistoryCard({
   setRoundToDelete: (round: SavedRound) => void;
   onViewPlayerProfile?: (player: { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null }) => void;
   onToggleShare?: (roundId: string, isShared: boolean) => void;
+  onShareWhatsApp?: (round: SavedRound) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -677,6 +805,18 @@ function RoundHistoryCard({
                   >
                     <Share2 className="w-3 h-3 mr-1" />
                     {round.isShared ? 'Shared' : 'Share'}
+                  </Button>
+                )}
+                {round.completed && onShareWhatsApp && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onShareWhatsApp(round)}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-300"
+                    title="Share via WhatsApp"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    WhatsApp
                   </Button>
                 )}
               </div>
@@ -3253,6 +3393,48 @@ export default function JazelApp() {
     }
   };
 
+  // Share round via WhatsApp - compute needed values from the round
+  const handleShareWhatsApp = useCallback((round: SavedRound) => {
+    let playerNames: (string | { name: string; avatar?: string | null; handicap?: number | null; userId?: string | null })[] = [];
+    if (round.playerNames) {
+      try { playerNames = JSON.parse(round.playerNames); } catch (e) {}
+    }
+
+    const additionalPlayerTotals = new Map<number, number>();
+    round.scores?.forEach(s => {
+      if (s.playerIndex && s.playerIndex > 0) {
+        additionalPlayerTotals.set(s.playerIndex, (additionalPlayerTotals.get(s.playerIndex) || 0) + s.strokes);
+      }
+    });
+
+    const holesPlayedCount = round.holesPlayed || 18;
+    const holesTypeValue = round.holesType || 'front';
+    const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+    const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+    const relevantHoles = (round.course?.holes || []).filter((h: { holeNumber: number }) =>
+      h.holeNumber >= startHole && h.holeNumber <= endHole
+    );
+    const coursePar = relevantHoles.reduce((sum: number, h: { par: number }) => sum + h.par, 0) || (holesPlayedCount === 9 ? 36 : 72);
+    const mainPlayerScores = round.scores?.filter(s => !s.playerIndex || s.playerIndex === 0) || [];
+
+    let vsPar = 0;
+    let totalStrokesFromScores = 0;
+    mainPlayerScores.forEach(score => {
+      if (score.strokes > 0) {
+        const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
+        vsPar += score.strokes - (hole?.par || 4);
+        totalStrokesFromScores += score.strokes;
+      }
+    });
+    const displayTotalStrokes = totalStrokesFromScores > 0 ? totalStrokesFromScores : (round.totalStrokes || 0);
+
+    shareRoundViaWhatsApp(
+      round, user?.name || 'Me', playerNames, additionalPlayerTotals,
+      holesPlayedCount, displayTotalStrokes, vsPar,
+      coursePar, relevantHoles, round.playerHandicap ?? null
+    );
+  }, []);
+
   // Load a round for editing - extracted to useCallback for better reactivity
   const loadRoundForEditing = useCallback(async (round: SavedRound) => {
     // Get the course ID - try both locations
@@ -5393,6 +5575,7 @@ export default function JazelApp() {
                         setRoundToDelete={setRoundToDelete}
                         onViewPlayerProfile={setPlayerToView}
                         onToggleShare={toggleRoundShare}
+                        onShareWhatsApp={handleShareWhatsApp}
                       />
                     );})}
                   </div>
@@ -9529,7 +9712,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.49</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.50</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
