@@ -4788,7 +4788,7 @@ export default function JazelApp() {
 
                     <div
                       ref={scorecardRef}
-                      className="overflow-x-auto overflow-y-auto max-h-[65vh]"
+                      className="overflow-x-auto overflow-y-auto max-h-[80vh]"
                       onScroll={checkScrollPosition}
                     >
                       <div className="min-w-[600px]">
