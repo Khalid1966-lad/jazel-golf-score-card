@@ -1300,6 +1300,11 @@ export default function JazelApp() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customInputValue, setCustomInputValue] = useState('');
 
+  // Hole selection state (declared early for use in advanceScorePad)
+  const [holesPlayed, setHolesPlayed] = useState<9 | 18>(18);
+  const [holesType, setHolesType] = useState<'front' | 'back'>('front');
+  const [scorecardView, setScorecardView] = useState<'front' | 'back'>('front');
+
   // Helper: advance to next field horizontally (strokes → putts → penalties → next hole)
   const advanceScorePad = useCallback((current: NonNullable<typeof activeScorePad>) => {
     if (current.type === 'player') {
@@ -1341,11 +1346,6 @@ export default function JazelApp() {
   // Hole selection state
   const [showHoleSelectionDialog, setShowHoleSelectionDialog] = useState(false);
   const [pendingCourse, setPendingCourse] = useState<GolfCourse | null>(null);
-  const [holesPlayed, setHolesPlayed] = useState<9 | 18>(18);
-  const [holesType, setHolesType] = useState<'front' | 'back'>('front');
-  
-  // Scorecard view toggle (for displaying 9 holes at a time)
-  const [scorecardView, setScorecardView] = useState<'front' | 'back'>('front');
   
   // Unsaved work warning state
   const [showUnsavedWarningDialog, setShowUnsavedWarningDialog] = useState(false);
@@ -4969,7 +4969,7 @@ export default function JazelApp() {
                                     }
                                     advanceScorePad(activeScorePad);
                                   }}
-                                  className="flex-1 h-12 rounded-lg border-2 text-lg font-bold transition-all active:scale-95"
+                                  className="flex-1 h-14 rounded-lg border-2 text-xl font-bold transition-all active:scale-95"
                                   style={{
                                     ...btnStyle,
                                     ...(isActive ? { boxShadow: '0 0 0 2px #39638b' } : {})
@@ -4982,7 +4982,7 @@ export default function JazelApp() {
                             {/* Custom number button - smaller */}
                             <button
                               onClick={() => { setShowCustomInput(true); setCustomInputValue(''); }}
-                              className="h-9 w-9 flex-shrink-0 rounded-lg border-2 border-blue-300 text-blue-600 text-base font-bold hover:bg-blue-50 transition-all active:scale-95"
+                              className="h-8 w-8 flex-shrink-0 rounded-lg border-2 border-blue-300 text-blue-600 text-sm font-bold hover:bg-blue-50 transition-all active:scale-95"
                             >
                               +
                             </button>
@@ -4996,7 +4996,7 @@ export default function JazelApp() {
                                 }
                                 setActiveScorePad(null);
                               }}
-                              className="h-9 px-2 flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-xs font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
+                              className="h-8 px-1.5 flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-[10px] font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
                             >
                               Clear
                             </button>
@@ -9509,7 +9509,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.45</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.46</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
