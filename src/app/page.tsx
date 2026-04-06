@@ -1305,31 +1305,40 @@ export default function JazelApp() {
   const [holesType, setHolesType] = useState<'front' | 'back'>('front');
   const [scorecardView, setScorecardView] = useState<'front' | 'back'>('front');
 
-  // Helper: advance to next field horizontally (strokes → putts → penalties → next hole)
+  // Helper: advance to next field horizontally across all players then putts/penalties
+  // Flow: Main strokes → Player1 strokes → Player2 strokes → ... → Putts → Penalties → Next hole
   const advanceScorePad = useCallback((current: NonNullable<typeof activeScorePad>) => {
+    const getMaxHole = () => holesPlayed === 9
+      ? (holesType === 'back' ? 18 : 9)
+      : (scorecardView === 'back' ? 18 : 9);
+
     if (current.type === 'player') {
-      // For additional players, only strokes field - advance to next hole
-      const maxHole = holesPlayed === 9
-        ? (holesType === 'back' ? 18 : 9)
-        : (scorecardView === 'back' ? 18 : 9);
-      const nextHole = current.holeNumber + 1;
-      if (nextHole <= maxHole) {
-        setActiveScorePad({ ...current, holeNumber: nextHole });
+      // Currently on an additional player's strokes → advance to next player or putts
+      const nextPlayerIdx = (current.playerIndex ?? -1) + 1;
+      if (nextPlayerIdx < additionalPlayers.length) {
+        // Go to next additional player's strokes
+        setActiveScorePad({ type: 'player', playerIndex: nextPlayerIdx, holeNumber: current.holeNumber, field: 'strokes', min: 1, max: 8 });
       } else {
-        setActiveScorePad(null);
+        // All players done for this hole → go to putts
+        setActiveScorePad({ type: 'main', holeNumber: current.holeNumber, field: 'putts', min: 0, max: 8 });
       }
       return;
     }
-    // Main player: strokes → putts → penalties → next hole strokes
+
+    // Main player fields
     if (current.field === 'strokes') {
-      setActiveScorePad({ ...current, field: 'putts', min: 0, max: 8 });
+      if (additionalPlayers.length > 0) {
+        // Go to first additional player's strokes
+        setActiveScorePad({ type: 'player', playerIndex: 0, holeNumber: current.holeNumber, field: 'strokes', min: 1, max: 8 });
+      } else {
+        // No additional players → go to putts
+        setActiveScorePad({ ...current, field: 'putts', min: 0, max: 8 });
+      }
     } else if (current.field === 'putts') {
       setActiveScorePad({ ...current, field: 'penalties', min: 0, max: 5 });
     } else {
       // After penalties, go to next hole strokes
-      const maxHole = holesPlayed === 9
-        ? (holesType === 'back' ? 18 : 9)
-        : (scorecardView === 'back' ? 18 : 9);
+      const maxHole = getMaxHole();
       const nextHole = current.holeNumber + 1;
       if (nextHole <= maxHole) {
         setActiveScorePad({ ...current, holeNumber: nextHole, field: 'strokes', min: 1, max: 8 });
@@ -1337,7 +1346,7 @@ export default function JazelApp() {
         setActiveScorePad(null);
       }
     }
-  }, [holesPlayed, holesType, scorecardView]);
+  }, [holesPlayed, holesType, scorecardView, additionalPlayers.length]);
 
   // Round edit/delete state
   const [roundToDelete, setRoundToDelete] = useState<SavedRound | null>(null);
@@ -9509,7 +9518,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.46</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.47</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
