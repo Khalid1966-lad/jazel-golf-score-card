@@ -5412,42 +5412,159 @@ export default function AdminPage() {
                 {/* Backup Info */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold">What's Included in Backup</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Users & Profiles</span>
+                  <p className="text-xs text-muted-foreground">All 26 database tables + static files</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                    {/* Users & Auth */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Users & Auth</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Users</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Admin Sessions</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Admin Permissions</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Password Reset Tokens</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Golf Courses</span>
+                    {/* Clubs & Equipment */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Clubs & Equipment</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Club Distances</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>User Clubs</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Course Holes & Tees</span>
+                    {/* Golf Courses */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Golf Courses</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Courses</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Course Holes</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Course Tees</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Course Hole Distances</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Rounds & Scores</span>
+                    {/* Rounds & Scores */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rounds & Scores</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Rounds</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Round Scores</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Tournaments</span>
+                    {/* Favorites */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Favorites</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Favorites</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Golfer Groups</span>
+                    {/* Tournaments */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tournaments</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Tournaments</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Tournament Participants</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Messages</span>
+                    {/* Groups & Messages */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Groups & Messages</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Golfer Groups</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>User Groups</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Messages</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Message Reads</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Favorites</span>
+                    {/* Achievements */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Achievements</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Achievements</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>User Achievements</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span>Settings</span>
+                    {/* Partner Requests */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Partner Requests</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Partner Requests</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Partner Request Participants</span>
+                      </div>
+                    </div>
+                    {/* Local Businesses */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Local Businesses</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Repair Shops</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Golf Pros</span>
+                      </div>
+                    </div>
+                    {/* Settings & Static Files */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Settings & Static Files</p>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Settings</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>golf-rules.json static file</span>
+                      </div>
                     </div>
                   </div>
                 </div>
