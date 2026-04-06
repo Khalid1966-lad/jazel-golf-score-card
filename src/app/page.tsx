@@ -1389,21 +1389,6 @@ export default function JazelApp() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(true);
   const [selectedGPSHole, setSelectedGPSHole] = useState(1);
-
-  // Find next unfilled hole for main player
-  const getNextUnfilledHole = useCallback(() => {
-    const startHole = holesPlayed === 9 && holesType === 'back' ? 10 : 1;
-    const endHole = holesPlayed === 9 ? (holesType === 'back' ? 18 : 9) : 9;
-    // For 18-hole, check based on current view
-    const viewStart = holesPlayed === 18 ? (scorecardView === 'back' ? 10 : 1) : startHole;
-    const viewEnd = holesPlayed === 18 ? (scorecardView === 'back' ? 18 : 9) : endHole;
-
-    for (let h = viewStart; h <= viewEnd; h++) {
-      const score = scores.find(s => s.holeNumber === h);
-      if (!score || score.strokes === 0) return h;
-    }
-    return viewStart; // All filled, go to first
-  }, [scores, holesPlayed, holesType, scorecardView]);
   const [maxNearbyDistance, setMaxNearbyDistance] = useState(100);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
@@ -1460,6 +1445,20 @@ export default function JazelApp() {
   const [holesPlayed, setHolesPlayed] = useState<9 | 18>(18);
   const [holesType, setHolesType] = useState<'front' | 'back'>('front');
   const [scorecardView, setScorecardView] = useState<'front' | 'back'>('front');
+
+  // Find next unfilled hole for main player
+  const getNextUnfilledHole = useCallback(() => {
+    const startHole = holesPlayed === 9 && holesType === 'back' ? 10 : 1;
+    const endHole = holesPlayed === 9 ? (holesType === 'back' ? 18 : 9) : 9;
+    const viewStart = holesPlayed === 18 ? (scorecardView === 'back' ? 10 : 1) : startHole;
+    const viewEnd = holesPlayed === 18 ? (scorecardView === 'back' ? 18 : 9) : endHole;
+
+    for (let h = viewStart; h <= viewEnd; h++) {
+      const score = scores.find(s => s.holeNumber === h);
+      if (!score || score.strokes === 0) return h;
+    }
+    return viewStart;
+  }, [scores, holesPlayed, holesType, scorecardView]);
 
   // Helper: advance to next field horizontally across all players then putts/penalties
   // Flow: Main strokes → Player1 strokes → Player2 strokes → ... → Putts → Penalties → Next hole
@@ -9727,7 +9726,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.53</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.54</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
