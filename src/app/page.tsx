@@ -1221,6 +1221,7 @@ export default function JazelApp() {
   const [filterCity, setFilterCity] = useState<string>('all');
   const [courseViewMode, setCourseViewMode] = useState<'cards' | 'list'>('list');
   const [selectedCourse, setSelectedCourse] = useState<GolfCourse | null>(null);
+  const [courseDetailDialogCourse, setCourseDetailDialogCourse] = useState<GolfCourse | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isNearbyMode, setIsNearbyMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -3964,106 +3965,14 @@ export default function JazelApp() {
                               Coming Soon
                             </Button>
                           )}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button size="sm" variant="outline" style={{borderColor: '#a3c4e0'}}>
-                                Details
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-lg">
-                              <DialogHeader>
-                                <DialogTitle>{course.name}</DialogTitle>
-                                <DialogDescription>
-                                  {course.city}, {course.region} • {course.totalHoles} holes
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                {course.description && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {course.description}
-                                  </p>
-                                )}
-                                
-                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                  {course.designer && (
-                                    <div>
-                                      <span className="text-muted-foreground">Designer:</span>
-                                      <span className="ml-2 font-medium">{course.designer}</span>
-                                    </div>
-                                  )}
-                                  {course.yearBuilt && (
-                                    <div>
-                                      <span className="text-muted-foreground">Year:</span>
-                                      <span className="ml-2 font-medium">{course.yearBuilt}</span>
-                                    </div>
-                                  )}
-                                  {course.phone && (
-                                    <div>
-                                      <span className="text-muted-foreground">Phone:</span>
-                                      <span className="ml-2 font-medium">{course.phone}</span>
-                                    </div>
-                                  )}
-                                  {course.distance !== undefined && (
-                                    <div>
-                                      <span className="text-muted-foreground">Distance:</span>
-                                      <span className="ml-2 font-medium" style={{color: '#39638b'}}>
-                                        {distanceUnit === 'yards' 
-                                          ? `${(course.distance * 0.621371).toFixed(1)} mi`
-                                          : `${course.distance.toFixed(1)} km`}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {course.holes.length > 0 && (
-                                  <div className="mt-4">
-                                    <h4 className="font-medium mb-2">Hole Information</h4>
-                                    <ScrollArea className="h-48 rounded border">
-                                      <div className="p-2">
-                                        <div className="grid grid-cols-9 gap-1 text-center text-xs font-medium text-muted-foreground mb-1">
-                                          {Array.from({ length: Math.min(course.totalHoles, 18) }).map((_, i) => (
-                                            <div key={i} className="p-1">{i + 1}</div>
-                                          ))}
-                                        </div>
-                                        <div className="grid grid-cols-9 gap-1 text-center text-xs">
-                                          {course.holes.slice(0, 18).map((hole) => (
-                                            <div key={hole.id} className={`p-1 rounded ${
-                                              hole.par === 3 ? 'bg-red-100 text-red-700' :
-                                              hole.par === 4 ? 'bg-yellow-100 text-yellow-700' :
-                                              'bg-blue-100 text-blue-700'
-                                            }`}>
-                                              {hole.par}
-                                            </div>
-                                          ))}
-                                        </div>
-                                        <div className="mt-2 text-xs text-muted-foreground text-center">
-                                          Par: {course.holes.slice(0, 18).reduce((sum, h) => sum + h.par, 0)}
-                                        </div>
-                                      </div>
-                                    </ScrollArea>
-                                  </div>
-                                )}
-
-                                {course.isActive ? (
-                                  <Button
-                                    className="w-full text-white"
-                                    style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
-                                    onClick={() => startNewRound(course)}
-                                  >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Start a Round
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    className="w-full bg-red-500 hover:bg-red-600 text-white cursor-not-allowed"
-                                    disabled
-                                  >
-                                    Coming Soon
-                                  </Button>
-                                )}
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            style={{borderColor: '#a3c4e0'}}
+                            onClick={(e) => { e.stopPropagation(); setCourseDetailDialogCourse(course); }}
+                          >
+                            Details
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -4097,8 +4006,8 @@ export default function JazelApp() {
                       return true;
                     });
                     return filteredCourses.map((course) => (
-                      <TableRow key={course.id} className="hover:bg-muted/50 transition-colors"
-                        onClick={() => setSelectedCourse(course)}>
+                      <TableRow key={course.id} className="hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => setCourseDetailDialogCourse(course)}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <button
@@ -4171,6 +4080,104 @@ export default function JazelApp() {
               </div>
             )}
           </TabsContent>
+
+          {/* Shared Course Detail Dialog - used by both card and list views */}
+          <Dialog open={!!courseDetailDialogCourse} onOpenChange={(open) => { if (!open) setCourseDetailDialogCourse(null); }}>
+            <DialogContent className="max-w-lg">
+              {courseDetailDialogCourse && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>{courseDetailDialogCourse.name}</DialogTitle>
+                    <DialogDescription>
+                      {courseDetailDialogCourse.city}, {courseDetailDialogCourse.region} • {courseDetailDialogCourse.totalHoles} holes
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    {courseDetailDialogCourse.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {courseDetailDialogCourse.description}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {courseDetailDialogCourse.designer && (
+                        <div>
+                          <span className="text-muted-foreground">Designer:</span>
+                          <span className="ml-2 font-medium">{courseDetailDialogCourse.designer}</span>
+                        </div>
+                      )}
+                      {courseDetailDialogCourse.yearBuilt && (
+                        <div>
+                          <span className="text-muted-foreground">Year:</span>
+                          <span className="ml-2 font-medium">{courseDetailDialogCourse.yearBuilt}</span>
+                        </div>
+                      )}
+                      {courseDetailDialogCourse.phone && (
+                        <div>
+                          <span className="text-muted-foreground">Phone:</span>
+                          <span className="ml-2 font-medium">{courseDetailDialogCourse.phone}</span>
+                        </div>
+                      )}
+                      {courseDetailDialogCourse.distance !== undefined && (
+                        <div>
+                          <span className="text-muted-foreground">Distance:</span>
+                          <span className="ml-2 font-medium" style={{color: '#39638b'}}>
+                            {distanceUnit === 'yards'
+                              ? `${(courseDetailDialogCourse.distance * 0.621371).toFixed(1)} mi`
+                              : `${courseDetailDialogCourse.distance.toFixed(1)} km`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {courseDetailDialogCourse.holes.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Hole Information</h4>
+                        <ScrollArea className="h-48 rounded border">
+                          <div className="p-2">
+                            <div className="grid grid-cols-9 gap-1 text-center text-xs font-medium text-muted-foreground mb-1">
+                              {Array.from({ length: Math.min(courseDetailDialogCourse.totalHoles, 18) }).map((_, i) => (
+                                <div key={i} className="p-1">{i + 1}</div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-9 gap-1 text-center text-xs">
+                              {courseDetailDialogCourse.holes.slice(0, 18).map((hole) => (
+                                <div key={hole.id} className={`p-1 rounded ${
+                                  hole.par === 3 ? 'bg-red-100 text-red-700' :
+                                  hole.par === 4 ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {hole.par}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2 text-xs text-muted-foreground text-center">
+                              Par: {courseDetailDialogCourse.holes.slice(0, 18).reduce((sum, h) => sum + h.par, 0)}
+                            </div>
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+                    {courseDetailDialogCourse.isActive ? (
+                      <Button
+                        className="w-full text-white"
+                        style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                        onClick={() => startNewRound(courseDetailDialogCourse)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Start a Round
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full bg-red-500 hover:bg-red-600 text-white cursor-not-allowed"
+                        disabled
+                      >
+                        Coming Soon
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Partner Requests Tab */}
           <TabsContent value="partners" className="space-y-4">
@@ -9522,7 +9529,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.48</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.49</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
