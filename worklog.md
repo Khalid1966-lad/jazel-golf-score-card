@@ -224,3 +224,23 @@ Successfully added Repair Shops management to the admin page with the following 
 - POST `/api/repair-shops` - Create new shop
 - PUT `/api/repair-shops` - Update existing shop
 - DELETE `/api/repair-shops?id=xxx` - Delete shop
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix Vercel build error and improve score pad UI
+
+Work Log:
+- Identified Vercel build failure: `ReferenceError: Cannot access 'dq' before initialization`
+- Root cause: `holesPlayed`, `holesType`, `scorecardView` state variables declared at line ~1344 but referenced in `advanceScorePad` useCallback at line ~1335
+- Fix: moved the 3 state declarations to before the `advanceScorePad` useCallback (line ~1303)
+- Made score number buttons bigger: h-12 → h-14, text-lg → text-xl
+- Made "+" button smaller: h-9 w-9 text-base → h-8 w-8 text-sm
+- Made "Clear" button smaller: h-9 px-2 text-xs → h-8 px-1.5 text-[10px]
+- Horizontal auto-advance was already implemented (strokes → putts → penalties → next hole)
+- Bumped version to v1.4.46
+- Committed and pushed to both main and master branches
+
+Stage Summary:
+- Build error fixed by reordering variable declarations
+- Score pad buttons now have better size hierarchy (number buttons prominently larger than +/Clear)
+- Vercel deployment should succeed now
