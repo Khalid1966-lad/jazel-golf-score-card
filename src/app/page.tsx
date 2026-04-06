@@ -1297,6 +1297,8 @@ export default function JazelApp() {
     min: number;
     max: number;
   } | null>(null);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customInputValue, setCustomInputValue] = useState('');
 
   // Round edit/delete state
   const [roundToDelete, setRoundToDelete] = useState<SavedRound | null>(null);
@@ -4885,14 +4887,14 @@ export default function JazelApp() {
                     </div>
 
                     {/* Custom Score Pad - right below the scorecard */}
-                    {activeScorePad && (
+                    {activeScorePad && !showCustomInput && (
                       <div className="px-4 pb-2">
                         <div className="p-2.5 rounded-xl bg-white border-2 shadow-lg" style={{borderColor: '#39638b'}}>
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="text-sm font-semibold" style={{color: '#39638b'}}>
                               Hole {activeScorePad.holeNumber} — {activeScorePad.field === 'strokes' ? 'Strokes' : activeScorePad.field === 'putts' ? 'Putts' : 'Penalties'}
                             </span>
-                            <button onClick={() => setActiveScorePad(null)} className="text-muted-foreground hover:text-foreground">
+                            <button onClick={() => { setActiveScorePad(null); setShowCustomInput(false); }} className="text-muted-foreground hover:text-foreground">
                               <X className="w-4 h-4" />
                             </button>
                           </div>
@@ -4949,6 +4951,14 @@ export default function JazelApp() {
                                 </button>
                               );
                             })}
+                            {/* Custom number button */}
+                            <button
+                              onClick={() => { setShowCustomInput(true); setCustomInputValue(''); }}
+                              className="h-11 w-11 flex-shrink-0 rounded-lg border-2 border-blue-300 text-blue-600 text-lg font-bold hover:bg-blue-50 transition-all active:scale-95"
+                            >
+                              +
+                            </button>
+                            {/* Clear button */}
                             <button
                               onClick={() => {
                                 if (activeScorePad.type === 'main') {
@@ -4958,11 +4968,92 @@ export default function JazelApp() {
                                 }
                                 setActiveScorePad(null);
                               }}
-                              className="h-11 px-4 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
+                              className="h-11 px-3 flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-sm font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
                             >
                               Clear
                             </button>
                           </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Custom number input */}
+                    {activeScorePad && showCustomInput && (
+                      <div className="px-4 pb-2">
+                        <div className="p-2.5 rounded-xl bg-white border-2 shadow-lg" style={{borderColor: '#39638b'}}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-sm font-semibold" style={{color: '#39638b'}}>
+                              Hole {activeScorePad.holeNumber} — {activeScorePad.field === 'strokes' ? 'Strokes' : activeScorePad.field === 'putts' ? 'Putts' : 'Penalties'}
+                            </span>
+                            <button onClick={() => { setShowCustomInput(false); setActiveScorePad(null); }} className="text-muted-foreground hover:text-foreground">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              inputMode="numeric"
+                              min={activeScorePad.min}
+                              max={99}
+                              placeholder={String(activeScorePad.min)}
+                              value={customInputValue}
+                              onChange={(e) => setCustomInputValue(e.target.value)}
+                              className="h-11 flex-1 text-center text-lg font-semibold border-gray-300"
+                              style={{'--tw-ring-color': '#39638b'} as React.CSSProperties}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && customInputValue) {
+                                  const val = parseInt(customInputValue) || 0;
+                                  if (val >= activeScorePad.min) {
+                                    if (activeScorePad.type === 'main') {
+                                      updateScore(activeScorePad.holeNumber, activeScorePad.field, val);
+                                    } else {
+                                      updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', val);
+                                    }
+                                  }
+                                  setShowCustomInput(false);
+                                  const nextHole = activeScorePad.holeNumber + 1;
+                                  const maxHole = holesPlayed === 9
+                                    ? (holesType === 'back' ? 18 : 9)
+                                    : (scorecardView === 'back' ? 18 : 9);
+                                  if (nextHole <= maxHole) {
+                                    setActiveScorePad(prev => prev ? { ...prev, holeNumber: nextHole } : null);
+                                  } else {
+                                    setActiveScorePad(null);
+                                  }
+                                }
+                                if (e.key === 'Escape') {
+                                  setShowCustomInput(false);
+                                }
+                              }}
+                            />
+                            <Button
+                              onClick={() => {
+                                const val = parseInt(customInputValue) || 0;
+                                if (val >= activeScorePad.min) {
+                                  if (activeScorePad.type === 'main') {
+                                    updateScore(activeScorePad.holeNumber, activeScorePad.field, val);
+                                  } else {
+                                    updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', val);
+                                  }
+                                  setShowCustomInput(false);
+                                  const nextHole = activeScorePad.holeNumber + 1;
+                                  const maxHole = holesPlayed === 9
+                                    ? (holesType === 'back' ? 18 : 9)
+                                    : (scorecardView === 'back' ? 18 : 9);
+                                  if (nextHole <= maxHole) {
+                                    setActiveScorePad(prev => prev ? { ...prev, holeNumber: nextHole } : null);
+                                  } else {
+                                    setActiveScorePad(null);
+                                  }
+                                }
+                              }}
+                              className="h-11 px-5 text-white flex-shrink-0"
+                              style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
+                            >
+                              OK
+                            </Button>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1 text-center">Enter any number, then press OK or Enter</p>
                         </div>
                       </div>
                     )}
