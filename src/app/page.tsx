@@ -5050,7 +5050,7 @@ export default function JazelApp() {
                               <X className="w-4 h-4" />
                             </button>
                           </div>
-                          <div className="flex gap-1.5 items-center">
+                          <div className="flex gap-1.5 items-stretch">
                             {Array.from({ length: activeScorePad.max - activeScorePad.min + 1 }, (_, i) => {
                               const val = activeScorePad.min + i;
                               const isActive = (() => {
@@ -5087,7 +5087,7 @@ export default function JazelApp() {
                                     }
                                     advanceScorePad(activeScorePad);
                                   }}
-                                  className="flex-1 h-14 rounded-lg border-2 text-xl font-bold transition-all active:scale-95"
+                                  className="flex-1 h-14 rounded-lg border-2 text-2xl font-bold transition-all active:scale-95"
                                   style={{
                                     ...btnStyle,
                                     ...(isActive ? { boxShadow: '0 0 0 2px #39638b' } : {})
@@ -5097,27 +5097,28 @@ export default function JazelApp() {
                                 </button>
                               );
                             })}
-                            {/* Custom number button - smaller */}
-                            <button
-                              onClick={() => { setShowCustomInput(true); setCustomInputValue(''); }}
-                              className="h-8 w-8 flex-shrink-0 rounded-lg border-2 border-blue-300 text-blue-600 text-sm font-bold hover:bg-blue-50 transition-all active:scale-95"
-                            >
-                              +
-                            </button>
-                            {/* Clear button - smaller */}
-                            <button
-                              onClick={() => {
-                                if (activeScorePad.type === 'main') {
-                                  updateScore(activeScorePad.holeNumber, activeScorePad.field, 0);
-                                } else {
-                                  updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', 0);
-                                }
-                                setActiveScorePad(null);
-                              }}
-                              className="h-8 px-1.5 flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-[10px] font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95"
-                            >
-                              Clear
-                            </button>
+                            {/* + and Clear stacked vertically */}
+                            <div className="flex flex-col gap-1 flex-shrink-0 w-9">
+                              <button
+                                onClick={() => { setShowCustomInput(true); setCustomInputValue(''); }}
+                                className="flex-1 rounded-lg border-2 border-blue-300 text-blue-600 text-sm font-bold hover:bg-blue-50 transition-all active:scale-95 flex items-center justify-center"
+                              >
+                                +
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (activeScorePad.type === 'main') {
+                                    updateScore(activeScorePad.holeNumber, activeScorePad.field, 0);
+                                  } else {
+                                    updatePlayerScore(activeScorePad.playerIndex!, activeScorePad.holeNumber, 'strokes', 0);
+                                  }
+                                  setActiveScorePad(null);
+                                }}
+                                className="flex-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 text-[10px] font-medium hover:border-red-300 hover:text-red-500 transition-all active:scale-95 flex items-center justify-center"
+                              >
+                                Clear
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
