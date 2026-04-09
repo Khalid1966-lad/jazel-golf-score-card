@@ -5974,7 +5974,7 @@ export default function JazelApp() {
                     className={`h-12 px-3 flex-shrink-0 ${showFavoriteGolfersOnly ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-red-200 hover:bg-red-50'}`}
                   >
                     <Heart className={`w-4 h-4 mr-1.5 ${showFavoriteGolfersOnly ? 'fill-white' : ''}`} />
-                    <span className="hidden sm:inline">Favorites</span>
+                    <span>Golfing Friends</span>
                     {favoriteGolferIds.length > 0 && (
                       <span className="ml-1 text-xs">{favoriteGolferIds.length}</span>
                     )}
