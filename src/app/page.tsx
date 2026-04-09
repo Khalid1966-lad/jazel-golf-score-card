@@ -1388,6 +1388,13 @@ export default function JazelApp() {
   const [showGPSPanel, setShowGPSPanel] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(true);
+  const [favoriteGolferIds, setFavoriteGolferIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try { return JSON.parse(localStorage.getItem('jazel_favorite_golfers') || '[]'); } catch { return []; }
+    }
+    return [];
+  });
+  const [showFavoriteGolfersOnly, setShowFavoriteGolfersOnly] = useState(false);
   const [selectedGPSHole, setSelectedGPSHole] = useState(1);
   const [maxNearbyDistance, setMaxNearbyDistance] = useState(100);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -2405,6 +2412,23 @@ export default function JazelApp() {
       toast.error('Failed to update favorites');
     }
   };
+
+  const toggleFavoriteGolfer = (golferId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isFavorited = favoriteGolferIds.includes(golferId);
+    if (isFavorited) {
+      setFavoriteGolferIds(prev => prev.filter(id => id !== golferId));
+      toast.success('Removed from favorites');
+    } else {
+      setFavoriteGolferIds(prev => [...prev, golferId]);
+      toast.success('Added to favorites');
+    }
+  };
+
+  // Save favorite golfers to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('jazel_favorite_golfers', JSON.stringify(favoriteGolferIds));
+  }, [favoriteGolferIds]);
 
   // Login
   const handleLogin = async () => {
@@ -5941,6 +5965,20 @@ export default function JazelApp() {
                       onBlur={(e) => e.target.style.borderColor = '#a3c4e0'}
                     />
                   </div>
+
+                  {/* Favorite Golfers Filter */}
+                  <Button
+                    variant={showFavoriteGolfersOnly ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setShowFavoriteGolfersOnly(!showFavoriteGolfersOnly)}
+                    className={`h-12 px-3 flex-shrink-0 ${showFavoriteGolfersOnly ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-red-200 hover:bg-red-50'}`}
+                  >
+                    <Heart className={`w-4 h-4 mr-1.5 ${showFavoriteGolfersOnly ? 'fill-white' : ''}`} />
+                    <span className="hidden sm:inline">Favorites</span>
+                    {favoriteGolferIds.length > 0 && (
+                      <span className="ml-1 text-xs">{favoriteGolferIds.length}</span>
+                    )}
+                  </Button>
                 </div>
 
                 {golfers.length === 0 ? (
@@ -5956,10 +5994,11 @@ export default function JazelApp() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {golfers
                       .filter((golfer) => 
-                        golferSearch === '' || 
+                        (!showFavoriteGolfersOnly || favoriteGolferIds.includes(golfer.id)) &&
+                        (golferSearch === '' || 
                         golfer.name?.toLowerCase().includes(golferSearch.toLowerCase()) ||
                         golfer.city?.toLowerCase().includes(golferSearch.toLowerCase()) ||
-                        golfer.country?.toLowerCase().includes(golferSearch.toLowerCase())
+                        golfer.country?.toLowerCase().includes(golferSearch.toLowerCase()))
                       )
                       .sort((a, b) => {
                         if (golferSort === 'rounds') {
@@ -5972,6 +6011,7 @@ export default function JazelApp() {
                       })
                       .map((golfer, index) => {
                         const levelStyle = getLevelStyle(golfer.achievementLevel || 'Beginner');
+                        const isFavGolfer = favoriteGolferIds.includes(golfer.id);
                         return (
                       <motion.div
                         key={golfer.id}
@@ -5990,9 +6030,17 @@ export default function JazelApp() {
                                 {golfer.achievementLevel || 'Beginner'}
                               </span>
                             </div>
-                            <span className={`text-xs font-medium ${levelStyle.text}`}>
-                              {golfer.achievementPoints || 0} pts
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => toggleFavoriteGolfer(golfer.id, e)}
+                                className="p-0.5 hover:scale-110 transition-transform"
+                              >
+                                <Heart className={`w-4 h-4 transition-colors ${isFavGolfer ? 'fill-red-500 text-red-500' : 'text-muted-foreground/50 hover:text-red-400'}`} />
+                              </button>
+                              <span className={`text-xs font-medium ${levelStyle.text}`}>
+                                {golfer.achievementPoints || 0} pts
+                              </span>
+                            </div>
                           </div>
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
@@ -6082,10 +6130,11 @@ export default function JazelApp() {
                       <TableBody>
                         {golfers
                           .filter((golfer) => 
-                            golferSearch === '' || 
+                            (!showFavoriteGolfersOnly || favoriteGolferIds.includes(golfer.id)) &&
+                            (golferSearch === '' || 
                             golfer.name?.toLowerCase().includes(golferSearch.toLowerCase()) ||
                             golfer.city?.toLowerCase().includes(golferSearch.toLowerCase()) ||
-                            golfer.country?.toLowerCase().includes(golferSearch.toLowerCase())
+                            golfer.country?.toLowerCase().includes(golferSearch.toLowerCase()))
                           )
                           .sort((a, b) => {
                             if (golferSort === 'rounds') {
@@ -6098,11 +6147,18 @@ export default function JazelApp() {
                           })
                           .map((golfer) => {
                             const levelStyle = getLevelStyle(golfer.achievementLevel || 'Beginner');
+                            const isFavGolfer = favoriteGolferIds.includes(golfer.id);
                             return (
                               <TableRow key={golfer.id} className="hover:bg-muted/50 cursor-pointer transition-colors"
                                 onClick={() => setPlayerToView({ name: golfer.name || 'Anonymous Golfer', avatar: golfer.avatar, handicap: golfer.handicap, userId: golfer.id })}>
                                 <TableCell>
                                   <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={(e) => toggleFavoriteGolfer(golfer.id, e)}
+                                      className="flex-shrink-0 hover:scale-110 transition-transform"
+                                    >
+                                      <Heart className={`w-4 h-4 transition-colors ${isFavGolfer ? 'fill-red-500 text-red-500' : 'text-muted-foreground/30 hover:text-red-400'}`} />
+                                    </button>
                                     <div className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
                                       style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
                                       {golfer.avatar ? (
