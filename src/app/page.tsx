@@ -3557,11 +3557,13 @@ export default function JazelApp() {
       }> = [];
       
       playerScores.forEach((ps, idx) => {
-        const scoresWithStrokesForPlayer = ps.filter(s => s.strokes > 0);
-        if (scoresWithStrokesForPlayer.length > 0) {
+        // In tournament mode, send ALL holes (including 0 strokes) so backend can calculate accurate grossScore
+        // In regular mode, only send scored holes
+        const scoresToSend = isLiveScoring ? ps : ps.filter(s => s.strokes > 0);
+        if (scoresToSend.length > 0) {
           playerScoresArray.push({
             playerIndex: idx,
-            scores: scoresWithStrokesForPlayer,
+            scores: scoresToSend,
           });
         }
       });
@@ -7102,15 +7104,16 @@ export default function JazelApp() {
                               if (a.grossScore === null) return 1;
                               if (b.grossScore === null) return -1;
                               // Sort by net vs par: (gross - par - handicap)
-                              const aNetDiff = (a.grossScore! - coursePar) - Math.round(a.user.handicap || 0);
-                              const bNetDiff = (b.grossScore! - coursePar) - Math.round(b.user.handicap || 0);
+                              const aNetDiff = (a.grossScore! - coursePar) - (a.user.handicap || 0);
+                              const bNetDiff = (b.grossScore! - coursePar) - (b.user.handicap || 0);
                               return aNetDiff - bNetDiff;
                             }
                             return (a.user.handicap || 0) - (b.user.handicap || 0);
                           });
                           return sorted.map((participant, index) => {
                             const grossDiff = participant.grossScore != null ? participant.grossScore - coursePar : null;
-                            const netDiff = participant.grossScore != null ? grossDiff! - Math.round(participant.user.handicap || 0) : null;
+                            const playerHcp = participant.user.handicap || 0;
+                            const netDiff = grossDiff != null ? grossDiff - playerHcp : null;
                             return (
                             <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
                               <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
@@ -9602,7 +9605,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.69 • Made with ❤️ for Golfers
+              Version 1.4.71 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10423,7 +10426,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.69</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.71</p>
             </div>
             
             {/* Description */}
