@@ -326,3 +326,26 @@ Stage Summary:
 - Fixed: Save Draft now properly saves and closes the scorecard
 - Fixed: Leaderboard now shows gross/net scores after draft save
 - Files changed: src/app/api/tournaments/scoring/route.ts, src/app/page.tsx
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix tournament scoring - leaderboard refresh, continue scoring, live banner, +/- display
+
+Work Log:
+- Found Bug 1: fetchTournamentWithParticipants had no cache-busting → browser served stale data
+- Found Bug 2: resumeTournamentScoring called GET /api/tournaments/scoring without tournamentId (required param) → 400 error → Continue Scoring button silently failed
+- Found Bug 3: loadRoundForEditing never set isLiveScoring/tournamentScoringInfo when opening tournament rounds from history
+- Found Bug 4: Net score showed raw number instead of +/- relative to course par
+- Fix 1: Added _t=Date.now() and cache: 'no-store' to fetchTournamentWithParticipants
+- Fix 2: resumeTournamentScoring now accepts optional tournamentId param, passes it to API
+- Fix 3: Continue Scoring button now passes tournament.id to resumeTournamentScoring
+- Fix 4: loadRoundForEditing now checks for tournamentId/tournamentGroupLetter and fetches active scoring round
+- Fix 5: Leaderboard columns show both raw score AND +/- par (color-coded green/red)
+- Fix 6: Tournament API now includes course holes for par calculation
+
+Stage Summary:
+- Leaderboard refreshes with fresh data after every save draft
+- Continue Scoring button now works (opens scorecard with existing scores)
+- Tournament draft rounds in history now show live scoring banner when opened
+- Leaderboard shows "72 +2" or "70 -2" or "72 E" format with colors
+- Files changed: src/app/page.tsx, src/app/api/tournaments/route.ts
