@@ -370,3 +370,27 @@ Stage Summary:
 - The missing cache-busting caused the browser to return stale GET responses (with all-zero scores from before the draft was saved)
 - Now all scoring-related fetches use _t=timestamp and cache: no-store to ensure fresh data
 
+---
+Task ID: 1
+Agent: Main Agent
+Task: Admin lock/unlock group scores system - v1.4.80
+
+Work Log:
+- Added lockedAt DateTime? and scoreSnapshot String? to TournamentParticipant schema
+- Created /api/tournaments/validate endpoint (POST=lock group, DELETE=unlock group)
+- Lock saves current grossScore/netScore as JSON snapshot + sets lockedAt on all group participants
+- Unlock clears lockedAt and scoreSnapshot for all group participants
+- Updated scoring PUT handler: skips locked participants (if participant.lockedAt, continue)
+- Updated recalculate endpoint: skips locked participants (scores preserved from validation)
+- Added Lock/Unlock buttons in group card header (Lock only visible when group has scores)
+- Added '🔒 Validated' badge on locked group headers
+- Added 🔒 icon on locked players in leaderboard
+- Added Lock, Unlock icons from lucide-react
+- Scorer can delete scorecard after lock — scores remain in TournamentParticipant table
+- After unlock, if scorecard wasn't deleted, scorer can continue editing and save will update scores
+
+Stage Summary:
+- v1.4.80 deployed with admin group score validation
+- Lock prevents score changes via scorecard save AND recalculate
+- Unlock re-enables editing if scorecard still exists
+- Force pushed to both main and master branches
