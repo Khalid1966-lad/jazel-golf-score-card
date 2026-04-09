@@ -1783,6 +1783,12 @@ export default function JazelApp() {
           setHasUnsavedWork(true);
           setEditingRoundId(parsed.editingRoundId || null);
           
+          // Restore live scoring state if it was a tournament round
+          if (parsed.isLiveScoring && parsed.tournamentScoringInfo) {
+            setIsLiveScoring(true);
+            setTournamentScoringInfo(parsed.tournamentScoringInfo);
+          }
+          
           toast.info('Restored your unsaved round. Continue playing or save when ready.', {
             duration: 5000,
           });
@@ -1814,6 +1820,8 @@ export default function JazelApp() {
           holesPlayed,
           holesType,
           editingRoundId,
+          isLiveScoring,
+          tournamentScoringInfo,
           savedAt: new Date().toISOString(),
         }));
         setHasUnsavedWork(true);
@@ -3555,15 +3563,18 @@ export default function JazelApp() {
 
       // Tournament live scoring mode - use tournament scoring API
       if (isLiveScoring && tournamentScoringInfo) {
+        // Start socket connection in background (non-blocking) - only for live leaderboard broadcast
         let socket: any = null;
-        try {
-          const { io: socketIO } = await import('socket.io-client');
-          socket = socketIO('/?XTransformPort=3005', {
-            transports: ['websocket', 'polling'],
-            reconnection: false,
-            timeout: 3000,
-          });
-        } catch {}
+        import('socket.io-client').then(({ io: socketIO }) => {
+          try {
+            socket = socketIO('/?XTransformPort=3005', {
+              transports: ['websocket'],
+              reconnection: false,
+              timeout: 1500,
+            });
+          } catch {}
+        }).catch(() => {});
+        
         const currentHole = liveScoringHole;
         const response = await fetch('/api/tournaments/scoring', {
           method: 'PUT',
@@ -9523,7 +9534,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.65 • Made with ❤️ for Golfers
+              Version 1.4.66 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10344,7 +10355,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.65</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.66</p>
             </div>
             
             {/* Description */}
@@ -10390,7 +10401,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.65</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.66</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

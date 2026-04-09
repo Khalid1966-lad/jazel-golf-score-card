@@ -366,8 +366,29 @@ export async function PUT(request: NextRequest) {
       const greensInReg = mainPlayerScores.filter(s => s.greenInReg).length;
       const penalties = mainPlayerScores.reduce((sum: number, s) => sum + (s.penalties || 0), 0);
 
-      // Delete existing scores and recreate
-      await db.roundScore.deleteMany({ where: { roundId } });
+      // Upsert scores (update existing, create new) instead of delete+recreate
+      await Promise.all(allScores.map(s =>
+        db.roundScore.upsert({
+          where: {
+            roundId_holeNumber_playerIndex: {
+              roundId,
+              holeNumber: s.holeNumber,
+              playerIndex: s.playerIndex,
+            },
+          },
+          update: {
+            strokes: s.strokes,
+            putts: s.putts || 0,
+            fairwayHit: s.fairwayHit ?? null,
+            greenInReg: s.greenInReg || false,
+            penalties: s.penalties || 0,
+            sandShots: s.sandShots || 0,
+            chipShots: s.chipShots || 0,
+            driveDistance: s.driveDistance || null,
+          },
+          create: s,
+        })
+      ));
 
       await db.round.update({
         where: { id: roundId },
@@ -382,7 +403,6 @@ export async function PUT(request: NextRequest) {
           playerHandicap: playerHandicap !== undefined ? playerHandicap : undefined,
           completed: completed !== undefined ? completed : undefined,
           completedAt: completed ? new Date() : undefined,
-          scores: { create: allScores },
         },
       });
 
