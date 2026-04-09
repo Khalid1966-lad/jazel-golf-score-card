@@ -1393,7 +1393,7 @@ function ScoringActionButton({
       if (cancelled) return;
       setChecking(true);
     });
-    fetch(`/api/tournaments/scoring?tournamentId=${tournament.id}&scorerId=${user.id}`)
+    fetch(`/api/tournaments/scoring?tournamentId=${tournament.id}&scorerId=${user.id}&_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (cancelled) return;
@@ -2246,10 +2246,10 @@ export default function JazelApp() {
       console.log('[TournamentScoring] Resuming scoring round:', scoringRoundId);
       
       // Build query with required tournamentId (API requires it)
-      let url = `/api/tournaments/scoring?scorerId=${user.id}`;
+      let url = `/api/tournaments/scoring?scorerId=${user.id}&_t=${Date.now()}`;
       if (tournamentId) url += `&tournamentId=${tournamentId}`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) {
         let errorMsg = 'Failed to resume scoring';
         try {
@@ -3662,10 +3662,11 @@ export default function JazelApp() {
             toast.success('Draft saved! You can resume scoring from the tournament.');
           }
 
-          // Refresh leaderboard BEFORE clearing state
+          // Refresh leaderboard AND history BEFORE clearing state
           if (tid) {
             await fetchTournamentWithParticipants(tid);
           }
+          await fetchRounds();
 
           // Clear scorecard state
           setIsLiveScoring(false);
@@ -4184,7 +4185,7 @@ export default function JazelApp() {
       // If this is a tournament round, set live scoring state
       if (round.tournamentId && round.tournamentGroupLetter) {
         try {
-          const scoringResponse = await fetch(`/api/tournaments/scoring?tournamentId=${round.tournamentId}&scorerId=${user?.id}&_t=${Date.now()}`);
+          const scoringResponse = await fetch(`/api/tournaments/scoring?tournamentId=${round.tournamentId}&scorerId=${user?.id}&_t=${Date.now()}`, { cache: 'no-store' });
           if (scoringResponse.ok) {
             const scoringData = await scoringResponse.json();
             const scoringRounds = scoringData.scoringRounds || [];
