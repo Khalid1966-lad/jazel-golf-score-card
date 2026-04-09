@@ -7059,40 +7059,47 @@ export default function JazelApp() {
                                       </Popover>
                                     )}
                                     <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
-                                    {/* Admin Lock/Unlock group scores */}
-                                    {user && letter !== 'U' && (
-                                      (() => {
-                                        const groupLocked = participants.some(p => p.lockedAt);
-                                        const groupHasScores = participants.some(p => p.grossScore !== null);
-                                        return lockingGroup === letter ? (
-                                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                                        ) : groupLocked ? (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 px-2 text-xs hover:bg-amber-100 text-amber-700 gap-1"
-                                            onClick={() => unlockGroupScores(selectedTournament.id, letter)}
-                                            title="Unlock scores — allow scorer to edit again"
-                                          >
-                                            <Unlock className="w-3.5 h-3.5" />
-                                            Unlock
-                                          </Button>
-                                        ) : groupHasScores ? (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 px-2 text-xs hover:bg-green-100 text-green-700 gap-1"
-                                            onClick={() => lockGroupScores(selectedTournament.id, letter)}
-                                            title="Lock scores — prevent changes, safe to delete scorecard"
-                                          >
-                                            <Lock className="w-3.5 h-3.5" />
-                                            Lock
-                                          </Button>
-                                        ) : null;
-                                      })()
-                                    )}
                                   </div>
                                 </div>
+                                {/* Admin Lock/Unlock group scores — own line */}
+                                {user && letter !== 'U' && (() => {
+                                  const groupLocked = participants.some(p => p.lockedAt);
+                                  const groupHasScores = participants.some(p => p.grossScore !== null);
+                                  if (!groupLocked && !groupHasScores && lockingGroup !== letter) return null;
+                                  return (
+                                    <div className="px-3 py-2 flex items-center gap-2 border-b border-white/50">
+                                      {lockingGroup === letter ? (
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                          {groupLocked ? 'Unlocking...' : 'Locking...'}
+                                        </div>
+                                      ) : groupLocked ? (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 px-3 text-xs gap-1.5 text-amber-700 border-amber-200 hover:bg-amber-50"
+                                          onClick={() => unlockGroupScores(selectedTournament.id, letter)}
+                                        >
+                                          <Unlock className="w-3.5 h-3.5" />
+                                          🔓 Unlock Scores
+                                        </Button>
+                                      ) : groupHasScores ? (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 px-3 text-xs gap-1.5 text-green-700 border-green-200 hover:bg-green-50"
+                                          onClick={() => lockGroupScores(selectedTournament.id, letter)}
+                                        >
+                                          <Lock className="w-3.5 h-3.5" />
+                                          🔒 Lock Scores
+                                        </Button>
+                                      ) : null}
+                                      {groupLocked && (
+                                        <span className="text-[11px] text-emerald-600">Scores validated — safe to delete scorecard</span>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                                 <div className="divide-y divide-white/50">
                                   {participants
                                     .sort((a, b) => {
