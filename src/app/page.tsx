@@ -703,15 +703,18 @@ function RoundHistoryCard({
           {/* Main row - always visible */}
           <div className="flex items-center justify-between">
             <div className="flex-1">
+              {/* Tournament badge - first row, prominent */}
+              {(round as any).tournamentId && (
+                <div className="mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-sm font-semibold" style={{background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white'}}>
+                    🏆 Tournament{(round as any).tournamentGroupLetter ? ` — Group ${(round as any).tournamentGroupLetter}` : ''}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <h4 className="font-medium">{round.course?.name || 'Unknown Course'}</h4>
                 {!round.completed && (
                   <Badge className="bg-amber-500 text-white text-xs">Draft</Badge>
-                )}
-                {(round as any).tournamentId && (
-                  <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-xs" title="Tournament Round">
-                    🏆 Tournament{(round as any).tournamentGroupLetter ? ` - Group ${(round as any).tournamentGroupLetter}` : ''}
-                  </Badge>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
