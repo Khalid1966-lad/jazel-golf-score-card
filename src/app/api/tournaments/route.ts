@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
               city: true,
               region: true,
               country: true,
+              holes: { select: { holeNumber: true, par: true }, orderBy: { holeNumber: 'asc' } },
             }
           },
           admin: {

@@ -1373,7 +1373,7 @@ function ScoringActionButton({
   tournament: Tournament;
   tournamentScoringLoading: boolean;
   startTournamentScoring: (tournamentId: string, groupLetter: string) => Promise<void>;
-  resumeTournamentScoring: (scoringRoundId: string) => Promise<void>;
+  resumeTournamentScoring: (scoringRoundId: string, tournamentId?: string) => Promise<void>;
 }) {
   const [activeScoringRound, setActiveScoringRound] = useState<any>(null);
   const [checking, setChecking] = useState(false);
@@ -1426,7 +1426,7 @@ function ScoringActionButton({
       <Button
         className="w-full text-white"
         style={{background: 'linear-gradient(to right, #059669, #0d9488)'}}
-        onClick={() => resumeTournamentScoring(activeScoringRound.id)}
+        onClick={() => resumeTournamentScoring(activeScoringRound.id, tournament.id)}
         disabled={tournamentScoringLoading}
       >
         <Radio className="w-4 h-4 mr-2" />
@@ -2076,7 +2076,7 @@ export default function JazelApp() {
   // Fetch tournament with participants
   const fetchTournamentWithParticipants = useCallback(async (tournamentId: string) => {
     try {
-      const response = await fetch(`/api/tournaments?id=${tournamentId}&includeParticipants=true`);
+      const response = await fetch(`/api/tournaments?id=${tournamentId}&includeParticipants=true&_t=${Date.now()}`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         if (data.tournament) {
@@ -2209,7 +2209,7 @@ export default function JazelApp() {
   }, [user]);
 
   // Resume an existing tournament scoring round
-  const resumeTournamentScoring = useCallback(async (scoringRoundId: string) => {
+  const resumeTournamentScoring = useCallback(async (scoringRoundId: string, tournamentId?: string) => {
     if (!user) {
       toast.error('You must be logged in to resume scoring');
       return;
@@ -2218,7 +2218,11 @@ export default function JazelApp() {
       setTournamentScoringLoading(true);
       console.log('[TournamentScoring] Resuming scoring round:', scoringRoundId);
       
-      const response = await fetch(`/api/tournaments/scoring?scorerId=${user.id}`);
+      // Build query with required tournamentId (API requires it)
+      let url = `/api/tournaments/scoring?scorerId=${user.id}`;
+      if (tournamentId) url += `&tournamentId=${tournamentId}`;
+      
+      const response = await fetch(url);
       if (!response.ok) {
         let errorMsg = 'Failed to resume scoring';
         try {
@@ -2230,13 +2234,14 @@ export default function JazelApp() {
       }
       const data = await response.json();
       const activeRounds = data.scoringRounds || [];
-      const activeRound = activeRounds.find((r: any) => r.id === scoringRoundId) || activeRounds[0];
+      // Find the specific scoring round, also filter for active status
+      const activeRound = activeRounds.find((r: any) => r.id === scoringRoundId && r.status === 'active') || activeRounds.find((r: any) => r.id === scoringRoundId) || activeRounds[0];
       if (!activeRound) {
         toast.error('No active scoring round found');
         return;
       }
       const round = activeRound.round;
-      const groupLetter = round.tournamentGroupLetter || 'A';
+      const groupLetter = round.tournamentGroupLetter || activeRound.groupLetter || 'A';
       
       // Use round.course (included in GET response) instead of tournament.course
       const courseData = round.course;
@@ -4145,12 +4150,36 @@ export default function JazelApp() {
       setEditingRoundId(round.id);
       setShowScorecard(true);
       setActiveTab('scorecard');
+      
+      // If this is a tournament round, set live scoring state
+      if (round.tournamentId && round.tournamentGroupLetter) {
+        try {
+          const scoringResponse = await fetch(`/api/tournaments/scoring?tournamentId=${round.tournamentId}&scorerId=${user?.id}&_t=${Date.now()}`);
+          if (scoringResponse.ok) {
+            const scoringData = await scoringResponse.json();
+            const scoringRounds = scoringData.scoringRounds || [];
+            const match = scoringRounds.find((r: any) => r.roundId === round.id && r.status === 'active');
+            if (match) {
+              setIsLiveScoring(true);
+              setTournamentScoringInfo({
+                tournamentId: round.tournamentId,
+                groupLetter: round.tournamentGroupLetter,
+                scoringRoundId: match.id,
+              });
+              toast.info('Tournament round loaded. You can continue live scoring.');
+            }
+          }
+        } catch {
+          // Not critical — just won't show live scoring banner
+        }
+      }
+      
       toast.info('Round loaded for editing. Make changes and save to update.');
     } catch (error) {
       console.error('Failed to load round for editing:', error);
       toast.error('Failed to load round');
     }
-  }, []);
+  }, [user]);
 
   // Calculate round totals
   const calculateTotals = () => {
@@ -7048,6 +7077,14 @@ export default function JazelApp() {
                         </div>
                         {/* Sorted participants */}
                         {(() => {
+                          const coursePar = (selectedTournament.course?.holes || []).reduce((sum: number, h: any) => sum + (h.par || 4), 0);
+                          const formatVsPar = (score: number | null) => {
+                            if (score === null || score === undefined) return '-';
+                            const diff = score - coursePar;
+                            if (diff > 0) return `+${diff}`;
+                            if (diff < 0) return `${diff}`;
+                            return 'E';
+                          };
                           const sorted = [...selectedTournament.participants].sort((a, b) => {
                             if (participantSort === 'gross') {
                               if (a.grossScore === null && b.grossScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
@@ -7083,10 +7120,16 @@ export default function JazelApp() {
                                 </Badge>
                               </div>
                               <div className="col-span-2 text-center font-mono">
-                                {participant.grossScore ?? '-'}
+                                <span className="text-xs text-muted-foreground mr-1">{participant.grossScore ?? '-'}</span>
+                                <span className={participant.grossScore != null ? (participant.grossScore - coursePar > 0 ? 'text-red-600 font-semibold' : participant.grossScore - coursePar < 0 ? 'text-green-600 font-semibold' : 'font-semibold') : ''}>
+                                  {formatVsPar(participant.grossScore)}
+                                </span>
                               </div>
                               <div className="col-span-2 text-center font-mono">
-                                {participant.netScore ?? '-'}
+                                <span className="text-xs text-muted-foreground mr-1">{participant.netScore ?? '-'}</span>
+                                <span className={participant.netScore != null ? (participant.netScore - coursePar > 0 ? 'text-red-600 font-semibold' : participant.netScore - coursePar < 0 ? 'text-green-600 font-semibold' : 'font-semibold') : ''}>
+                                  {formatVsPar(participant.netScore)}
+                                </span>
                               </div>
                               <div className="col-span-1"></div>
                             </div>
@@ -9549,7 +9592,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.68 • Made with ❤️ for Golfers
+              Version 1.4.69 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10370,7 +10413,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.68</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.69</p>
             </div>
             
             {/* Description */}
