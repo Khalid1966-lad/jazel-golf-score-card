@@ -349,3 +349,24 @@ Stage Summary:
 - Tournament draft rounds in history now show live scoring banner when opened
 - Leaderboard shows "72 +2" or "70 -2" or "72 E" format with colors
 - Files changed: src/app/page.tsx, src/app/api/tournaments/route.ts
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix save draft scores not persisting on continue scoring - v1.4.74
+
+Work Log:
+- Identified root cause: browser/HTTP caching returning stale data when resuming scoring
+- Added cache-busting (_t=timestamp) to resumeTournamentScoring GET request (line 2249)
+- Added cache: no-store to resumeTournamentScoring fetch (line 2252)
+- Added cache-busting to active scoring round check useEffect (line 1396)
+- Added fetchRounds() call after tournament draft save to keep history fresh (line 3669)
+- Added cache: no-store to loadRoundForEditing tournament check (line 4188)
+- Verified build compiles with no errors
+- Pushed v1.4.74 to main and master branches
+
+Stage Summary:
+- Fixed 4 locations where cache-busting was missing for tournament scoring API calls
+- The missing cache-busting caused the browser to return stale GET responses (with all-zero scores from before the draft was saved)
+- Now all scoring-related fetches use _t=timestamp and cache: no-store to ensure fresh data
+
