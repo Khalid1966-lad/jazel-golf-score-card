@@ -5465,6 +5465,7 @@ export default function JazelApp() {
                   if (!player.handicap || player.handicap <= 0) return null;
                   const pScores = playerScores.get(idx) || [];
                   let pTotal = 0;
+                  let pVsPar = 0;
                   selectedCourse.holes.filter(h => {
                     if (holesPlayed === 9) {
                       return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
@@ -5475,6 +5476,7 @@ export default function JazelApp() {
                     const pScore = pScores.find(s => s.holeNumber === h.holeNumber);
                     if (pScore && pScore.strokes > 0) {
                       pTotal += getStablefordPointsEarned(pScore.strokes, h.par || 4, strokesRcvd);
+                      pVsPar += pScore.strokes - (h.par || 4);
                     }
                   });
                   return (
@@ -5482,6 +5484,9 @@ export default function JazelApp() {
                       <span className="text-xs text-muted-foreground">{player.name}:</span>
                       <span className="text-xs font-bold text-amber-600">{pTotal} stbfd</span>
                       <Badge variant="outline" className="text-[10px]">HCP {player.handicap}</Badge>
+                      <span className={`text-xs font-semibold ${pVsPar > 0 ? 'text-red-600' : pVsPar < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        {pVsPar > 0 ? '+' : ''}{pVsPar}
+                      </span>
                     </div>
                   );
                 })}
