@@ -104,6 +104,9 @@ export async function POST(request: NextRequest) {
     for (const participant of participants) {
       const totals = playerTotals.get(participant.userId);
 
+      // Skip locked participants — their scores are preserved from admin validation
+      if (participant.lockedAt) continue;
+
       if (!totals || !totals.found || totals.scoredHoles === 0) {
         // No scores found — reset (scorecard deleted or never scored)
         await db.tournamentParticipant.update({

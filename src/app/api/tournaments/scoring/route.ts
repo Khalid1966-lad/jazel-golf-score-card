@@ -457,6 +457,9 @@ export async function PUT(request: NextRequest) {
 
             // Update each player's gross score based on their playerIndex
             for (const participant of participants) {
+              // Skip if this participant's scores are locked by admin
+              if (participant.lockedAt) continue;
+
               let playerIndex = 0;
               if (participant.userId !== scoringRoundInfo.scorerId) {
                 const playerNames = scoringRoundInfo.round.playerNames

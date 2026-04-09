@@ -14,7 +14,7 @@ import {
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
   Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
   LayoutGrid, List as ListIcon, ClipboardList, MessageCircle, Pencil,
-  Clipboard, Radio, Zap
+  Clipboard, Radio, Zap, Lock, Unlock
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -302,6 +302,8 @@ interface TournamentParticipant {
   teeTime: string | null;
   isScorer?: boolean;
   scoredAt?: string;
+  lockedAt?: string;
+  scoreSnapshot?: string;
   user: {
     id: string;
     name: string | null;
@@ -2117,6 +2119,54 @@ export default function JazelApp() {
       setRecalculating(false);
     }
   }, [selectedTournament?.id, fetchTournamentWithParticipants]);
+
+  // Admin lock/unlock group scores
+  const [lockingGroup, setLockingGroup] = useState<string | null>(null);
+  const lockGroupScores = useCallback(async (tournamentId: string, groupLetter: string) => {
+    if (!user) return;
+    setLockingGroup(groupLetter);
+    try {
+      const res = await fetch('/api/tournaments/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId, groupLetter, adminId: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || `Group ${groupLetter} scores locked`);
+        await fetchTournamentWithParticipants(tournamentId);
+      } else {
+        toast.error(data.error || 'Failed to lock');
+      }
+    } catch {
+      toast.error('Failed to lock scores');
+    } finally {
+      setLockingGroup(null);
+    }
+  }, [user, fetchTournamentWithParticipants]);
+
+  const unlockGroupScores = useCallback(async (tournamentId: string, groupLetter: string) => {
+    if (!user) return;
+    setLockingGroup(groupLetter);
+    try {
+      const res = await fetch('/api/tournaments/validate', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId, groupLetter }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || `Group ${groupLetter} unlocked`);
+        await fetchTournamentWithParticipants(tournamentId);
+      } else {
+        toast.error(data.error || 'Failed to unlock');
+      }
+    } catch {
+      toast.error('Failed to unlock scores');
+    } finally {
+      setLockingGroup(null);
+    }
+  }, [user, fetchTournamentWithParticipants]);
 
   // Start a new tournament scoring round
   const startTournamentScoring = useCallback(async (tournamentId: string, groupLetter: string) => {
@@ -6946,6 +6996,7 @@ export default function JazelApp() {
                             {sortedGroups.map(([letter, participants]) => {
                               const color = getGroupColor(letter);
                               const groupScorer = participants.find(p => p.isScorer);
+                              const groupLocked = participants.some(p => p.lockedAt);
                               const safeColor = color || { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
                               return (
                               <div key={letter || 'unknown'} className={`border rounded-lg overflow-hidden ${safeColor.border} ${safeColor.bg}`}>
@@ -6954,6 +7005,9 @@ export default function JazelApp() {
                                     <span className={`font-medium ${safeColor.headerText}`}>
                                       {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
                                     </span>
+                                    {groupLocked && (
+                                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">🔒 Validated</Badge>
+                                    )}
                                     {groupScorer && (
                                       <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">📋 Scorer: {groupScorer.user.name || 'TBD'}</Badge>
                                     )}
@@ -7005,6 +7059,38 @@ export default function JazelApp() {
                                       </Popover>
                                     )}
                                     <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
+                                    {/* Admin Lock/Unlock group scores */}
+                                    {user && letter !== 'U' && (
+                                      (() => {
+                                        const groupLocked = participants.some(p => p.lockedAt);
+                                        const groupHasScores = participants.some(p => p.grossScore !== null);
+                                        return lockingGroup === letter ? (
+                                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                        ) : groupLocked ? (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 text-xs hover:bg-amber-100 text-amber-700 gap-1"
+                                            onClick={() => unlockGroupScores(selectedTournament.id, letter)}
+                                            title="Unlock scores — allow scorer to edit again"
+                                          >
+                                            <Unlock className="w-3.5 h-3.5" />
+                                            Unlock
+                                          </Button>
+                                        ) : groupHasScores ? (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 text-xs hover:bg-green-100 text-green-700 gap-1"
+                                            onClick={() => lockGroupScores(selectedTournament.id, letter)}
+                                            title="Lock scores — prevent changes, safe to delete scorecard"
+                                          >
+                                            <Lock className="w-3.5 h-3.5" />
+                                            Lock
+                                          </Button>
+                                        ) : null;
+                                      })()
+                                    )}
                                   </div>
                                 </div>
                                 <div className="divide-y divide-white/50">
@@ -7159,6 +7245,7 @@ export default function JazelApp() {
                               <div className="col-span-3 font-medium flex items-center gap-1.5">
                                 {participant.user.name || 'Unnamed'}
                                 {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
+                                {participant.lockedAt && <span className="text-xs" title="Score validated by admin">🔒</span>}
                               </div>
                               <div className="col-span-1 text-center">
                                 {participant.groupLetter ? (
@@ -10511,7 +10598,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.79</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.80</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
