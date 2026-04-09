@@ -244,3 +244,26 @@ Stage Summary:
 - Build error fixed by reordering variable declarations
 - Score pad buttons now have better size hierarchy (number buttons prominently larger than +/Clear)
 - Vercel deployment should succeed now
+
+---
+Task ID: 1
+Agent: Main
+Task: Complete live tournament scoring system - fix missing schema fields and scoredAt logic
+
+Work Log:
+- Discovered entire live tournament scoring was already built in previous sessions
+- Found missing `isScorer` and `scoredAt` fields on TournamentParticipant in Prisma schema
+- Added both fields to schema.sqlite.prisma, schema.postgresql.prisma
+- Ran db:push to sync schema to SQLite DB - verified columns exist via query
+- Fixed scoring API (route.ts) to set `scoredAt` on every score save, not just completion
+- This enables the LIVE indicator on the leaderboard to activate as soon as scoring starts
+- Started WebSocket service on port 3005 (mini-services/tournament-live)
+- Ran lint - 0 errors
+- Updated version to v1.4.63 across all 4 instances
+- Committed and pushed to main + master
+
+Stage Summary:
+- Key finding: All live scoring features were already implemented (schema models, APIs, WebSocket, UI components)
+- Bug fixed: isScorer field was referenced in code but missing from schema - would crash at runtime
+- Bug fixed: scoredAt was never set by the scoring API - LIVE indicator would never activate
+- v1.4.63 pushed: aaa9f87
