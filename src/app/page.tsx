@@ -2088,6 +2088,32 @@ export default function JazelApp() {
     }
   }, []);
 
+  // Recalculate tournament leaderboard from actual round data
+  const [recalculating, setRecalculating] = useState(false);
+  const recalculateLeaderboard = useCallback(async () => {
+    if (!selectedTournament?.id) return;
+    setRecalculating(true);
+    try {
+      const response = await fetch('/api/tournaments/recalculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId: selectedTournament.id }),
+      });
+      if (response.ok) {
+        toast.success('Leaderboard recalculated from all scorecards');
+        // Refresh tournament data
+        await fetchTournamentWithParticipants(selectedTournament.id);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to recalculate');
+      }
+    } catch {
+      toast.error('Failed to recalculate leaderboard');
+    } finally {
+      setRecalculating(false);
+    }
+  }, [selectedTournament?.id, fetchTournamentWithParticipants]);
+
   // Start a new tournament scoring round
   const startTournamentScoring = useCallback(async (tournamentId: string, groupLetter: string) => {
     if (!user) {
@@ -7043,12 +7069,24 @@ export default function JazelApp() {
                           </span>
                         )}
                       </h3>
-                      {tournamentViewers > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Eye className="w-3.5 h-3.5" />
-                          {tournamentViewers} viewer{tournamentViewers !== 1 ? 's' : ''}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={recalculateLeaderboard}
+                          disabled={recalculating}
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 mr-1 ${recalculating ? 'animate-spin' : ''}`} />
+                          {recalculating ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                        {tournamentViewers > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Eye className="w-3.5 h-3.5" />
+                            {tournamentViewers} viewer{tournamentViewers !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
@@ -9605,7 +9643,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.71 • Made with ❤️ for Golfers
+              Version 1.4.72 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10426,7 +10464,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.71</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.72</p>
             </div>
             
             {/* Description */}
