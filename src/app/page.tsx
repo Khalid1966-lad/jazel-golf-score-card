@@ -46,6 +46,7 @@ import {
 } from '@/lib/distance';
 import CourseMap from '@/components/CourseMap';
 import { BadgeCollection } from '@/components/badges/BadgeCollection';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Types
 interface CourseHole {
@@ -4147,19 +4148,20 @@ export default function JazelApp() {
   const getCoursePar = () => {
     if (!selectedCourse) return holesPlayed === 9 ? 36 : 72;
     
+    const holes = selectedCourse.holes || [];
     if (holesPlayed === 9) {
       // For 9-hole rounds, get par for front or back nine
       if (holesType === 'back') {
         // Back nine: holes 10-18 (indices 9-17)
-        return selectedCourse.holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0);
+        return holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0);
       } else {
         // Front nine: holes 1-9 (indices 0-8)
-        return selectedCourse.holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0);
+        return holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0);
       }
     }
     
     // Full 18 holes
-    return selectedCourse.holes.slice(0, 18).reduce((sum, h) => sum + h.par, 0);
+    return holes.slice(0, 18).reduce((sum, h) => sum + h.par, 0);
   };
 
   // Get score color based on performance
@@ -4209,6 +4211,7 @@ export default function JazelApp() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
@@ -5393,7 +5396,7 @@ export default function JazelApp() {
                             return score.holeNumber >= 10 && score.holeNumber <= 18;
                           }
                         }).map((score, index) => {
-                          const hole = selectedCourse.holes.find(h => h.holeNumber === score.holeNumber);
+                          const hole = (selectedCourse.holes || []).find(h => h.holeNumber === score.holeNumber);
                           const holePar = hole?.par || 4;
                           const holeHcp = hole?.handicap || '-';
                           const scoreDiff = score.strokes > 0 ? score.strokes - holePar : 0;
@@ -5553,7 +5556,7 @@ export default function JazelApp() {
                           <div className="text-center sticky left-0 z-40 bg-[#39638b]">Total</div>
                           <div className="text-center">{
                             // Calculate par for played holes only
-                            selectedCourse.holes
+                            (selectedCourse.holes || [])
                               .filter(h => {
                                 if (holesPlayed === 9) {
                                   return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
@@ -5605,10 +5608,10 @@ export default function JazelApp() {
                           <div className="text-center">
                             {(() => {
                               let vsPar = 0;
-                              const relevantScores = scores.filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true);
+                              const relevantScores = (scores || []).filter(s => holesPlayed === 9 ? (holesType === 'front' ? s.holeNumber <= 9 : s.holeNumber >= 10) : true);
                               relevantScores.forEach(s => {
                                 if (s.strokes > 0) {
-                                  const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
+                                  const hole = (selectedCourse.holes || []).find(h => h.holeNumber === s.holeNumber);
                                   vsPar += s.strokes - (hole?.par || 4);
                                 }
                               });
@@ -5617,7 +5620,7 @@ export default function JazelApp() {
                           </div>
                           {/* Stableford Total Strokes Given */}
                           <div className="text-center text-white/70">{
-                            selectedCourse.holes
+                            (selectedCourse.holes || [])
                               .filter(h => {
                                 if (holesPlayed === 9) {
                                   return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
@@ -5640,7 +5643,7 @@ export default function JazelApp() {
                                 return true;
                               }).forEach(s => {
                                 if (s.strokes > 0) {
-                                  const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
+                                  const hole = (selectedCourse.holes || []).find(h => h.holeNumber === s.holeNumber);
                                   const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null);
                                   total += getStablefordPointsEarned(s.strokes, hole?.par || 4, strokesRcvd);
                                 }
@@ -5679,7 +5682,7 @@ export default function JazelApp() {
 
                               let btnStyle: React.CSSProperties = {};
                               if (activeScorePad.field === 'strokes') {
-                                const hole = selectedCourse.holes.find(h => h.holeNumber === activeScorePad.holeNumber);
+                                const hole = (selectedCourse.holes || []).find(h => h.holeNumber === activeScorePad.holeNumber);
                                 const par = hole?.par || 4;
                                 const diff = val - par;
                                 if (diff <= -2) btnStyle = { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#86efac' };
@@ -5923,7 +5926,7 @@ export default function JazelApp() {
                                   return true;
                                 }).forEach(s => {
                                   if (s.strokes > 0) {
-                                    const hole = selectedCourse.holes.find(h => h.holeNumber === s.holeNumber);
+                                    const hole = (selectedCourse.holes || []).find(h => h.holeNumber === s.holeNumber);
                                     const strokesRcvd = getStrokesReceived(hole?.handicap || null, user?.handicap || null);
                                     total += getStablefordPointsEarned(s.strokes, hole?.par || 4, strokesRcvd);
                                   }
@@ -5935,7 +5938,7 @@ export default function JazelApp() {
                           <div className="text-center">
                             <p className="text-[10px] text-muted-foreground">Strokes Rcvd</p>
                             <p className="text-xl font-bold text-gray-400">
-                              {selectedCourse.holes.filter(h => {
+                              {(selectedCourse.holes || []).filter(h => {
                                 if (holesPlayed === 9) {
                                   return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
                                 }
@@ -5957,7 +5960,7 @@ export default function JazelApp() {
                   const pScores = playerScores.get(idx) || [];
                   let pTotal = 0;
                   let pVsPar = 0;
-                  selectedCourse.holes.filter(h => {
+                  (selectedCourse.holes || []).filter(h => {
                     if (holesPlayed === 9) {
                       return holesType === 'front' ? h.holeNumber <= 9 : h.holeNumber >= 10;
                     }
@@ -9520,7 +9523,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.64 • Made with ❤️ for Golfers
+              Version 1.4.65 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10341,7 +10344,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.64</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.65</p>
             </div>
             
             {/* Description */}
@@ -10387,7 +10390,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.64</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.65</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
@@ -10527,5 +10530,6 @@ export default function JazelApp() {
         </DialogContent>
       </Dialog>
     </div>
+    </ErrorBoundary>
   );
 }

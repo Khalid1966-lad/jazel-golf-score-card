@@ -287,3 +287,23 @@ Stage Summary:
 - Better error feedback: every failure path now shows a toast with descriptive message
 - Console logging added for debugging scoring flow on browser console
 - Version updated to v1.4.64, pushed to GitHub (main + master)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix tournament tab crash and add error boundary
+
+Work Log:
+- Created `/src/components/ErrorBoundary.tsx` - React class component error boundary with fallback UI
+- Wrapped JazelApp return content in `<ErrorBoundary>` in `/src/app/page.tsx`
+- Removed `/manifest.json` from service worker PRECACHE_ASSETS in `/public/sw.js` (causes 401 on Vercel)
+- Added `|| []` safety checks to all `selectedCourse.holes` usages in scorecard rendering (12 occurrences)
+- Added `|| []` safety checks to `scores.filter()` calls in scorecard area
+- Updated `getCoursePar()` to use local `const holes = selectedCourse.holes || []` variable
+- Updated version from 1.4.64 to 1.4.65 in page.tsx (3 instances) and sw.js cache name
+- Lint passed: 0 errors, 1 pre-existing warning
+
+Stage Summary:
+- Error boundary prevents white-screen crashes when React components throw errors
+- Service worker no longer fails precache on Vercel due to manifest.json 401
+- All scorecard/tournament .length and .find() calls are now safe against undefined arrays
+- Version bumped to v1.4.65

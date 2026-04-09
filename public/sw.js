@@ -1,10 +1,10 @@
-const CACHE_NAME = 'jazel-golf-v1.4.64';
+const CACHE_NAME = 'jazel-golf-v1.4.65';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
   '/',
-  '/manifest.json',
+  // 'manifest.json' removed - causes 401 on some deployments, will be cached on-demand
   '/favicon.svg',
   '/favicon.png',
   '/offline.html',
