@@ -76,7 +76,7 @@ interface GolfCourse {
   address: string | null;
   isActive: boolean;
   distance?: number;
-  holes: CourseHole[];
+  holes?: CourseHole[];
   tees?: { id: string; name: string; color: string | null }[];
 }
 
@@ -5126,7 +5126,7 @@ export default function JazelApp() {
 
           {/* Scorecard Tab */}
           <TabsContent value="scorecard" className="space-y-4">
-            {!showScorecard || !selectedCourse ? (
+            {!showScorecard || !selectedCourse || !selectedCourse.holes || !Array.isArray(selectedCourse.holes) ? (
               <Card className="bg-white/80 backdrop-blur">
                 <CardContent className="py-12 text-center">
                   {/* Scorecard with Pen SVG Icon */}
