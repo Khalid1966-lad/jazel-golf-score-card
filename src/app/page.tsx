@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { io } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import { 
   Search, MapPin, Circle, Trophy, User, Menu, X, 
@@ -2525,30 +2524,36 @@ export default function JazelApp() {
     if (!selectedTournament?.id) return;
     
     let socket: any = null;
-    try {
-      socket = io('/?XTransformPort=3005', {
-        transports: ['websocket', 'polling'],
-        reconnection: false,
-        timeout: 3000,
-      });
-      socket.on('connect', () => {
-        try { socket.emit('join-tournament', { tournamentId: selectedTournament.id }); } catch {}
-      });
-      socket.on('score-update', (data: any) => {
-        fetchTournamentWithParticipants(selectedTournament.id);
-      });
-      socket.on('round-completed', (data: any) => {
-        fetchTournamentWithParticipants(selectedTournament.id);
-      });
-      socket.on('viewer-count', (data: any) => {
-        setTournamentViewers(data.count || 0);
-      });
-      socket.on('connect_error', () => {
-        // WebSocket service not available - live scoring disabled, page still works fine
-      });
-    } catch {
-      // Socket.IO not available - live scoring disabled
-    }
+    
+    // Dynamically import socket.io-client only when needed
+    import('socket.io-client').then(({ io }) => {
+      try {
+        socket = io('/?XTransformPort=3005', {
+          transports: ['websocket', 'polling'],
+          reconnection: false,
+          timeout: 3000,
+        });
+        socket.on('connect', () => {
+          try { socket.emit('join-tournament', { tournamentId: selectedTournament.id }); } catch {}
+        });
+        socket.on('score-update', (data: any) => {
+          fetchTournamentWithParticipants(selectedTournament.id);
+        });
+        socket.on('round-completed', (data: any) => {
+          fetchTournamentWithParticipants(selectedTournament.id);
+        });
+        socket.on('viewer-count', (data: any) => {
+          setTournamentViewers(data.count || 0);
+        });
+        socket.on('connect_error', () => {
+          // WebSocket service not available - live scoring disabled, page still works fine
+        });
+      } catch {
+        // Socket.IO connection failed - live scoring disabled
+      }
+    }).catch(() => {
+      // socket.io-client not available at all
+    });
     
     return () => {
       try {
@@ -3504,7 +3509,8 @@ export default function JazelApp() {
       if (isLiveScoring && tournamentScoringInfo) {
         let socket: any = null;
         try {
-          socket = io('/?XTransformPort=3005', {
+          const { io: socketIO } = await import('socket.io-client');
+          socket = socketIO('/?XTransformPort=3005', {
             transports: ['websocket', 'polling'],
             reconnection: false,
             timeout: 3000,
