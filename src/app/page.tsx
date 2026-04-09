@@ -2092,6 +2092,7 @@ export default function JazelApp() {
       const data = await response.json();
       if (!response.ok) {
         toast.error(data.error || 'Failed to start live scoring');
+        console.error('Start scoring error:', data.error);
         return;
       }
       const { scoringRound, round, tournament, participants } = data;
