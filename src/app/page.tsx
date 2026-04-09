@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import { 
   Search, MapPin, Circle, Trophy, User, Menu, X, 
@@ -13,7 +14,8 @@ import {
   CloudLightning, CloudDrizzle, CloudFog, CloudSun, Droplets,
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
   Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
-  LayoutGrid, List as ListIcon, ClipboardList, MessageCircle
+  LayoutGrid, List as ListIcon, ClipboardList, MessageCircle, Pencil,
+  Clipboard, Radio, Zap
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -32,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   formatTemperature, 
@@ -130,6 +133,8 @@ interface SavedRound {
   holesPlayed?: number; // 9 or 18
   holesType?: string | null; // "front" or "back" for 9-hole rounds
   isShared?: boolean; // Whether the round is shared publicly
+  tournamentId?: string | null;
+  tournamentGroupLetter?: string | null;
   course: {
     id?: string;
     name: string;
@@ -295,6 +300,8 @@ interface TournamentParticipant {
   groupLetter: string | null;
   positionInGroup: number | null;
   teeTime: string | null;
+  isScorer?: boolean;
+  scoredAt?: string;
   user: {
     id: string;
     name: string | null;
@@ -700,6 +707,11 @@ function RoundHistoryCard({
                 <h4 className="font-medium">{round.course?.name || 'Unknown Course'}</h4>
                 {!round.completed && (
                   <Badge className="bg-amber-500 text-white text-xs">Draft</Badge>
+                )}
+                {(round as any).tournamentId && (
+                  <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-xs" title="Tournament Round">
+                    🏆 Tournament{(round as any).tournamentGroupLetter ? ` - Group ${(round as any).tournamentGroupLetter}` : ''}
+                  </Badge>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
@@ -1349,6 +1361,93 @@ function GPSRangeFinder({
   );
 }
 
+// Scoring Action Button - checks for active rounds and shows start/continue
+function ScoringActionButton({
+  user,
+  tournament,
+  tournamentScoringLoading,
+  startTournamentScoring,
+  resumeTournamentScoring,
+}: {
+  user: User;
+  tournament: Tournament;
+  tournamentScoringLoading: boolean;
+  startTournamentScoring: (tournamentId: string, groupLetter: string) => Promise<void>;
+  resumeTournamentScoring: (scoringRoundId: string) => Promise<void>;
+}) {
+  const [activeScoringRound, setActiveScoringRound] = useState<any>(null);
+  const [checking, setChecking] = useState(false);
+
+  // Derive scorer group letter without useEffect
+  const participant = user && tournament
+    ? tournament.participants?.find(p => p.isScorer && p.userId === user.id)
+    : null;
+  const scorerGroupLetter = participant?.groupLetter ?? null;
+
+  // Check for active scoring round
+  useEffect(() => {
+    if (!scorerGroupLetter || !user || !tournament) return;
+    let cancelled = false;
+    // Use microtask to avoid synchronous setState in effect
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setChecking(true);
+    });
+    fetch(`/api/tournaments/scoring?tournamentId=${tournament.id}&scorerId=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (cancelled) return;
+        const rounds = data.scoringRounds || [];
+        const myRound = rounds.find((r: any) => 
+          r.scorerId === user.id && !r.completed && r.tournamentId === tournament.id
+        );
+        setActiveScoringRound(myRound || null);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setChecking(false);
+      });
+    return () => { cancelled = true; };
+  }, [scorerGroupLetter, user, tournament]);
+
+  if (checking) {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span className="text-sm text-muted-foreground">Checking scoring status...</span>
+      </div>
+    );
+  }
+
+  if (!scorerGroupLetter) return null;
+
+  if (activeScoringRound) {
+    return (
+      <Button
+        className="w-full text-white"
+        style={{background: 'linear-gradient(to right, #059669, #0d9488)'}}
+        onClick={() => resumeTournamentScoring(activeScoringRound.id)}
+        disabled={tournamentScoringLoading}
+      >
+        <Radio className="w-4 h-4 mr-2" />
+        {tournamentScoringLoading ? 'Loading...' : `📋 Continue Scoring - Group ${scorerGroupLetter}`}
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      className="w-full text-white"
+      style={{background: 'linear-gradient(to right, #059669, #0d9488)'}}
+      onClick={() => startTournamentScoring(tournament.id, scorerGroupLetter!)}
+      disabled={tournamentScoringLoading}
+    >
+      <Clipboard className="w-4 h-4 mr-2" />
+      {tournamentScoringLoading ? 'Starting...' : `📋 Start Live Scoring - Group ${scorerGroupLetter}`}
+    </Button>
+  );
+}
+
 // Main App Component
 export default function JazelApp() {
   const [activeTab, setActiveTab] = useState('weather');
@@ -1583,6 +1682,12 @@ export default function JazelApp() {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('gross');
+  const [tournamentScoringRounds, setTournamentScoringRounds] = useState<any[]>([]);
+  const [tournamentScoringLoading, setTournamentScoringLoading] = useState(false);
+  const [isLiveScoring, setIsLiveScoring] = useState(false); // Whether current scorecard is a tournament scoring round
+  const [tournamentScoringInfo, setTournamentScoringInfo] = useState<{tournamentId: string; groupLetter: string; scoringRoundId: string} | null>(null);
+  const [liveScoringHole, setLiveScoringHole] = useState(1);
+  const [tournamentViewers, setTournamentViewers] = useState(0);
 
   // Partner Requests state
   const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>([]);
@@ -1975,6 +2080,184 @@ export default function JazelApp() {
     }
   }, []);
 
+  // Start a new tournament scoring round
+  const startTournamentScoring = useCallback(async (tournamentId: string, groupLetter: string) => {
+    if (!user) return;
+    try {
+      setTournamentScoringLoading(true);
+      const response = await fetch('/api/tournaments/scoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId, groupLetter, scorerId: user.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to start live scoring');
+        return;
+      }
+      const { scoringRound, round, tournament, participants } = data;
+      setIsLiveScoring(true);
+      setTournamentScoringInfo({ tournamentId, groupLetter, scoringRoundId: scoringRound.id });
+      // Set course from tournament
+      setSelectedCourse(tournament.course as any);
+      setEditingRoundId(round.id);
+      // Parse scores for main player (playerIndex === 0)
+      const mainScores = (round.scores || []).filter((s: any) => !s.playerIndex || s.playerIndex === 0);
+      setScores(mainScores);
+      // Parse additional players
+      let players: AdditionalPlayer[] = [];
+      if (round.playerNames) {
+        try {
+          const playerData = JSON.parse(round.playerNames);
+          players = playerData.map((item: any, idx: number) => ({
+            id: `player-${idx}`,
+            name: item.name,
+            avatar: item.avatar || null,
+            handicap: item.handicap || null,
+            userId: item.userId || null,
+          }));
+        } catch (e) {}
+      }
+      setAdditionalPlayers(players);
+      // Parse player scores for additional players (playerIndex > 0)
+      const pScoresMap = new Map<number, RoundScore[]>();
+      const allHoles = (tournament.course as any).holes || [];
+      (round.scores || []).forEach((s: any) => {
+        if (s.playerIndex && s.playerIndex > 0) {
+          const existing = pScoresMap.get(s.playerIndex) || [];
+          existing.push(s);
+          pScoresMap.set(s.playerIndex, existing);
+        }
+      });
+      const newPlayerScores = new Map<number, RoundScore[]>();
+      players.forEach((_player, idx) => {
+        const playerIndex = idx + 1;
+        const existingPlayerScores = pScoresMap.get(playerIndex) || [];
+        const playerScoreMap = new Map(existingPlayerScores.map((s: any) => [s.holeNumber, s]));
+        const fullScores: RoundScore[] = allHoles.map((hole: any) => {
+          const existing = playerScoreMap.get(hole.holeNumber);
+          return existing ? {
+            holeNumber: existing.holeNumber,
+            strokes: existing.strokes,
+            putts: existing.putts || 0,
+            fairwayHit: existing.fairwayHit ?? null,
+            greenInReg: existing.greenInReg || false,
+            penalties: existing.penalties || 0,
+          } : {
+            holeNumber: hole.holeNumber,
+            strokes: 0,
+            putts: 0,
+            fairwayHit: null,
+            greenInReg: false,
+            penalties: 0,
+          };
+        });
+        newPlayerScores.set(idx, fullScores);
+      });
+      setPlayerScores(newPlayerScores);
+      setHolesPlayed(18);
+      setHolesType('front');
+      setScorecardView('front');
+      setShowScorecard(true);
+      setActiveTab('scorecard');
+      toast.success('Live scoring started!');
+    } catch (error) {
+      console.error('Failed to start tournament scoring:', error);
+      toast.error('Failed to start live scoring');
+    } finally {
+      setTournamentScoringLoading(false);
+    }
+  }, [user]);
+
+  // Resume an existing tournament scoring round
+  const resumeTournamentScoring = useCallback(async (scoringRoundId: string) => {
+    if (!user) return;
+    try {
+      setTournamentScoringLoading(true);
+      const response = await fetch(`/api/tournaments/scoring?scorerId=${user.id}`);
+      const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to resume scoring');
+        return;
+      }
+      const activeRounds = data.scoringRounds || [];
+      const activeRound = activeRounds.find((r: any) => r.id === scoringRoundId) || activeRounds[0];
+      if (!activeRound) {
+        toast.error('No active scoring round found');
+        return;
+      }
+      const round = activeRound.round;
+      const tournament = activeRound.tournament;
+      const groupLetter = round.tournamentGroupLetter || 'A';
+      setIsLiveScoring(true);
+      setTournamentScoringInfo({ tournamentId: activeRound.tournamentId, groupLetter, scoringRoundId: activeRound.id });
+      setSelectedCourse(tournament.course as any);
+      setEditingRoundId(round.id);
+      const mainScores = (round.scores || []).filter((s: any) => !s.playerIndex || s.playerIndex === 0);
+      setScores(mainScores);
+      let players: AdditionalPlayer[] = [];
+      if (round.playerNames) {
+        try {
+          const playerData = JSON.parse(round.playerNames);
+          players = playerData.map((item: any, idx: number) => ({
+            id: `player-${idx}`,
+            name: item.name,
+            avatar: item.avatar || null,
+            handicap: item.handicap || null,
+            userId: item.userId || null,
+          }));
+        } catch (e) {}
+      }
+      setAdditionalPlayers(players);
+      const pScoresMap = new Map<number, RoundScore[]>();
+      const allHoles = (tournament.course as any).holes || [];
+      (round.scores || []).forEach((s: any) => {
+        if (s.playerIndex && s.playerIndex > 0) {
+          const existing = pScoresMap.get(s.playerIndex) || [];
+          existing.push(s);
+          pScoresMap.set(s.playerIndex, existing);
+        }
+      });
+      const newPlayerScores = new Map<number, RoundScore[]>();
+      players.forEach((_player, idx) => {
+        const playerIndex = idx + 1;
+        const existingPlayerScores = pScoresMap.get(playerIndex) || [];
+        const playerScoreMap = new Map(existingPlayerScores.map((s: any) => [s.holeNumber, s]));
+        const fullScores: RoundScore[] = allHoles.map((hole: any) => {
+          const existing = playerScoreMap.get(hole.holeNumber);
+          return existing ? {
+            holeNumber: existing.holeNumber,
+            strokes: existing.strokes,
+            putts: existing.putts || 0,
+            fairwayHit: existing.fairwayHit ?? null,
+            greenInReg: existing.greenInReg || false,
+            penalties: existing.penalties || 0,
+          } : {
+            holeNumber: hole.holeNumber,
+            strokes: 0,
+            putts: 0,
+            fairwayHit: null,
+            greenInReg: false,
+            penalties: 0,
+          };
+        });
+        newPlayerScores.set(idx, fullScores);
+      });
+      setPlayerScores(newPlayerScores);
+      setHolesPlayed(18);
+      setHolesType('front');
+      setScorecardView('front');
+      setShowScorecard(true);
+      setActiveTab('scorecard');
+      toast.success('Scoring resumed!');
+    } catch (error) {
+      console.error('Failed to resume tournament scoring:', error);
+      toast.error('Failed to resume scoring');
+    } finally {
+      setTournamentScoringLoading(false);
+    }
+  }, [user]);
+
   // Fetch partner requests
   const fetchPartnerRequests = useCallback(async () => {
     if (!user) return;
@@ -2236,6 +2519,30 @@ export default function JazelApp() {
   useEffect(() => {
     fetchGolfers(selectedGroupFilter);
   }, [selectedGroupFilter, fetchGolfers]);
+
+  // WebSocket connection for tournament live scoring
+  useEffect(() => {
+    if (!selectedTournament?.id) return;
+    
+    const socket = io('/?XTransformPort=3005');
+    socket.on('connect', () => {
+      socket.emit('join-tournament', { tournamentId: selectedTournament.id });
+    });
+    socket.on('score-update', (data: any) => {
+      fetchTournamentWithParticipants(selectedTournament.id);
+    });
+    socket.on('round-completed', (data: any) => {
+      fetchTournamentWithParticipants(selectedTournament.id);
+    });
+    socket.on('viewer-count', (data: any) => {
+      setTournamentViewers(data.count || 0);
+    });
+    
+    return () => {
+      socket.emit('leave-tournament', { tournamentId: selectedTournament.id });
+      socket.disconnect();
+    };
+  }, [selectedTournament?.id, fetchTournamentWithParticipants]);
 
   // Load last seen partner request time from localStorage on mount
   useEffect(() => {
@@ -3176,6 +3483,68 @@ export default function JazelApp() {
           });
         }
       });
+
+      // Tournament live scoring mode - use tournament scoring API
+      if (isLiveScoring && tournamentScoringInfo) {
+        const socket = io('/?XTransformPort=3005');
+        const currentHole = liveScoringHole;
+        const response = await fetch('/api/tournaments/scoring', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scoringRoundId: tournamentScoringInfo.scoringRoundId,
+            currentHole,
+            roundId: editingRoundId,
+            scores: scores,
+            playerScores: playerScoresArray,
+            playerNames: playerData,
+            playerHandicap: user?.handicap || null,
+            completed,
+          }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+          socket.emit('score-update', {
+            tournamentId: tournamentScoringInfo.tournamentId,
+            groupLetter: tournamentScoringInfo.groupLetter,
+            scoringRoundId: tournamentScoringInfo.scoringRoundId,
+            currentHole,
+            completed,
+          });
+          if (completed) {
+            socket.emit('round-completed', {
+              tournamentId: tournamentScoringInfo.tournamentId,
+              groupLetter: tournamentScoringInfo.groupLetter,
+              scoringRoundId: tournamentScoringInfo.scoringRoundId,
+            });
+            toast.success('Round completed successfully!');
+            setIsLiveScoring(false);
+            setTournamentScoringInfo(null);
+            setShowScorecard(false);
+            setSelectedCourse(null);
+            setScores([]);
+            setAdditionalPlayers([]);
+            setPlayerScores(new Map());
+            setEditingRoundId(null);
+            setSelectedTee('');
+            setHasUnsavedWork(false);
+            localStorage.removeItem('jazel_active_round');
+            if (tournamentScoringInfo.tournamentId) {
+              fetchTournamentWithParticipants(tournamentScoringInfo.tournamentId);
+            }
+            setActiveTab('history');
+            socket.disconnect();
+          } else {
+            toast.success('Scores saved! Live scoring continues...');
+            // Don't switch away from scorecard when saving draft in live mode
+            localStorage.removeItem('jazel_active_round');
+          }
+        } else {
+          toast.error(data.error || 'Failed to save scores');
+          socket.disconnect();
+        }
+        return;
+      }
 
       // Check if we're editing an existing round or creating new
       if (editingRoundId) {
@@ -4719,9 +5088,47 @@ export default function JazelApp() {
               </Card>
             ) : (
               <div className="space-y-4">
+                {/* Tournament Live Scoring Banner */}
+                {isLiveScoring && tournamentScoringInfo && (
+                  <div className="px-3 py-2 rounded-t-lg text-white flex items-center justify-between"
+                    style={{background: 'linear-gradient(to right, #059669, #0d9488)'}}>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      <h2 className="text-sm font-semibold">🏆 Group {tournamentScoringInfo.groupLetter} - Live Scoring</h2>
+                      <span className="flex items-center gap-1 text-xs bg-white/20 rounded-full px-2 py-0.5">
+                        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                        LIVE
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (confirm('Abandon this scoring round? Progress will be lost.')) {
+                          fetch(`/api/tournaments/scoring?scoringRoundId=${tournamentScoringInfo.scoringRoundId}`, {
+                            method: 'DELETE',
+                          }).then(() => {
+                            setIsLiveScoring(false);
+                            setTournamentScoringInfo(null);
+                            setShowScorecard(false);
+                            setSelectedCourse(null);
+                            setScores([]);
+                            setAdditionalPlayers([]);
+                            setPlayerScores(new Map());
+                            setEditingRoundId(null);
+                            setActiveTab('tournaments');
+                            toast.info('Scoring round abandoned');
+                          }).catch(() => toast.error('Failed to abandon'));
+                        }
+                      }}
+                      className="text-white/70 hover:text-white text-xs flex items-center gap-1"
+                    >
+                      <X className="w-3 h-3" />
+                      Exit
+                    </button>
+                  </div>
+                )}
                 {/* Course Info Header - Compact name and city */}
-                <div className="px-3 py-2 rounded-t-lg text-white flex items-center justify-center"
-                  style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
+                <div className={`px-3 py-2 ${isLiveScoring ? 'rounded-none' : 'rounded-t-lg'} text-white flex items-center justify-center`}
+                  style={{background: isLiveScoring ? 'linear-gradient(to right, #047857, #0f766e)' : 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold">{selectedCourse.name}</h2>
                     <span className="text-white/70">•</span>
@@ -6360,13 +6767,67 @@ export default function JazelApp() {
                           <div className="grid gap-4 md:grid-cols-2">
                             {sortedGroups.map(([letter, participants]) => {
                               const color = getGroupColor(letter);
+                              // Find the scorer in this group
+                              const groupScorer = participants.find(p => p.isScorer);
                               return (
                               <div key={letter} className={`border rounded-lg overflow-hidden ${color.border} ${color.bg}`}>
                                 <div className={`${color.headerBg} p-3 flex items-center justify-between`}>
-                                  <span className={`font-medium ${color.headerText}`}>
-                                    {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
-                                  </span>
-                                  <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`font-medium ${color.headerText}`}>
+                                      {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
+                                    </span>
+                                    {groupScorer && (
+                                      <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">📋 Scorer: {groupScorer.user.name || 'TBD'}</Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {user && letter !== 'U' && (
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-white/50" title="Assign Scorer">
+                                            <Clipboard className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-56 p-2" align="end">
+                                          <p className="text-xs font-medium text-muted-foreground mb-2 px-1">Assign scorer for Group {letter}</p>
+                                          <div className="space-y-1">
+                                            {participants.map((p) => (
+                                              <button
+                                                key={p.userId}
+                                                className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-muted/80 transition-colors ${p.isScorer ? 'bg-green-50 ring-1 ring-green-200' : ''}`}
+                                                onClick={async () => {
+                                                  try {
+                                                    const res = await fetch('/api/tournaments/groups', {
+                                                      method: 'PATCH',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({
+                                                        tournamentId: selectedTournament.id,
+                                                        groupLetter: letter,
+                                                        scorerId: p.userId,
+                                                      }),
+                                                    });
+                                                    if (res.ok) {
+                                                      toast.success(`${p.user.name || 'Player'} assigned as scorer`);
+                                                      fetchTournamentWithParticipants(selectedTournament.id);
+                                                    } else {
+                                                      const d = await res.json();
+                                                      toast.error(d.error || 'Failed to assign scorer');
+                                                    }
+                                                  } catch (e) {
+                                                    toast.error('Failed to assign scorer');
+                                                  }
+                                                }}
+                                              >
+                                                <span className="truncate">{p.user.name || 'Unnamed'}</span>
+                                                {p.isScorer && <span className="text-xs">📋</span>}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    )}
+                                    <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
+                                  </div>
                                 </div>
                                 <div className="divide-y divide-white/50">
                                   {participants
@@ -6384,6 +6845,9 @@ export default function JazelApp() {
                                             {idx + 1}
                                           </span>
                                           <span>{p.user.name || 'Unnamed'}</span>
+                                          {p.isScorer && (
+                                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1 py-0">📋</Badge>
+                                          )}
                                         </div>
                                         <div className="flex items-center gap-2 text-muted-foreground">
                                           {p.teeTime && (
@@ -6408,19 +6872,45 @@ export default function JazelApp() {
                     </div>
                   )}
 
+                  {/* Start/Continue Live Scoring Button */}
+                  {user && selectedTournament.participants?.some(p => p.isScorer && p.userId === user.id) && (
+                    <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
+                      <ScoringActionButton
+                        user={user}
+                        tournament={selectedTournament}
+                        tournamentScoringLoading={tournamentScoringLoading}
+                        startTournamentScoring={startTournamentScoring}
+                        resumeTournamentScoring={resumeTournamentScoring}
+                      />
+                    </div>
+                  )}
+
                   {/* Participants Leaderboard */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold">
+                      <h3 className="font-semibold flex items-center gap-2">
                         Leaderboard ({selectedTournament.participants?.length || 0}/{selectedTournament.maxPlayers} players)
+                        {selectedTournament.participants?.some(p => p.scoredAt) && (
+                          <span className="flex items-center gap-1 text-xs bg-red-50 text-red-700 border border-red-200 rounded-full px-2 py-0.5">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                            LIVE
+                          </span>
+                        )}
                       </h3>
+                      {tournamentViewers > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Eye className="w-3.5 h-3.5" />
+                          {tournamentViewers} viewer{tournamentViewers !== 1 ? 's' : ''}
+                        </div>
+                      )}
                     </div>
 
                     {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
                       <div className="border rounded-lg overflow-hidden">
                         <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm items-center">
                           <div className="col-span-1">#</div>
-                          <div className="col-span-4">Player</div>
+                          <div className="col-span-3">Player</div>
+                          <div className="col-span-1 text-center">Group</div>
                           <div 
                             className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
                             onClick={() => setParticipantSort('handicap')}
@@ -6461,7 +6951,17 @@ export default function JazelApp() {
                           return sorted.map((participant, index) => (
                             <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
                               <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
-                              <div className="col-span-4 font-medium">{participant.user.name || 'Unnamed'}</div>
+                              <div className="col-span-3 font-medium flex items-center gap-1.5">
+                                {participant.user.name || 'Unnamed'}
+                                {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
+                              </div>
+                              <div className="col-span-1 text-center">
+                                {participant.groupLetter ? (
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0">{participant.groupLetter}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">-</span>
+                                )}
+                              </div>
                               <div className="col-span-2 text-center">
                                 <Badge variant="outline" className="font-mono">
                                   {participant.user.handicap?.toFixed(1) || '-'}
@@ -8934,7 +9434,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.61 • Made with ❤️ for Golfers
+              Version 1.4.62 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -9755,7 +10255,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.61</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.62</p>
             </div>
             
             {/* Description */}
@@ -9801,7 +10301,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.61</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.62</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

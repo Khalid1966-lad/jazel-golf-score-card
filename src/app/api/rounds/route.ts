@@ -133,6 +133,8 @@ export async function POST(request: NextRequest) {
       holesPlayed = 18,
       holesType = null,
       completed = true,  // Allow saving as draft (completed: false)
+      tournamentId = null,
+      tournamentGroupLetter = null,
     } = body;
 
     // Build all scores array including main player (index 0) and additional players
@@ -236,6 +238,8 @@ export async function POST(request: NextRequest) {
         completedAt: completed ? new Date() : null,  // Only set if completing
         playerNames,
         playerHandicap,
+        tournamentId,
+        tournamentGroupLetter,
         scores: {
           create: allScores,
         },

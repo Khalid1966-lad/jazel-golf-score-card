@@ -44,6 +44,7 @@ model User {
   administeredTournaments Tournament[]  @relation("TournamentAdmin")
   partnerRequests       GolfPartnerRequest[]
   partnerParticipations GolfPartnerRequestParticipant[]
+  scoringRounds         TournamentScoringRound[] @relation("ScoringRounds")
 
   @@map("users")
 }
@@ -228,6 +229,8 @@ model Round {
   playerHandicap Float?   // Main player's handicap at time of round (locked)
   holesPlayed    Int      @default(18) // 9 or 18
   holesType      String?  // "front" or "back" for 9-hole rounds, null for 18
+  tournamentId   String?  // If this round is for a tournament, links to it
+  tournamentGroupLetter String? // Which group this round covers (e.g. "A", "B")
   isShared       Boolean  @default(false) // Whether the round is shared publicly
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -235,6 +238,8 @@ model Round {
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   course         GolfCourse  @relation(fields: [courseId], references: [id])
   scores         RoundScore[]
+  tournament     Tournament? @relation(fields: [tournamentId], references: [id])
+  tournamentScoringRound TournamentScoringRound?
   
   @@map("rounds")
 }
@@ -366,6 +371,8 @@ model Tournament {
   course          GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
   admin           User?     @relation("TournamentAdmin", fields: [adminId], references: [id])
   participants    TournamentParticipant[]
+  rounds          Round[]
+  scoringRounds   TournamentScoringRound[]
   
   @@map("tournaments")
 }
@@ -386,6 +393,26 @@ model TournamentParticipant {
   
   @@unique([tournamentId, userId])
   @@map("tournament_participants")
+}
+
+// Live scoring round for tournament
+model TournamentScoringRound {
+  id              String   @id @default(cuid())
+  tournamentId    String
+  groupLetter     String       // e.g. "A", "B", "C"
+  scorerId        String       // User who is the designated scorer
+  roundId         String       @unique // The actual Round record for scoring (1-to-1)
+  status          String   @default("active") // "active", "completed", "abandoned"
+  currentHole     Int      @default(1) // Last scored hole (for progress tracking)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  scorer          User     @relation("ScoringRounds", fields: [scorerId], references: [id], onDelete: Cascade)
+  round           Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  
+  @@unique([tournamentId, groupLetter]) // Only one active scoring round per group
+  @@map("tournament_scoring_rounds")
 }
 
 // Achievement definitions - system-wide badges

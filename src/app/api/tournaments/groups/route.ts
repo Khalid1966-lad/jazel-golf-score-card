@@ -265,6 +265,50 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+// PATCH /api/tournaments/groups - Assign or remove scorer for a group
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { tournamentId, groupLetter, scorerId } = body;
+
+    if (!tournamentId || !groupLetter) {
+      return NextResponse.json({ error: 'Missing tournamentId or groupLetter' }, { status: 400 });
+    }
+
+    // If scorerId is provided, set that user as the scorer (and clear others in same group)
+    // If scorerId is null, clear the scorer for this group
+    if (scorerId) {
+      // Clear any existing scorer in this group
+      await db.tournamentParticipant.updateMany({
+        where: { tournamentId, groupLetter, isScorer: true },
+        data: { isScorer: false },
+      });
+
+      // Set the new scorer
+      const participant = await db.tournamentParticipant.update({
+        where: { tournamentId_userId: { tournamentId, userId: scorerId } },
+        data: { isScorer: true },
+        include: {
+          user: { select: { id: true, name: true, handicap: true, avatar: true } },
+        },
+      });
+
+      return NextResponse.json({ success: true, scorer: participant });
+    } else {
+      // Clear scorer for this group
+      await db.tournamentParticipant.updateMany({
+        where: { tournamentId, groupLetter, isScorer: true },
+        data: { isScorer: false },
+      });
+
+      return NextResponse.json({ success: true, message: 'Scorer cleared for this group' });
+    }
+  } catch (error) {
+    console.error('Error assigning scorer:', error);
+    return NextResponse.json({ error: 'Failed to assign scorer' }, { status: 500 });
+  }
+}
+
 // Helper: Renumber all groups sequentially (A, B, C...) and recalculate tee times
 async function renumberGroups(tournamentId: string) {
   // Get tournament start time and tee time interval
