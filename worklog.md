@@ -267,3 +267,23 @@ Stage Summary:
 - Bug fixed: isScorer field was referenced in code but missing from schema - would crash at runtime
 - Bug fixed: scoredAt was never set by the scoring API - LIVE indicator would never activate
 - v1.4.63 pushed: aaa9f87
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix "Start Scoring" button doing nothing when clicked
+
+Work Log:
+- Investigated the full scoring flow: ScoringActionButton → startTournamentScoring → POST /api/tournaments/scoring
+- Found API wasn't including `tees` in the course response (causing scorecard render crash)
+- Found `GolfCourse.tees` interface wasn't optional (TypeScript type mismatch)
+- Found scorecard rendering accessed `selectedCourse.tees.length` without null check
+- Found `resumeTournamentScoring` accessed `activeRound.tournament.course` but GET endpoint doesn't include `tournament` relation (should use `round.course`)
+- Fixed all 4 issues plus improved error handling with console logs and toast messages
+- Updated version to v1.4.64 across all 4 locations
+- Pushed to main and master
+
+Stage Summary:
+- Key fixes: API includes tees, tees made optional in interface, safety check in rendering, resume uses round.course
+- Better error feedback: every failure path now shows a toast with descriptive message
+- Console logging added for debugging scoring flow on browser console
+- Version updated to v1.4.64, pushed to GitHub (main + master)
