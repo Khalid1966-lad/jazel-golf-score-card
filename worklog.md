@@ -307,3 +307,22 @@ Stage Summary:
 - Service worker no longer fails precache on Vercel due to manifest.json 401
 - All scorecard/tournament .length and .find() calls are now safe against undefined arrays
 - Version bumped to v1.4.65
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix tournament save draft - scores not in leaderboard, scorecard not closing
+
+Work Log:
+- Investigated save draft flow: page.tsx saveRound() → PUT /api/tournaments/scoring
+- Found Bug 1: Upsert `create` payload was missing `roundId` field — if any score record needed creating, Prisma would throw a validation error, causing API 500 which prevented the success branch from executing (scorecard never closed)
+- Found Bug 2: `grossScore`/`netScore` on TournamentParticipant were only calculated when `completed: true` (inside `if (completed)` block) — draft saves never updated leaderboard scores
+- Fixed upsert create payload to explicitly include all required fields with `roundId`
+- Moved gross/net score calculation outside the `if (completed)` check so it runs for both draft and final saves
+- Changed `grossScore` to use `null` when totalStrokes is 0 (instead of 0) to show `-` in leaderboard
+- Updated version from 1.4.67 → 1.4.68
+- Lint check passes (0 errors)
+
+Stage Summary:
+- Fixed: Save Draft now properly saves and closes the scorecard
+- Fixed: Leaderboard now shows gross/net scores after draft save
+- Files changed: src/app/api/tournaments/scoring/route.ts, src/app/page.tsx

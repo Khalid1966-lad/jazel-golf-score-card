@@ -386,7 +386,19 @@ export async function PUT(request: NextRequest) {
             chipShots: s.chipShots || 0,
             driveDistance: s.driveDistance || null,
           },
-          create: s,
+          create: {
+            roundId,
+            holeNumber: s.holeNumber,
+            strokes: s.strokes,
+            putts: s.putts || 0,
+            fairwayHit: s.fairwayHit ?? null,
+            greenInReg: s.greenInReg || false,
+            penalties: s.penalties || 0,
+            sandShots: s.sandShots || 0,
+            chipShots: s.chipShots || 0,
+            driveDistance: s.driveDistance || null,
+            playerIndex: s.playerIndex,
+          },
         })
       ));
 
@@ -423,59 +435,57 @@ export async function PUT(request: NextRequest) {
             data: { scoredAt: new Date() },
           }).catch(() => {});
 
-          // If completing, also calculate and update gross/net scores
-          if (completed) {
-            const tournament = await db.tournament.findUnique({
-              where: { id: scoringRoundInfo.tournamentId },
-              include: { course: { include: { holes: true } } },
+          // Calculate and update gross/net scores for ALL saves (draft + completed)
+          const tournament = await db.tournament.findUnique({
+            where: { id: scoringRoundInfo.tournamentId },
+            include: { course: { include: { holes: true } } },
+          });
+
+          if (tournament) {
+            // Get all participants in this group
+            const participants = await db.tournamentParticipant.findMany({
+              where: { tournamentId: scoringRoundInfo.tournamentId, groupLetter: scoringRoundInfo.groupLetter },
             });
 
-            if (tournament) {
-              // Get all participants in this group
-              const participants = await db.tournamentParticipant.findMany({
-                where: { tournamentId: scoringRoundInfo.tournamentId, groupLetter: scoringRoundInfo.groupLetter },
-              });
-
-              // Update each player's gross score based on their playerIndex
-              for (const participant of participants) {
-                let playerIndex = 0;
-                if (participant.userId !== scoringRoundInfo.scorerId) {
-                  const playerNames = scoringRoundInfo.round.playerNames
-                    ? JSON.parse(scoringRoundInfo.round.playerNames)
-                    : [];
-                  const addIdx = playerNames.findIndex((p: { userId: string }) => p.userId === participant.userId);
-                  playerIndex = addIdx + 1;
-                }
-
-                const playerTotalStrokes = allScores
-                  .filter(s => s.playerIndex === playerIndex)
-                  .reduce((sum: number, s) => sum + s.strokes, 0);
-
-                const playerHcp = participant.userId === scoringRoundInfo.scorerId
-                  ? scoringRoundInfo.round.playerHandicap || 0
-                  : (() => {
-                      const playerNames = scoringRoundInfo.round.playerNames
-                        ? JSON.parse(scoringRoundInfo.round.playerNames)
-                        : [];
-                      const p = playerNames.find((pn: { userId: string }) => pn.userId === participant.userId);
-                      return p?.handicap || 0;
-                    })();
-
-                const netScore = Math.round(playerTotalStrokes - (playerHcp * 0.85));
-
-                await db.tournamentParticipant.update({
-                  where: {
-                    tournamentId_userId: {
-                      tournamentId: scoringRoundInfo.tournamentId,
-                      userId: participant.userId,
-                    },
-                  },
-                  data: {
-                    grossScore: playerTotalStrokes,
-                    netScore: playerTotalStrokes > 0 ? netScore : null,
-                  },
-                });
+            // Update each player's gross score based on their playerIndex
+            for (const participant of participants) {
+              let playerIndex = 0;
+              if (participant.userId !== scoringRoundInfo.scorerId) {
+                const playerNames = scoringRoundInfo.round.playerNames
+                  ? JSON.parse(scoringRoundInfo.round.playerNames)
+                  : [];
+                const addIdx = playerNames.findIndex((p: { userId: string }) => p.userId === participant.userId);
+                playerIndex = addIdx + 1;
               }
+
+              const playerTotalStrokes = allScores
+                .filter(s => s.playerIndex === playerIndex)
+                .reduce((sum: number, s) => sum + s.strokes, 0);
+
+              const playerHcp = participant.userId === scoringRoundInfo.scorerId
+                ? scoringRoundInfo.round.playerHandicap || 0
+                : (() => {
+                    const playerNames = scoringRoundInfo.round.playerNames
+                      ? JSON.parse(scoringRoundInfo.round.playerNames)
+                      : [];
+                    const p = playerNames.find((pn: { userId: string }) => pn.userId === participant.userId);
+                    return p?.handicap || 0;
+                  })();
+
+              const netScore = Math.round(playerTotalStrokes - (playerHcp * 0.85));
+
+              await db.tournamentParticipant.update({
+                where: {
+                  tournamentId_userId: {
+                    tournamentId: scoringRoundInfo.tournamentId,
+                    userId: participant.userId,
+                  },
+                },
+                data: {
+                  grossScore: playerTotalStrokes > 0 ? playerTotalStrokes : null,
+                  netScore: playerTotalStrokes > 0 ? netScore : null,
+                },
+              });
             }
           }
         }
