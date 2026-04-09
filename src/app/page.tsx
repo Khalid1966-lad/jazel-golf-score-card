@@ -6800,13 +6800,13 @@ export default function JazelApp() {
                           <div className="grid gap-4 md:grid-cols-2">
                             {sortedGroups.map(([letter, participants]) => {
                               const color = getGroupColor(letter);
-                              // Find the scorer in this group
                               const groupScorer = participants.find(p => p.isScorer);
+                              const safeColor = color || { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
                               return (
-                              <div key={letter} className={`border rounded-lg overflow-hidden ${color.border} ${color.bg}`}>
-                                <div className={`${color.headerBg} p-3 flex items-center justify-between`}>
+                              <div key={letter || 'unknown'} className={`border rounded-lg overflow-hidden ${safeColor.border} ${safeColor.bg}`}>
+                                <div className={`${safeColor.headerBg} p-3 flex items-center justify-between`}>
                                   <div className="flex items-center gap-2">
-                                    <span className={`font-medium ${color.headerText}`}>
+                                    <span className={`font-medium ${safeColor.headerText}`}>
                                       {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
                                     </span>
                                     {groupScorer && (
