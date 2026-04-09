@@ -77,7 +77,7 @@ interface GolfCourse {
   isActive: boolean;
   distance?: number;
   holes: CourseHole[];
-  tees: { id: string; name: string; color: string | null }[];
+  tees?: { id: string; name: string; color: string | null }[];
 }
 
 interface RoundScore {
@@ -2081,25 +2081,55 @@ export default function JazelApp() {
 
   // Start a new tournament scoring round
   const startTournamentScoring = useCallback(async (tournamentId: string, groupLetter: string) => {
-    if (!user) return;
+    if (!user) {
+      console.warn('[TournamentScoring] No user, aborting');
+      toast.error('You must be logged in to start scoring');
+      return;
+    }
     try {
       setTournamentScoringLoading(true);
+      console.log('[TournamentScoring] Starting scoring for tournament:', tournamentId, 'group:', groupLetter);
+      
       const response = await fetch('/api/tournaments/scoring', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tournamentId, groupLetter, scorerId: user.id }),
       });
-      const data = await response.json();
+      
+      console.log('[TournamentScoring] API response status:', response.status);
+      
       if (!response.ok) {
-        toast.error(data.error || 'Failed to start live scoring');
-        console.error('Start scoring error:', data.error);
+        let errorMsg = 'Failed to start live scoring';
+        try {
+          const errData = await response.json();
+          errorMsg = errData.error || errorMsg;
+        } catch { /* ignore parse error */ }
+        toast.error(errorMsg);
+        console.error('[TournamentScoring] Error:', errorMsg);
         return;
       }
-      const { scoringRound, round, tournament, participants } = data;
+      
+      const data = await response.json();
+      console.log('[TournamentScoring] API success, data keys:', Object.keys(data));
+      
+      const { scoringRound, round, tournament } = data;
+      
+      if (!scoringRound || !round || !tournament) {
+        toast.error('Invalid response from server');
+        console.error('[TournamentScoring] Missing data:', { scoringRound, round, tournament });
+        return;
+      }
+      
+      // Ensure course has tees array (prevent render crash)
+      const courseData = tournament.course;
+      if (!courseData.tees) {
+        courseData.tees = [];
+      }
+      
       setIsLiveScoring(true);
       setTournamentScoringInfo({ tournamentId, groupLetter, scoringRoundId: scoringRound.id });
       // Set course from tournament
-      setSelectedCourse(tournament.course as any);
+      setSelectedCourse(courseData as any);
       setEditingRoundId(round.id);
       // Parse scores for main player (playerIndex === 0)
       const mainScores = (round.scores || []).filter((s: any) => !s.playerIndex || s.playerIndex === 0);
@@ -2121,7 +2151,7 @@ export default function JazelApp() {
       setAdditionalPlayers(players);
       // Parse player scores for additional players (playerIndex > 0)
       const pScoresMap = new Map<number, RoundScore[]>();
-      const allHoles = (tournament.course as any).holes || [];
+      const allHoles = courseData.holes || [];
       (round.scores || []).forEach((s: any) => {
         if (s.playerIndex && s.playerIndex > 0) {
           const existing = pScoresMap.get(s.playerIndex) || [];
@@ -2162,8 +2192,8 @@ export default function JazelApp() {
       setActiveTab('scorecard');
       toast.success('Live scoring started!');
     } catch (error) {
-      console.error('Failed to start tournament scoring:', error);
-      toast.error('Failed to start live scoring');
+      console.error('[TournamentScoring] Failed:', error);
+      toast.error('Failed to start live scoring. Please try again.');
     } finally {
       setTournamentScoringLoading(false);
     }
@@ -2171,15 +2201,25 @@ export default function JazelApp() {
 
   // Resume an existing tournament scoring round
   const resumeTournamentScoring = useCallback(async (scoringRoundId: string) => {
-    if (!user) return;
+    if (!user) {
+      toast.error('You must be logged in to resume scoring');
+      return;
+    }
     try {
       setTournamentScoringLoading(true);
+      console.log('[TournamentScoring] Resuming scoring round:', scoringRoundId);
+      
       const response = await fetch(`/api/tournaments/scoring?scorerId=${user.id}`);
-      const data = await response.json();
       if (!response.ok) {
-        toast.error(data.error || 'Failed to resume scoring');
+        let errorMsg = 'Failed to resume scoring';
+        try {
+          const errData = await response.json();
+          errorMsg = errData.error || errorMsg;
+        } catch { /* ignore */ }
+        toast.error(errorMsg);
         return;
       }
+      const data = await response.json();
       const activeRounds = data.scoringRounds || [];
       const activeRound = activeRounds.find((r: any) => r.id === scoringRoundId) || activeRounds[0];
       if (!activeRound) {
@@ -2187,11 +2227,17 @@ export default function JazelApp() {
         return;
       }
       const round = activeRound.round;
-      const tournament = activeRound.tournament;
       const groupLetter = round.tournamentGroupLetter || 'A';
+      
+      // Use round.course (included in GET response) instead of tournament.course
+      const courseData = round.course;
+      if (!courseData.tees) {
+        courseData.tees = [];
+      }
+      
       setIsLiveScoring(true);
       setTournamentScoringInfo({ tournamentId: activeRound.tournamentId, groupLetter, scoringRoundId: activeRound.id });
-      setSelectedCourse(tournament.course as any);
+      setSelectedCourse(courseData as any);
       setEditingRoundId(round.id);
       const mainScores = (round.scores || []).filter((s: any) => !s.playerIndex || s.playerIndex === 0);
       setScores(mainScores);
@@ -2210,7 +2256,7 @@ export default function JazelApp() {
       }
       setAdditionalPlayers(players);
       const pScoresMap = new Map<number, RoundScore[]>();
-      const allHoles = (tournament.course as any).holes || [];
+      const allHoles = courseData.holes || [];
       (round.scores || []).forEach((s: any) => {
         if (s.playerIndex && s.playerIndex > 0) {
           const existing = pScoresMap.get(s.playerIndex) || [];
@@ -2251,8 +2297,8 @@ export default function JazelApp() {
       setActiveTab('scorecard');
       toast.success('Scoring resumed!');
     } catch (error) {
-      console.error('Failed to resume tournament scoring:', error);
-      toast.error('Failed to resume scoring');
+      console.error('[TournamentScoring] Failed to resume:', error);
+      toast.error('Failed to resume scoring. Please try again.');
     } finally {
       setTournamentScoringLoading(false);
     }
@@ -5761,7 +5807,7 @@ export default function JazelApp() {
                     <div className="p-4 border-t space-y-3" style={{borderColor: '#8ab0d1'}}>
                       {/* Tee Selector and Action Buttons Row - Centered */}
                       <div className="flex items-center justify-center gap-3 flex-wrap">
-                        {selectedCourse.tees.length > 0 && (
+                        {selectedCourse.tees && selectedCourse.tees.length > 0 && (
                           <Select value={selectedTee} onValueChange={setSelectedTee}>
                             <SelectTrigger className="w-40 h-9 text-sm">
                               <SelectValue placeholder="Select Tee" />
@@ -9474,7 +9520,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.63 • Made with ❤️ for Golfers
+              Version 1.4.64 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10295,7 +10341,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.63</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.64</p>
             </div>
             
             {/* Description */}
@@ -10341,7 +10387,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.63</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.64</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>

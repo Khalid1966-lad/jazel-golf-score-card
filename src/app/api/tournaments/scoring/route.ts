@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
       where: { id: tournamentId },
       include: {
         course: {
-          include: { holes: { orderBy: { holeNumber: 'asc' } } },
+          include: {
+            holes: { orderBy: { holeNumber: 'asc' } },
+            tees: { select: { id: true, name: true, color: true } },
+          },
         },
       },
     });
@@ -226,7 +229,12 @@ export async function GET(request: NextRequest) {
           round: {
             include: {
               scores: true,
-              course: { include: { holes: { orderBy: { holeNumber: 'asc' } } } },
+              course: {
+                include: {
+                  holes: { orderBy: { holeNumber: 'asc' } },
+                  tees: { select: { id: true, name: true, color: true } },
+                },
+              },
             },
           },
         },
