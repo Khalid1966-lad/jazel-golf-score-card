@@ -1395,6 +1395,7 @@ export default function JazelApp() {
     return [];
   });
   const [showFavoriteGolfersOnly, setShowFavoriteGolfersOnly] = useState(false);
+  const [showPlayerDialogFavFilter, setShowPlayerDialogFavFilter] = useState(false);
   const [selectedGPSHole, setSelectedGPSHole] = useState(1);
   const [maxNearbyDistance, setMaxNearbyDistance] = useState(100);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -7433,7 +7434,18 @@ export default function JazelApp() {
           <div className="space-y-4">
             {/* Select from registered golfers */}
             <div className="space-y-2">
-              <Label>Select from Registered Golfers</Label>
+              <div className="flex items-center justify-between">
+                <Label>Select from Registered Golfers</Label>
+                <Button
+                  variant={showPlayerDialogFavFilter ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowPlayerDialogFavFilter(!showPlayerDialogFavFilter)}
+                  className={`h-7 px-2 text-xs ${showPlayerDialogFavFilter ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-red-200 hover:bg-red-50'}`}
+                >
+                  <Heart className={`w-3 h-3 mr-1 ${showPlayerDialogFavFilter ? 'fill-white' : ''}`} />
+                  Golfing Friends
+                </Button>
+              </div>
               <Select onValueChange={(value) => {
                 const selectedGolfer = golfers.find(g => g.id === value);
                 if (selectedGolfer && additionalPlayers.length < 3) {
@@ -7441,11 +7453,12 @@ export default function JazelApp() {
                 }
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a golfer..." />
+                  <SelectValue placeholder={showPlayerDialogFavFilter && favoriteGolferIds.length === 0 ? "No favorite golfers yet" : "Choose a golfer..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {golfers
                     .filter(g => g.id !== user?.id && !additionalPlayers.some(p => p.userId === g.id || p.name === g.name))
+                    .filter(g => !showPlayerDialogFavFilter || favoriteGolferIds.includes(g.id))
                     .map((golfer) => (
                       <SelectItem key={golfer.id} value={golfer.id}>
                         <div className="flex items-center gap-2">
