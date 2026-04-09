@@ -1621,6 +1621,7 @@ export default function JazelApp() {
   // Unsaved work warning state
   const [showUnsavedWarningDialog, setShowUnsavedWarningDialog] = useState(false);
   const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Round summary scorecard state
   const [roundToView, setRoundToView] = useState<SavedRound | null>(null);
@@ -3550,7 +3551,9 @@ export default function JazelApp() {
 
   // Save round (completed = true for final save, false for draft)
   const saveRound = async (completed: boolean = true) => {
-    if (!user || !selectedCourse) return;
+    if (!user || !selectedCourse || isSaving) return;
+
+    setIsSaving(true);
 
     // Get scores with entered strokes
     const scoresWithStrokes = scores.filter(s => s.strokes > 0);
@@ -3596,7 +3599,7 @@ export default function JazelApp() {
 
       // Tournament live scoring mode - use tournament scoring API
       if (isLiveScoring && tournamentScoringInfo) {
-        // Start socket connection in background (non-blocking) - only for live leaderboard broadcast
+        // Start socket connection in background (non-blocking)
         let socket: any = null;
         import('socket.io-client').then(({ io: socketIO }) => {
           try {
@@ -3608,84 +3611,81 @@ export default function JazelApp() {
           } catch {}
         }).catch(() => {});
         
-        const currentHole = liveScoringHole;
-        const response = await fetch('/api/tournaments/scoring', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            scoringRoundId: tournamentScoringInfo.scoringRoundId,
-            currentHole,
-            roundId: editingRoundId,
-            scores: scores,
-            playerScores: playerScoresArray,
-            playerNames: playerData,
-            playerHandicap: user?.handicap || null,
-            completed,
-          }),
-        });
-        const data = await response.json();
-        if (response.ok) {
+        try {
+          const currentHole = liveScoringHole;
+          const tid = tournamentScoringInfo.tournamentId; // Save before clearing state
+          const response = await fetch('/api/tournaments/scoring', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scoringRoundId: tournamentScoringInfo.scoringRoundId,
+              currentHole,
+              roundId: editingRoundId,
+              scores: scores,
+              playerScores: playerScoresArray,
+              playerNames: playerData,
+              playerHandicap: user?.handicap || null,
+              completed,
+            }),
+          });
+          
+          if (!response.ok) {
+            let errorMsg = 'Failed to save scores';
+            try { const d = await response.json(); errorMsg = d.error || errorMsg; } catch {}
+            toast.error(errorMsg);
+            return;
+          }
+
+          // Emit socket events (fire-and-forget)
           try {
             if (socket?.connected) {
               socket.emit('score-update', {
-                tournamentId: tournamentScoringInfo.tournamentId,
+                tournamentId: tid,
                 groupLetter: tournamentScoringInfo.groupLetter,
                 scoringRoundId: tournamentScoringInfo.scoringRoundId,
                 currentHole,
                 completed,
               });
-            }
-          } catch {}
-          if (completed) {
-            try {
-              if (socket?.connected) {
+              if (completed) {
                 socket.emit('round-completed', {
-                  tournamentId: tournamentScoringInfo.tournamentId,
+                  tournamentId: tid,
                   groupLetter: tournamentScoringInfo.groupLetter,
                   scoringRoundId: tournamentScoringInfo.scoringRoundId,
                 });
               }
-            } catch {}
+            }
+          } catch {}
+
+          if (completed) {
             toast.success('Round completed successfully!');
-            setIsLiveScoring(false);
-            setTournamentScoringInfo(null);
-            setShowScorecard(false);
-            setSelectedCourse(null);
-            setScores([]);
-            setAdditionalPlayers([]);
-            setPlayerScores(new Map());
-            setEditingRoundId(null);
-            setSelectedTee('');
-            setHasUnsavedWork(false);
-            localStorage.removeItem('jazel_active_round');
-            if (tournamentScoringInfo.tournamentId) {
-              fetchTournamentWithParticipants(tournamentScoringInfo.tournamentId);
-            }
-            setActiveTab('history');
-            try { socket?.disconnect(); } catch {}
           } else {
-            // Draft saved — close scorecard and go back to tournament view
             toast.success('Draft saved! You can resume scoring from the tournament.');
-            setIsLiveScoring(false);
-            setTournamentScoringInfo(null);
-            setShowScorecard(false);
-            setSelectedCourse(null);
-            setScores([]);
-            setAdditionalPlayers([]);
-            setPlayerScores(new Map());
-            setEditingRoundId(null);
-            setSelectedTee('');
-            setHasUnsavedWork(false);
-            localStorage.removeItem('jazel_active_round');
-            if (tournamentScoringInfo.tournamentId) {
-              fetchTournamentWithParticipants(tournamentScoringInfo.tournamentId);
-            }
-            setActiveTab('tournaments');
-            try { socket?.disconnect(); } catch {}
           }
-        } else {
-          toast.error(data.error || 'Failed to save scores');
+
+          // Refresh leaderboard BEFORE clearing state
+          if (tid) {
+            await fetchTournamentWithParticipants(tid);
+          }
+
+          // Clear scorecard state
+          setIsLiveScoring(false);
+          setTournamentScoringInfo(null);
+          setShowScorecard(false);
+          setSelectedCourse(null);
+          setScores([]);
+          setAdditionalPlayers([]);
+          setPlayerScores(new Map());
+          setEditingRoundId(null);
+          setSelectedTee('');
+          setHasUnsavedWork(false);
+          localStorage.removeItem('jazel_active_round');
+
+          // Go to tournaments tab (shows leaderboard) for draft, history for completed
+          setActiveTab(completed ? 'history' : 'tournaments');
+          
           try { socket?.disconnect(); } catch {}
+        } finally {
+          setIsSaving(false);
         }
         return;
       }
@@ -3852,6 +3852,8 @@ export default function JazelApp() {
     } catch (error) {
       console.error('Failed to save round:', error);
       toast.error('Failed to save round');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -5925,19 +5927,19 @@ export default function JazelApp() {
                           variant="outline"
                           className="flex-1"
                           onClick={() => saveRound(false)}
-                          disabled={scores.filter(s => s.strokes > 0).length === 0}
+                          disabled={scores.filter(s => s.strokes > 0).length === 0 || isSaving}
                         >
-                          <Save className="w-4 h-4 mr-2" />
-                          Save Draft
+                          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                          {isSaving ? 'Saving...' : 'Save Draft'}
                         </Button>
                         <Button
                           className="flex-1 text-white"
                           style={{background: 'linear-gradient(to right, #39638b, #4a7aa8)'}}
                           onClick={() => saveRound(true)}
-                          disabled={scores.filter(s => s.strokes > 0).length < holesPlayed}
+                          disabled={scores.filter(s => s.strokes > 0).length < holesPlayed || isSaving}
                         >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Complete Round
+                          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                          {isSaving ? 'Saving...' : 'Complete Round'}
                         </Button>
                       </div>
                       <div className="flex justify-center mt-2">
@@ -9638,7 +9640,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.73 • Made with ❤️ for Golfers
+              Version 1.4.74 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10459,7 +10461,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.73</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.74</p>
             </div>
             
             {/* Description */}
