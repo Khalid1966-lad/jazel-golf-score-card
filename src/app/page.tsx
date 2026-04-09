@@ -2520,27 +2520,43 @@ export default function JazelApp() {
     fetchGolfers(selectedGroupFilter);
   }, [selectedGroupFilter, fetchGolfers]);
 
-  // WebSocket connection for tournament live scoring
+  // WebSocket connection for tournament live scoring (graceful - works with or without WebSocket service)
   useEffect(() => {
     if (!selectedTournament?.id) return;
     
-    const socket = io('/?XTransformPort=3005');
-    socket.on('connect', () => {
-      socket.emit('join-tournament', { tournamentId: selectedTournament.id });
-    });
-    socket.on('score-update', (data: any) => {
-      fetchTournamentWithParticipants(selectedTournament.id);
-    });
-    socket.on('round-completed', (data: any) => {
-      fetchTournamentWithParticipants(selectedTournament.id);
-    });
-    socket.on('viewer-count', (data: any) => {
-      setTournamentViewers(data.count || 0);
-    });
+    let socket: any = null;
+    try {
+      socket = io('/?XTransformPort=3005', {
+        transports: ['websocket', 'polling'],
+        reconnection: false,
+        timeout: 3000,
+      });
+      socket.on('connect', () => {
+        try { socket.emit('join-tournament', { tournamentId: selectedTournament.id }); } catch {}
+      });
+      socket.on('score-update', (data: any) => {
+        fetchTournamentWithParticipants(selectedTournament.id);
+      });
+      socket.on('round-completed', (data: any) => {
+        fetchTournamentWithParticipants(selectedTournament.id);
+      });
+      socket.on('viewer-count', (data: any) => {
+        setTournamentViewers(data.count || 0);
+      });
+      socket.on('connect_error', () => {
+        // WebSocket service not available - live scoring disabled, page still works fine
+      });
+    } catch {
+      // Socket.IO not available - live scoring disabled
+    }
     
     return () => {
-      socket.emit('leave-tournament', { tournamentId: selectedTournament.id });
-      socket.disconnect();
+      try {
+        if (socket) {
+          socket.emit('leave-tournament', { tournamentId: selectedTournament.id });
+          socket.disconnect();
+        }
+      } catch {}
     };
   }, [selectedTournament?.id, fetchTournamentWithParticipants]);
 
@@ -3486,7 +3502,14 @@ export default function JazelApp() {
 
       // Tournament live scoring mode - use tournament scoring API
       if (isLiveScoring && tournamentScoringInfo) {
-        const socket = io('/?XTransformPort=3005');
+        let socket: any = null;
+        try {
+          socket = io('/?XTransformPort=3005', {
+            transports: ['websocket', 'polling'],
+            reconnection: false,
+            timeout: 3000,
+          });
+        } catch {}
         const currentHole = liveScoringHole;
         const response = await fetch('/api/tournaments/scoring', {
           method: 'PUT',
@@ -3504,19 +3527,27 @@ export default function JazelApp() {
         });
         const data = await response.json();
         if (response.ok) {
-          socket.emit('score-update', {
-            tournamentId: tournamentScoringInfo.tournamentId,
-            groupLetter: tournamentScoringInfo.groupLetter,
-            scoringRoundId: tournamentScoringInfo.scoringRoundId,
-            currentHole,
-            completed,
-          });
+          try {
+            if (socket?.connected) {
+              socket.emit('score-update', {
+                tournamentId: tournamentScoringInfo.tournamentId,
+                groupLetter: tournamentScoringInfo.groupLetter,
+                scoringRoundId: tournamentScoringInfo.scoringRoundId,
+                currentHole,
+                completed,
+              });
+            }
+          } catch {}
           if (completed) {
-            socket.emit('round-completed', {
-              tournamentId: tournamentScoringInfo.tournamentId,
-              groupLetter: tournamentScoringInfo.groupLetter,
-              scoringRoundId: tournamentScoringInfo.scoringRoundId,
-            });
+            try {
+              if (socket?.connected) {
+                socket.emit('round-completed', {
+                  tournamentId: tournamentScoringInfo.tournamentId,
+                  groupLetter: tournamentScoringInfo.groupLetter,
+                  scoringRoundId: tournamentScoringInfo.scoringRoundId,
+                });
+              }
+            } catch {}
             toast.success('Round completed successfully!');
             setIsLiveScoring(false);
             setTournamentScoringInfo(null);
@@ -3533,7 +3564,7 @@ export default function JazelApp() {
               fetchTournamentWithParticipants(tournamentScoringInfo.tournamentId);
             }
             setActiveTab('history');
-            socket.disconnect();
+            try { socket?.disconnect(); } catch {}
           } else {
             toast.success('Scores saved! Live scoring continues...');
             // Don't switch away from scorecard when saving draft in live mode
@@ -3541,7 +3572,7 @@ export default function JazelApp() {
           }
         } else {
           toast.error(data.error || 'Failed to save scores');
-          socket.disconnect();
+          try { socket?.disconnect(); } catch {}
         }
         return;
       }
@@ -6740,6 +6771,8 @@ export default function JazelApp() {
 
                         // Color palette for groups (excluding blue/indigo as per requirements)
                         const getGroupColor = (letter: string): { bg: string; border: string; headerBg: string; headerText: string } => {
+                          const defaultColor = { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
+                          if (!letter) return defaultColor;
                           const colors = [
                             { bg: 'bg-emerald-50', border: 'border-emerald-200', headerBg: 'bg-emerald-100', headerText: 'text-emerald-700' },
                             { bg: 'bg-amber-50', border: 'border-amber-200', headerBg: 'bg-amber-100', headerText: 'text-amber-700' },
