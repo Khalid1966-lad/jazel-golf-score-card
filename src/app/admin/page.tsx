@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   ArrowLeft,
   Edit2,
@@ -47,7 +48,8 @@ import {
   Camera,
   Image as ImageIcon,
   Phone,
-  GraduationCap
+  GraduationCap,
+  Clipboard
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -153,6 +155,7 @@ interface Tournament {
     groupLetter: string | null;
     positionInGroup: number | null;
     teeTime: string | null;
+    isScorer?: boolean;
     user: {
       id: string;
       name: string | null;
@@ -169,6 +172,7 @@ interface TournamentParticipant {
   groupLetter: string | null;
   positionInGroup: number | null;
   teeTime: string | null;
+  isScorer?: boolean;
   user: {
     id: string;
     name: string | null;
@@ -3615,16 +3619,71 @@ export default function AdminPage() {
                                           {teeTime}
                                         </span>
                                       )}
+                                      {groupParticipants.find(p => p.isScorer) && (
+                                        <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">
+                                          📋 Scorer: {groupParticipants.find(p => p.isScorer)?.user.name || 'TBD'}
+                                        </Badge>
+                                      )}
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                      onClick={() => deleteTournamentGroup(letter)}
-                                      title="Delete group"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 w-6 p-0 hover:bg-white/50"
+                                            title="Assign Scorer"
+                                          >
+                                            <Clipboard className="h-3 w-3" />
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-56 p-2" align="end">
+                                          <p className="text-xs font-medium text-muted-foreground mb-2 px-1">Assign scorer for Group {letter}</p>
+                                          <div className="space-y-1">
+                                            {groupParticipants.filter(p => p.positionInGroup != null).map((p) => (
+                                              <button
+                                                key={p.userId}
+                                                className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-muted/80 transition-colors ${p.isScorer ? 'bg-green-50 ring-1 ring-green-200' : ''}`}
+                                                onClick={async () => {
+                                                  try {
+                                                    const res = await fetch('/api/tournaments/groups', {
+                                                      method: 'PATCH',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({
+                                                        tournamentId: selectedTournament.id,
+                                                        groupLetter: letter,
+                                                        scorerId: p.userId,
+                                                      }),
+                                                    });
+                                                    if (res.ok) {
+                                                      toast({ title: 'Success', description: `${p.user.name || 'Player'} assigned as scorer` });
+                                                      fetchGroupsData(selectedTournament.id);
+                                                    } else {
+                                                      const d = await res.json();
+                                                      toast({ title: 'Error', description: d.error || 'Failed to assign scorer', variant: 'destructive' });
+                                                    }
+                                                  } catch {
+                                                    toast({ title: 'Error', description: 'Failed to assign scorer', variant: 'destructive' });
+                                                  }
+                                                }}
+                                              >
+                                                <span className="truncate">{p.user.name || 'Unnamed'}</span>
+                                                {p.isScorer && <span className="text-xs">📋</span>}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={() => deleteTournamentGroup(letter)}
+                                        title="Delete group"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
                                   <div className="p-2 space-y-1">
                                     {[1, 2, 3, 4].map((position) => {
@@ -3639,6 +3698,7 @@ export default function AdminPage() {
                                           {participant ? (
                                             <>
                                               <span className="flex-1 text-sm truncate">{participant.user.name || 'Unnamed'}</span>
+                                              {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
                                               <Badge variant="outline" className="text-xs">
                                                 {participant.user.handicap?.toFixed(1) || '-'}
                                               </Badge>
