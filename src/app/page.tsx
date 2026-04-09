@@ -7069,30 +7069,23 @@ export default function JazelApp() {
                                   return (
                                     <div className="px-3 py-2 flex items-center gap-2 border-b border-white/50">
                                       {lockingGroup === letter ? (
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                          {groupLocked ? 'Unlocking...' : 'Locking...'}
-                                        </div>
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                       ) : groupLocked ? (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="h-8 px-3 text-xs gap-1.5 text-amber-700 border-amber-200 hover:bg-amber-50"
+                                        <button
+                                          className="text-xl hover:scale-110 transition-transform cursor-pointer"
                                           onClick={() => unlockGroupScores(selectedTournament.id, letter)}
+                                          title="Unlock scores"
                                         >
-                                          <Unlock className="w-3.5 h-3.5" />
-                                          🔓 Unlock Scores
-                                        </Button>
+                                          🔓
+                                        </button>
                                       ) : groupHasScores ? (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="h-8 px-3 text-xs gap-1.5 text-green-700 border-green-200 hover:bg-green-50"
+                                        <button
+                                          className="text-xl hover:scale-110 transition-transform cursor-pointer"
                                           onClick={() => lockGroupScores(selectedTournament.id, letter)}
+                                          title="Lock scores"
                                         >
-                                          <Lock className="w-3.5 h-3.5" />
-                                          🔒 Lock Scores
-                                        </Button>
+                                          🔒
+                                        </button>
                                       ) : null}
                                       {groupLocked && (
                                         <span className="text-[11px] text-emerald-600">Scores validated — safe to delete scorecard</span>
