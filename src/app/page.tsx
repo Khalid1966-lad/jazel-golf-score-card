@@ -3631,9 +3631,24 @@ export default function JazelApp() {
             setActiveTab('history');
             try { socket?.disconnect(); } catch {}
           } else {
-            toast.success('Scores saved! Live scoring continues...');
-            // Don't switch away from scorecard when saving draft in live mode
+            // Draft saved — close scorecard and go back to tournament view
+            toast.success('Draft saved! You can resume scoring from the tournament.');
+            setIsLiveScoring(false);
+            setTournamentScoringInfo(null);
+            setShowScorecard(false);
+            setSelectedCourse(null);
+            setScores([]);
+            setAdditionalPlayers([]);
+            setPlayerScores(new Map());
+            setEditingRoundId(null);
+            setSelectedTee('');
+            setHasUnsavedWork(false);
             localStorage.removeItem('jazel_active_round');
+            if (tournamentScoringInfo.tournamentId) {
+              fetchTournamentWithParticipants(tournamentScoringInfo.tournamentId);
+            }
+            setActiveTab('tournaments');
+            try { socket?.disconnect(); } catch {}
           }
         } else {
           toast.error(data.error || 'Failed to save scores');
@@ -5853,7 +5868,7 @@ export default function JazelApp() {
                           variant="outline"
                           className="flex-1"
                           onClick={() => saveRound(false)}
-                          disabled={scores.filter(s => s.strokes > 0).length === holesPlayed}
+                          disabled={scores.filter(s => s.strokes > 0).length === 0}
                         >
                           <Save className="w-4 h-4 mr-2" />
                           Save Draft
@@ -9534,7 +9549,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.66 • Made with ❤️ for Golfers
+              Version 1.4.67 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10355,7 +10370,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.66</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.67</p>
             </div>
             
             {/* Description */}
@@ -10401,7 +10416,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.66</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.4.67</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
