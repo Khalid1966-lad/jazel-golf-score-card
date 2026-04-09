@@ -387,6 +387,8 @@ model TournamentParticipant {
   groupLetter     String?
   positionInGroup Int?
   teeTime         String?
+  isScorer        Boolean  @default(false) // Designated as scorer for their group
+  scoredAt        DateTime? // When this player's scores were last updated by a scorer
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

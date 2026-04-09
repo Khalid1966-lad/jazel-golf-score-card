@@ -337,19 +337,28 @@ export async function PUT(request: NextRequest) {
         },
       });
 
-      // If completing, also update tournament participant scores
-      if (completed) {
-        // Get the scoring round with participants info
-        const scoringRound = await db.tournamentScoringRound.findUnique({
-          where: { id: scoringRoundId },
-          include: {
-            round: true,
+      // Always update scoredAt for all group participants when scores are saved
+      const scoringRoundInfo = await db.tournamentScoringRound.findUnique({
+        where: { id: scoringRoundId },
+        include: {
+          round: true,
+        },
+      });
+
+      if (scoringRoundInfo) {
+        // Mark all participants in this group as having been scored
+        await db.tournamentParticipant.updateMany({
+          where: {
+            tournamentId: scoringRoundInfo.tournamentId,
+            groupLetter: scoringRoundInfo.groupLetter,
           },
+          data: { scoredAt: new Date() },
         });
 
-        if (scoringRound) {
+        // If completing, also calculate and update gross/net scores
+        if (completed) {
           const tournament = await db.tournament.findUnique({
-            where: { id: scoringRound.tournamentId },
+            where: { id: scoringRoundInfo.tournamentId },
             include: { course: { include: { holes: true } } },
           });
 
@@ -359,16 +368,16 @@ export async function PUT(request: NextRequest) {
 
             // Get all participants in this group
             const participants = await db.tournamentParticipant.findMany({
-              where: { tournamentId: scoringRound.tournamentId, groupLetter: scoringRound.groupLetter },
+              where: { tournamentId: scoringRoundInfo.tournamentId, groupLetter: scoringRoundInfo.groupLetter },
             });
 
             // Update each player's gross score based on their playerIndex
             for (const participant of participants) {
               let playerIndex = 0;
-              if (participant.userId !== scoringRound.scorerId) {
+              if (participant.userId !== scoringRoundInfo.scorerId) {
                 // Find the player's position in additional players
-                const playerNames = scoringRound.round.playerNames
-                  ? JSON.parse(scoringRound.round.playerNames)
+                const playerNames = scoringRoundInfo.round.playerNames
+                  ? JSON.parse(scoringRoundInfo.round.playerNames)
                   : [];
                 const addIdx = playerNames.findIndex((p: { userId: string }) => p.userId === participant.userId);
                 playerIndex = addIdx + 1; // 1-based for additional players
@@ -378,24 +387,23 @@ export async function PUT(request: NextRequest) {
                 .filter(s => s.playerIndex === playerIndex)
                 .reduce((sum: number, s) => sum + s.strokes, 0);
 
-              const playerHcp = participant.userId === scoringRound.scorerId
-                ? scoringRound.round.playerHandicap || 0
+              const playerHcp = participant.userId === scoringRoundInfo.scorerId
+                ? scoringRoundInfo.round.playerHandicap || 0
                 : (() => {
-                    const playerNames = scoringRound.round.playerNames
-                      ? JSON.parse(scoringRound.round.playerNames)
+                    const playerNames = scoringRoundInfo.round.playerNames
+                      ? JSON.parse(scoringRoundInfo.round.playerNames)
                       : [];
                     const p = playerNames.find((pn: { userId: string }) => pn.userId === participant.userId);
                     return p?.handicap || 0;
                   })();
 
-              // For Stableford: net = strokes - (handicap * holes / 18) — simplified
-              // For Stroke play: net = gross - handicap * 0.9 (rough approximation)
+              // For Stroke play: net = gross - handicap * 0.85 (rough approximation)
               const netScore = Math.round(playerTotalStrokes - (playerHcp * 0.85));
 
               await db.tournamentParticipant.update({
                 where: {
                   tournamentId_userId: {
-                    tournamentId: scoringRound.tournamentId,
+                    tournamentId: scoringRoundInfo.tournamentId,
                     userId: participant.userId,
                   },
                 },
