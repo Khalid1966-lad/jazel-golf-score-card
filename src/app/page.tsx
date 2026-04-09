@@ -7117,17 +7117,16 @@ export default function JazelApp() {
                         </div>
                         {/* Sorted participants */}
                         {(() => {
-                          const coursePar = (selectedTournament.course?.holes || []).reduce((sum: number, h: any) => sum + (h.par || 4), 0);
-                          // Brut: total strokes vs course par (+3, -2, E)
-                          // Net: (total strokes vs course par) minus player handicap
-                          const formatDiff = (diff: number) => {
-                            if (diff > 0) return `+${diff}`;
-                            if (diff < 0) return `${diff}`;
+                          // grossScore = brut vs par (already calculated in backend)
+                          // netScore = brut vs par - handicap (already calculated in backend)
+                          const formatDiff = (val: number) => {
+                            if (val > 0) return `+${val}`;
+                            if (val < 0) return `${val}`;
                             return 'E';
                           };
-                          const diffColor = (diff: number) => {
-                            if (diff > 0) return 'text-red-600 font-semibold';
-                            if (diff < 0) return 'text-green-600 font-semibold';
+                          const diffColor = (val: number) => {
+                            if (val > 0) return 'text-red-600 font-semibold';
+                            if (val < 0) return 'text-green-600 font-semibold';
                             return 'font-semibold';
                           };
                           const sorted = [...selectedTournament.participants].sort((a, b) => {
@@ -7138,20 +7137,16 @@ export default function JazelApp() {
                               return a.grossScore - b.grossScore;
                             }
                             if (participantSort === 'net') {
-                              if (a.grossScore === null && b.grossScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
-                              if (a.grossScore === null) return 1;
-                              if (b.grossScore === null) return -1;
-                              // Sort by net vs par: (gross - par - handicap)
-                              const aNetDiff = (a.grossScore! - coursePar) - (a.user.handicap || 0);
-                              const bNetDiff = (b.grossScore! - coursePar) - (b.user.handicap || 0);
-                              return aNetDiff - bNetDiff;
+                              if (a.netScore === null && b.netScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
+                              if (a.netScore === null) return 1;
+                              if (b.netScore === null) return -1;
+                              return a.netScore - b.netScore;
                             }
                             return (a.user.handicap || 0) - (b.user.handicap || 0);
                           });
                           return sorted.map((participant, index) => {
-                            const grossDiff = participant.grossScore != null ? participant.grossScore - coursePar : null;
-                            const playerHcp = participant.user.handicap || 0;
-                            const netDiff = grossDiff != null ? grossDiff - playerHcp : null;
+                            const brut = participant.grossScore;
+                            const net = participant.netScore;
                             return (
                             <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
                               <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
@@ -7172,13 +7167,13 @@ export default function JazelApp() {
                                 </Badge>
                               </div>
                               <div className="col-span-2 text-center font-mono">
-                                <span className={grossDiff != null ? diffColor(grossDiff) : 'text-muted-foreground'}>
-                                  {grossDiff != null ? formatDiff(grossDiff) : '-'}
+                                <span className={brut != null ? diffColor(brut) : 'text-muted-foreground'}>
+                                  {brut != null ? formatDiff(brut) : '-'}
                                 </span>
                               </div>
                               <div className="col-span-2 text-center font-mono">
-                                <span className={netDiff != null ? diffColor(netDiff) : 'text-muted-foreground'}>
-                                  {netDiff != null ? formatDiff(netDiff) : '-'}
+                                <span className={net != null ? diffColor(net) : 'text-muted-foreground'}>
+                                  {net != null ? formatDiff(net) : '-'}
                                 </span>
                               </div>
                               <div className="col-span-1"></div>
@@ -9643,7 +9638,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.72 • Made with ❤️ for Golfers
+              Version 1.4.73 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10464,7 +10459,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.72</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.73</p>
             </div>
             
             {/* Description */}

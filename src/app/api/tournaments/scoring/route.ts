@@ -436,12 +436,20 @@ export async function PUT(request: NextRequest) {
           }).catch(() => {});
 
           // Calculate and update gross/net scores for ALL saves (draft + completed)
+          // grossScore = brut vs par = sum of (strokes - par) for each hole with strokes > 0
+          // netScore = brut vs par - handicap
           const tournament = await db.tournament.findUnique({
             where: { id: scoringRoundInfo.tournamentId },
             include: { course: { include: { holes: true } } },
           });
 
           if (tournament) {
+            // Build hole par map
+            const holeParMap = new Map<number, number>();
+            (tournament.course?.holes || []).forEach((h: any) => {
+              holeParMap.set(h.holeNumber, h.par || 4);
+            });
+
             // Get all participants in this group
             const participants = await db.tournamentParticipant.findMany({
               where: { tournamentId: scoringRoundInfo.tournamentId, groupLetter: scoringRoundInfo.groupLetter },
@@ -458,9 +466,9 @@ export async function PUT(request: NextRequest) {
                 playerIndex = addIdx + 1;
               }
 
-              const playerTotalStrokes = allScores
-                .filter(s => s.playerIndex === playerIndex)
-                .reduce((sum: number, s) => sum + s.strokes, 0);
+              // Calculate brut vs par: sum of (strokes - par) for scored holes only
+              const playerScores = allScores.filter(s => s.playerIndex === playerIndex && s.strokes > 0);
+              const brutVsPar = playerScores.reduce((sum: number, s) => sum + (s.strokes - (holeParMap.get(s.holeNumber) || 4)), 0);
 
               const playerHcp = participant.userId === scoringRoundInfo.scorerId
                 ? scoringRoundInfo.round.playerHandicap || 0
@@ -472,7 +480,7 @@ export async function PUT(request: NextRequest) {
                     return p?.handicap || 0;
                   })();
 
-              const netScore = Math.round(playerTotalStrokes - (playerHcp * 0.85));
+              const netVsPar = brutVsPar - playerHcp;
 
               await db.tournamentParticipant.update({
                 where: {
@@ -482,8 +490,8 @@ export async function PUT(request: NextRequest) {
                   },
                 },
                 data: {
-                  grossScore: playerTotalStrokes > 0 ? playerTotalStrokes : null,
-                  netScore: playerTotalStrokes > 0 ? netScore : null,
+                  grossScore: playerScores.length > 0 ? brutVsPar : null,
+                  netScore: playerScores.length > 0 ? netVsPar : null,
                 },
               });
             }
