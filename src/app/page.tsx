@@ -7103,17 +7103,17 @@ export default function JazelApp() {
                                         <button
                                           className="text-xl hover:scale-110 transition-transform cursor-pointer"
                                           onClick={() => unlockGroupScores(selectedTournament.id, letter)}
-                                          title="Unlock scores"
+                                          title="Unlock scores — allow scorer to edit again"
                                         >
-                                          🔓
+                                          🔒
                                         </button>
                                       ) : groupHasScores ? (
                                         <button
                                           className="text-xl hover:scale-110 transition-transform cursor-pointer"
                                           onClick={() => lockGroupScores(selectedTournament.id, letter)}
-                                          title="Lock scores"
+                                          title="Lock scores — prevent changes"
                                         >
-                                          🔒
+                                          🔓
                                         </button>
                                       ) : null}
                                       {groupLocked && (
