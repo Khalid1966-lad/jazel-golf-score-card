@@ -1426,6 +1426,20 @@ function ScoringActionButton({
 
   if (!scorerGroupLetter) return null;
 
+  // Check if group is locked
+  const isGroupLocked = tournament.participants?.some(
+    p => p.groupLetter === scorerGroupLetter && p.lockedAt
+  );
+
+  if (isGroupLocked) {
+    return (
+      <div className="w-full px-3 py-2.5 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center gap-2">
+        <span className="text-lg">🔒</span>
+        <span className="text-sm font-medium text-emerald-700">Scores validated by admin — scoring locked</span>
+      </div>
+    );
+  }
+
   if (activeScoringRound) {
     return (
       <Button
@@ -4237,6 +4251,21 @@ export default function JazelApp() {
       
       // If this is a tournament round, set live scoring state
       if (round.tournamentId && round.tournamentGroupLetter) {
+        // Check if group scores are locked by admin
+        try {
+          const tournamentData = await fetch(`/api/tournaments?id=${round.tournamentId}&includeParticipants=true&_t=${Date.now()}`, { cache: 'no-store' });
+          if (tournamentData.ok) {
+            const tData = await tournamentData.json();
+            const groupLocked = tData.tournament?.participants?.some(
+              (p: any) => p.groupLetter === round.tournamentGroupLetter && p.lockedAt
+            );
+            if (groupLocked) {
+              toast.error('🔒 This group\'s scores are locked by admin. Scoring is disabled.');
+              return;
+            }
+          }
+        } catch {}
+
         try {
           const scoringResponse = await fetch(`/api/tournaments/scoring?tournamentId=${round.tournamentId}&scorerId=${user?.id}&_t=${Date.now()}`, { cache: 'no-store' });
           if (scoringResponse.ok) {
