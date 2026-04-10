@@ -45,7 +45,9 @@ export async function POST(request: NextRequest) {
         netScore: participant.netScore,
       });
 
-      await db.tournamentParticipant.update({
+      console.log('[LOCK] Locking participant:', participant.userId, 'lockedAt before:', participant.lockedAt, 'setting to:', now.toISOString());
+
+      const result = await db.tournamentParticipant.update({
         where: {
           tournamentId_userId: {
             tournamentId,
@@ -60,8 +62,11 @@ export async function POST(request: NextRequest) {
           netScore: participant.netScore,
         },
       });
+      console.log('[LOCK] Result lockedAt:', result.lockedAt);
       lockedCount++;
     }
+
+    console.log('[LOCK] Total locked:', lockedCount, 'for group:', groupLetter);
 
     return NextResponse.json({
       success: true,

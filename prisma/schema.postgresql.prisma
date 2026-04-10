@@ -389,6 +389,8 @@ model TournamentParticipant {
   teeTime         String?  // "08:00", "08:10", etc.
   isScorer        Boolean  @default(false) // Designated as scorer for their group
   scoredAt        DateTime? // When this player's scores were last updated by a scorer
+  lockedAt        DateTime? // When admin locked this player's scores (immutable)
+  scoreSnapshot   String?   // JSON: current grossScore/netScore when locked
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

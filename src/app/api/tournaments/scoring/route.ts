@@ -458,7 +458,11 @@ export async function PUT(request: NextRequest) {
             // Update each player's gross score based on their playerIndex
             for (const participant of participants) {
               // Skip if this participant's scores are locked by admin
-              if (participant.lockedAt) continue;
+              console.log('[PUT SCORING] participant:', participant.userId, 'lockedAt:', participant.lockedAt, 'group:', scoringRoundInfo.groupLetter);
+              if (participant.lockedAt) {
+                console.log('[PUT SCORING] SKIP locked participant:', participant.userId);
+                continue;
+              }
 
               let playerIndex = 0;
               if (participant.userId !== scoringRoundInfo.scorerId) {
