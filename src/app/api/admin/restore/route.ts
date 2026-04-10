@@ -28,6 +28,7 @@ const TABLE_TO_MODEL: Record<string, string> = {
   messages: 'message',
   message_reads: 'messageRead',
   tournament_participants: 'tournamentParticipant',
+  tournament_scoring_rounds: 'tournamentScoringRound',
   golf_partner_requests: 'golfPartnerRequest',
   golf_partner_request_participants: 'golfPartnerRequestParticipant',
   repair_shops: 'repairShop',
@@ -58,6 +59,9 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   messages: ['users'],
   message_reads: ['messages', 'users'],
   tournament_participants: ['tournaments', 'users'],
+
+  // Tables depending on tournaments, users, and rounds
+  tournament_scoring_rounds: ['tournaments', 'users', 'rounds'],
 
   // Tables depending on users and golf_courses (partner requests)
   golf_partner_requests: ['users', 'golf_courses'],
@@ -166,6 +170,7 @@ async function clearAllTables(): Promise<{ cleared: string[]; errors: string[] }
         case 'message': await db.message.deleteMany(); break;
         case 'messageRead': await db.messageRead.deleteMany(); break;
         case 'tournamentParticipant': await db.tournamentParticipant.deleteMany(); break;
+        case 'tournamentScoringRound': await db.tournamentScoringRound.deleteMany(); break;
         case 'golfPartnerRequestParticipant': await db.golfPartnerRequestParticipant.deleteMany(); break;
         case 'golfPartnerRequest': await db.golfPartnerRequest.deleteMany(); break;
         case 'repairShop': await db.repairShop.deleteMany(); break;
@@ -362,12 +367,19 @@ async function insertRecords(
             create: filteredRecord as Parameters<typeof db.messageRead.create>[0]['data']
           }); 
           break;
-        case 'tournamentParticipant': 
-          await db.tournamentParticipant.upsert({ 
+        case 'tournamentParticipant':
+          await db.tournamentParticipant.upsert({
             where: { id },
             update: filteredRecord as Parameters<typeof db.tournamentParticipant.update>[0]['data'],
             create: filteredRecord as Parameters<typeof db.tournamentParticipant.create>[0]['data']
-          }); 
+          });
+          break;
+        case 'tournamentScoringRound':
+          await db.tournamentScoringRound.upsert({
+            where: { id },
+            update: filteredRecord as Parameters<typeof db.tournamentScoringRound.update>[0]['data'],
+            create: filteredRecord as Parameters<typeof db.tournamentScoringRound.create>[0]['data']
+          });
           break;
         case 'golfPartnerRequest': 
           await db.golfPartnerRequest.upsert({ 

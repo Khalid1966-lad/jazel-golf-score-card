@@ -270,12 +270,40 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // Delete all participants first (cascade should handle this, but let's be explicit)
+    // 1. Get all scoring rounds for this tournament (to find linked round IDs)
+    try {
+      const scoringRounds = await db.tournamentScoringRound.findMany({
+        where: { tournamentId },
+        select: { roundId: true },
+      });
+      const roundIds = scoringRounds.map(sr => sr.roundId);
+
+      // 2. Delete scoring rounds (cascades to linked rounds and scores)
+      if (roundIds.length > 0) {
+        await db.tournamentScoringRound.deleteMany({ where: { tournamentId } });
+      }
+
+      // 3. Delete any remaining tournament-linked rounds not covered by scoring rounds
+      if (roundIds.length > 0) {
+        await db.round.deleteMany({
+          where: { id: { in: roundIds } },
+        });
+      }
+
+      // 4. Also clean up any rounds with this tournamentId that aren't linked via scoring round
+      await db.round.deleteMany({
+        where: { tournamentId },
+      }).catch(() => {}); // Ignore if no column or constraint
+    } catch {
+      // Tables might not exist in some environments
+    }
+
+    // 5. Delete all participants
     await db.tournamentParticipant.deleteMany({
       where: { tournamentId }
-    });
+    }).catch(() => {});
 
-    // Delete the tournament
+    // 6. Delete the tournament
     await db.tournament.delete({
       where: { id: tournamentId }
     });

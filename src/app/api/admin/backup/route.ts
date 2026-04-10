@@ -34,16 +34,19 @@ const TABLE_DEPENDENCIES: Record<string, string[]> = {
   
   // Tables depending on users and golf_courses
   rounds: ['users', 'golf_courses'],
-  
+
   // Tables depending on rounds
   round_scores: ['rounds'],
-  
+
+  // Tables depending on tournaments and users
+  tournament_participants: ['tournaments', 'users'],
+
+  // Tables depending on tournaments, users, and rounds
+  tournament_scoring_rounds: ['tournaments', 'users', 'rounds'],
+
   // Tables depending on users (for messages)
   messages: ['users'],
   message_reads: ['messages', 'users'],
-  
-  // Tables depending on tournaments and users
-  tournament_participants: ['tournaments', 'users'],
 
   // Tables depending on users and golf_courses (partner requests)
   golf_partner_requests: ['users', 'golf_courses'],
@@ -267,6 +270,15 @@ async function fetchAllData() {
     statistics.tournament_participants = 0;
   }
 
+  try {
+    data.tournament_scoring_rounds = await db.tournamentScoringRound.findMany();
+    statistics.tournament_scoring_rounds = data.tournament_scoring_rounds.length;
+  } catch (e) {
+    errors.push(`tournament_scoring_rounds: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    data.tournament_scoring_rounds = [];
+    statistics.tournament_scoring_rounds = 0;
+  }
+
   // Fetch achievements (system-wide definitions)
   try {
     data.achievements = await db.achievement.findMany();
@@ -414,8 +426,8 @@ export async function GET(request: NextRequest) {
 
     // Build backup object with metadata
     const backup = {
-      version: '2.1',
-      schemaVersion: '2.0',
+      version: '2.2',
+      schemaVersion: '2.2',
       exportDate: new Date().toISOString(),
       exportedBy: session.user.name || session.user.email,
       statistics: { ...statistics, ...staticStats },
