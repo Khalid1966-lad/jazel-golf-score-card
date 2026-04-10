@@ -7212,10 +7212,10 @@ export default function JazelApp() {
 
                     {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
                       <div className="border rounded-lg overflow-hidden">
-                        <div className="grid grid-cols-12 gap-2 p-3 bg-muted/50 font-medium text-sm items-center">
+                        <div className="grid grid-cols-12 gap-3 p-3 bg-muted/50 font-medium text-sm items-center">
                           <div className="col-span-1">#</div>
                           <div className="col-span-3">Player</div>
-                          <div className="col-span-1 text-center">Group</div>
+                          <div className="col-span-1 text-center">Grp</div>
                           <div 
                             className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
                             onClick={() => setParticipantSort('handicap')}
@@ -7269,7 +7269,7 @@ export default function JazelApp() {
                             const brut = participant.grossScore;
                             const net = participant.netScore;
                             return (
-                            <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t">
+                            <div key={participant.userId} className="grid grid-cols-12 gap-3 p-3 items-center border-t">
                               <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
                               <div className="col-span-3 font-medium flex items-center gap-1.5">
                                 {participant.user.name || 'Unnamed'}
