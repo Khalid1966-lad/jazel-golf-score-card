@@ -7056,7 +7056,7 @@ export default function JazelApp() {
                                       </span>
                                     )}
                                     {groupScorer && (
-                                      <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">📋 Scorer: {groupScorer.user.name || 'TBD'}</Badge>
+                                      <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">📋 Scorer</Badge>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2">
@@ -7370,18 +7370,26 @@ export default function JazelApp() {
                                 <CardTitle className={`text-lg ${tournament.status === 'completed' ? 'text-emerald-800 dark:text-emerald-200' : ''}`}>{tournament.name}</CardTitle>
                                 <CardDescription>{tournament.course.name}</CardDescription>
                               </div>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  tournament.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                  tournament.status === 'in_progress' ? 'bg-green-50 text-green-700 border-green-200' :
-                                  tournament.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                                  'bg-red-50 text-red-700 border-red-200'
-                                }
-                              >
-                                {tournament.status === 'in_progress' ? 'In Progress' :
-                                 tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
-                              </Badge>
+                              <div className="flex items-center gap-1.5">
+                                {tournament.liveScoringEnabled && tournament.status === 'in_progress' && (
+                                  <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-700 border border-red-200 rounded-full px-2 py-0 animate-pulse font-semibold">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    LIVE
+                                  </span>
+                                )}
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    tournament.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    tournament.status === 'in_progress' ? 'bg-green-50 text-green-700 border-green-200' :
+                                    tournament.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                    'bg-red-50 text-red-700 border-red-200'
+                                  }
+                                >
+                                  {tournament.status === 'in_progress' ? 'In Progress' :
+                                   tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
+                                </Badge>
+                              </div>
                             </div>
                           </CardHeader>
                           <CardContent className="space-y-3">
