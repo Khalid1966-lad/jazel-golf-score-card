@@ -2243,6 +2243,72 @@ export default function AdminPage() {
     }
   };
 
+  // Add all filtered participants at once
+  const [addingAll, setAddingAll] = useState(false);
+  const addAllParticipants = async () => {
+    if (!selectedTournament) return;
+    const availableUsers = getAvailableUsers();
+    if (availableUsers.length === 0) {
+      toast({ title: 'Info', description: 'No available users to add' });
+      return;
+    }
+
+    setAddingAll(true);
+    let added = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const user of availableUsers) {
+      try {
+        const response = await fetch('/api/tournaments/participants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournamentId: selectedTournament.id,
+            userId: user.id
+          })
+        });
+
+        if (response.ok) {
+          added++;
+        } else {
+          const data = await response.json();
+          if (data.error?.includes('Already registered')) {
+            skipped++;
+          } else {
+            failed++;
+          }
+        }
+      } catch {
+        failed++;
+      }
+    }
+
+    setAddingAll(false);
+
+    // Refresh tournament data
+    try {
+      const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+      if (tournResponse.ok) {
+        const data = await tournResponse.json();
+        if (data.tournament) {
+          setSelectedTournament(data.tournament);
+          setTournaments(prev => prev.map(t => t.id === data.tournament.id ? data.tournament : t));
+        }
+      }
+    } catch {}
+
+    const parts: string[] = [];
+    if (added > 0) parts.push(`${added} added`);
+    if (skipped > 0) parts.push(`${skipped} already registered`);
+    if (failed > 0) parts.push(`${failed} failed`);
+    toast({
+      title: added > 0 ? 'Participants Added' : 'Result',
+      description: parts.join(', ') || 'No changes made',
+      variant: failed > 0 && added === 0 ? 'destructive' : 'default',
+    });
+  };
+
   // Remove participant from tournament
   const removeParticipant = async (userId: string) => {
     if (!selectedTournament) return;
@@ -3513,6 +3579,24 @@ export default function AdminPage() {
                                     onChange={(e) => setParticipantSearchQuery(e.target.value)}
                                     className="pl-8"
                                   />
+                                </div>
+                                {/* Add All button */}
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">
+                                    {getAvailableUsers().length} available user{getAvailableUsers().length !== 1 ? 's' : ''}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={addAllParticipants}
+                                    disabled={addingAll || getAvailableUsers().length === 0}
+                                  >
+                                    {addingAll ? (
+                                      <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> Adding...</>
+                                    ) : (
+                                      <><UserPlus className="mr-2 h-3.5 w-3.5" /> Add All ({getAvailableUsers().length})</>
+                                    )}
+                                  </Button>
                                 </div>
                                 {/* User List */}
                                 {groupFilterLoading ? (
