@@ -1,10 +1,9 @@
 [tournament-live] Installing dependencies...
-bun install v1.3.10 (30e609e0)
+bun install v1.3.12 (700fc117)
 
 + socket.io@4.8.3
 
-22 packages installed [163.00ms]
+22 packages installed [120.00ms]
 [tournament-live] Running bun run dev...
 $ bun --hot index.ts
-Tournament live scoring WebSocket server running on port 3005
 Tournament live scoring WebSocket server running on port 3005
