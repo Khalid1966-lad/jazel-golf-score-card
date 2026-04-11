@@ -328,95 +328,90 @@
 
 /* Print styles for tournament scorecard */
 @media print {
-  /* Hide everything except the scorecard modal */
-  body > *:not(#tournament-scorecard-modal) {
+  /* Hide everything except Radix portal (which contains the modal) */
+  body > *:not([data-radix-portal]) {
     display: none !important;
   }
 
-  /* Show the dialog overlay */
-  [data-radix-popper-content-wrapper] {
+  /* Make the portal wrapper and its children visible and static */
+  [data-radix-portal],
+  [data-radix-portal] > * {
     display: block !important;
     position: static !important;
+  }
+
+  /* Hide the overlay backdrop */
+  [data-radix-dialog-overlay] {
+    display: none !important;
   }
 
   /* Style the dialog content for print */
-  [data-radix-dialog-content],
-  #tournament-scorecard-modal {
-    display: block !important;
+  [data-radix-dialog-content] {
     position: static !important;
     overflow: visible !important;
     max-height: none !important;
+    height: auto !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 4pt !important;
+    padding: 8pt !important;
     border: none !important;
     box-shadow: none !important;
+    background: white !important;
+    opacity: 1 !important;
   }
 
-  /* Reset display for table elements inside the scorecard */
-  #tournament-scorecard-modal table,
-  #tournament-scorecard-modal thead,
-  #tournament-scorecard-modal tbody,
-  #tournament-scorecard-modal tr,
-  #tournament-scorecard-modal th,
-  #tournament-scorecard-modal td {
-    display: revert !important;
-    position: static !important;
-    overflow: visible !important;
-    max-height: none !important;
-  }
-
-  /* Force the modal to be visible */
+  /* Force [role="dialog"] visible */
   [role="dialog"] {
     display: block !important;
     position: static !important;
     opacity: 1 !important;
   }
 
-  /* Hide buttons and non-essential elements that shouldn't be printed */
-  #tournament-scorecard-modal button,
-  #tournament-scorecard-modal [data-radix-dialog-close] {
+  /* Hide all buttons */
+  button {
     display: none !important;
   }
 
-  /* Show non-button children with their natural display */
-  #tournament-scorecard-modal > *:not(button) {
-    display: revert !important;
-  }
-
-  /* Print-friendly table styling */
+  /* Ensure table elements render correctly */
   table {
-    page-break-inside: auto;
-    border-collapse: collapse;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
   }
 
   thead {
     display: table-header-group !important;
   }
 
-  tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
+  tbody {
+    display: table-body-group !important;
   }
 
-  /* Scale down for print - fit more on each page */
+  tr {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    display: table-cell !important;
+  }
+
+  /* Page setup */
   @page {
     size: landscape;
-    margin: 10mm;
+    margin: 8mm;
   }
 
   body {
-    font-size: 8pt !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  /* Ensure the scorecard container doesn't restrict height */
-  #tournament-scorecard-modal .overflow-auto,
-  #tournament-scorecard-modal .overflow-x-auto {
+  /* Remove all overflow constraints inside the modal */
+  #tournament-scorecard-modal * {
     overflow: visible !important;
     max-height: none !important;
+    position: static !important;
   }
 }
