@@ -10824,7 +10824,7 @@ export default function JazelApp() {
       </Dialog>
       {/* Tournament Scorecard Summary Modal */}
       <Dialog open={scorecardOpen} onOpenChange={setScorecardOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] flex flex-col overflow-hidden" id="tournament-scorecard-modal">
+        <DialogContent className="w-full h-[95vh] max-h-[95vh] sm:max-w-4xl sm:w-[95vw] flex flex-col overflow-hidden p-2 sm:p-6" id="tournament-scorecard-modal">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{color: '#39638b'}}>
               <Table2 className="w-5 h-5" />
@@ -10845,7 +10845,7 @@ export default function JazelApp() {
           )}
 
           {scorecardData && !scorecardLoading && (
-            <div className="flex-1 flex flex-col min-h-0 gap-3 pt-2">
+            <div className="flex-1 flex flex-col min-h-0 gap-2 sm:gap-3 pt-1 sm:pt-2">
               {/* Tournament Header Info */}
               <div className="flex flex-wrap items-center gap-4 text-sm p-3 rounded-lg" style={{backgroundColor: '#f0f6fc', borderColor: '#d6e4ef', border: '1px solid'}}>
                 <div className="flex items-center gap-1.5">
@@ -10864,16 +10864,16 @@ export default function JazelApp() {
               </div>
 
               {/* Scorecard Table */}
-              <div className="flex-1 min-h-0 overflow-auto rounded-lg border" style={{borderColor: '#d6e4ef'}}>
+              <div className="flex-1 min-h-0 overflow-auto rounded-lg border" style={{borderColor: '#d6e4ef', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.05)'}}>
                 <table className="w-full text-xs border-collapse min-w-[700px]">
                   <thead>
                     {/* Hole Numbers Row */}
-                    <tr className="bg-muted/50">
-                      <th className="sticky left-0 top-0 z-[30] h-7 bg-muted/50 px-2 text-left font-medium border-r" style={{borderColor: '#d6e4ef', minWidth: '120px'}}>
-                        Player
+                    <tr style={{backgroundColor: '#e8ecf1'}}>
+                      <th className="sticky left-0 top-0 z-[30] h-7 px-2 text-left font-medium border-r" style={{borderColor: '#d6e4ef', minWidth: '130px', backgroundColor: '#e8ecf1'}}>
+                        # Player
                       </th>
                       {scorecardData.holes?.map((hole: any) => (
-                        <th key={hole.number} className="sticky top-0 z-[20] h-7 bg-muted/50 px-1 text-center font-medium" style={{minWidth: '28px'}}>
+                        <th key={hole.number} className="sticky top-0 z-[20] h-7 px-1 text-center font-medium" style={{minWidth: '28px', backgroundColor: '#e8ecf1'}}>
                           {hole.number}
                         </th>
                       ))}
@@ -10919,15 +10919,16 @@ export default function JazelApp() {
                         <Fragment key={pIdx}>
                           {/* Player Name Row — Raw strokes per hole + Brut total */}
                           <tr className="border-t" style={{borderColor: '#d6e4ef'}}>
-                            <td className="sticky left-0 z-10 px-2 py-1.5 border-r font-medium bg-white" style={{borderColor: '#d6e4ef'}}>
+                            <td className="sticky left-0 z-10 px-2 py-1.5 border-r font-medium" style={{borderColor: '#d6e4ef', backgroundColor: '#ffffff'}}>
                               <div className="flex items-center gap-1">
-                                <span className="truncate max-w-[90px]" title={player.name}>{player.name}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground w-4 text-right flex-shrink-0">{pIdx + 1}</span>
+                                <span className="truncate" title={player.name}>{player.name}</span>
                                 {player.handicap > 0 && (
                                   <span className="text-[10px] text-muted-foreground whitespace-nowrap">({player.handicap})</span>
                                 )}
                               </div>
                               {player.groupLetter && (
-                                <div className="text-[10px] text-muted-foreground">Grp {player.groupLetter}</div>
+                                <div className="text-[10px] text-muted-foreground pl-4">Grp {player.groupLetter}</div>
                               )}
                             </td>
                             {player.scores?.map((score: number | null, sIdx: number) => {
