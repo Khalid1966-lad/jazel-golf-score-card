@@ -1715,6 +1715,115 @@ export default function JazelApp() {
   const [scorecardOpen, setScorecardOpen] = useState(false);
   const [scorecardData, setScorecardData] = useState<any>(null);
   const [scorecardLoading, setScorecardLoading] = useState(false);
+
+  // Print scorecard in a new window (bypasses Radix portal CSS issues)
+  const handlePrintScorecard = useCallback(() => {
+    if (!scorecardData) return;
+    const t = scorecardData.tournament;
+    const holes = scorecardData.holes || [];
+    const players = scorecardData.players || [];
+    const totalPar = holes.reduce((s: number, h: any) => s + (h.par || 0), 0);
+
+    // Build score cells for a player row
+    const buildScoreCells = (scores: (number | null)[]) => scores.map((s, i) => {
+      const par = holes[i]?.par || 4;
+      let bg = '#fff';
+      if (s !== null) {
+        const d = s - par;
+        if (d <= -2) bg = '#d1fae5';
+        else if (d === -1) bg = '#f0fdf4';
+        else if (d === 0) bg = '#f9fafb';
+        else if (d === 1) bg = '#fef2f2';
+        else if (d >= 2) bg = '#fee2e2';
+      }
+      return `<td style="padding:2px 4px;text-align:center;background:${bg};border:1px solid #d6e4ef;font-size:9pt">${s !== null ? s : ''}</td>`;
+    }).join('');
+
+    const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
+
+    const playerRows = players.map((p: any, idx: number) => {
+      const hasScores = p.scores?.some((s: number | null) => s !== null);
+      const brutHtml = hasScores
+        ? `<span style="color:${(p.gross as number) < 0 ? '#059669' : (p.gross as number) > 0 ? '#ef4444' : '#000'}">${brutStr(p.gross)}</span>`
+        : '-';
+      const netHtml = hasScores
+        ? `<span style="color:${(p.net as number) < 0 ? '#059669' : (p.net as number) > 0 ? '#ef4444' : '#6b7280'}">${brutStr(p.net)}</span>`
+        : '-';
+
+      return `
+        <tr>
+          <td style="padding:3px 6px;border:1px solid #d6e4ef;background:#fff;font-weight:500;min-width:140px">
+            <span style="font-size:8pt;color:#6b7280;font-weight:700;margin-right:4px">${idx + 1}.</span>
+            ${p.name}${p.handicap > 0 ? `<span style="font-size:8pt;color:#6b7280;margin-left:4px">(${p.handicap})</span>` : ''}
+            ${p.groupLetter ? `<br><span style="font-size:7pt;color:#9ca3af">Grp ${p.groupLetter}</span>` : ''}
+          </td>
+          ${buildScoreCells(p.scores || [])}
+          <td style="padding:3px 6px;text-align:center;background:#f3f4f6;border:1px solid #d6e4ef;font-weight:700">${brutHtml}</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 6px;border:1px solid #d6e4ef;background:#f9fafb;font-size:8pt;font-style:italic;color:#6b7280">Net</td>
+          <td colspan="${holes.length}" style="border:1px solid #d6e4ef;background:#f9fafb"></td>
+          <td style="padding:2px 6px;text-align:center;background:#f0f4f8;border:1px solid #d6e4ef;font-size:8pt;font-weight:600">${netHtml}</td>
+        </tr>`;
+    }).join('');
+
+    const dateStr = new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+    const html = `<!DOCTYPE html>
+<html><head><title>Scorecard - ${t.name}</title>
+<style>
+  @page { size: landscape; margin: 8mm; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 8pt; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #d6e4ef; }
+  .header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 12px; background: #f0f6fc; border: 1px solid #d6e4ef; border-radius: 6px; margin-bottom: 8px; font-size: 10pt; }
+  .header .title { font-weight: 700; color: #39638b; }
+  .header .meta { color: #6b7280; }
+  .footer { text-align: center; margin-top: 12px; font-size: 8pt; color: #9ca3af; }
+</style>
+</head><body>
+  <div class="header">
+    <span class="title">⛳ ${t.name}</span>
+    <span class="meta">📍 ${t.course.name} — ${t.course.city}</span>
+    <span class="meta">📅 ${dateStr}</span>
+    <span class="meta">${t.format || ''}</span>
+    ${scorecardData.isFrozen ? '<span style="color:#059669;font-weight:600">🔒 Frozen</span>' : ''}
+  </div>
+  <table>
+    <thead>
+      <tr style="background:#e8ecf1">
+        <th style="padding:4px 6px;text-align:left;min-width:140px;background:#e8ecf1"># Player</th>
+        ${holes.map(h => `<th style="padding:4px 2px;text-align:center;min-width:24px;background:#e8ecf1;font-size:9pt">${h.number}</th>`).join('')}
+        <th style="padding:4px 6px;text-align:center;min-width:40px;background:#39638b;color:#fff;font-weight:700">Brut</th>
+      </tr>
+      <tr style="background:#f1f5f9">
+        <td style="padding:4px 6px;font-weight:600;background:#f1f5f9;border:1px solid #d6e4ef">Par</td>
+        ${holes.map(h => `<td style="padding:4px 2px;text-align:center;background:#f1f5f9;font-size:9pt">${h.par}</td>`).join('')}
+        <td style="padding:4px 6px;text-align:center;background:#e2e8f0;font-weight:700">${totalPar}</td>
+      </tr>
+      <tr style="background:#e8f0f8">
+        <td style="padding:4px 6px;font-weight:600;background:#e8f0f8;border:1px solid #d6e4ef">HCP</td>
+        ${holes.map(h => `<td style="padding:4px 2px;text-align:center;background:#e8f0f8;font-size:9pt">${h.hcpIndex || '-'}</td>`).join('')}
+        <td style="padding:4px 6px;text-align:center;background:#dce6f0"></td>
+      </tr>
+    </thead>
+    <tbody>${playerRows}</tbody>
+  </table>
+  <div class="footer">Jazel Golf Scorecard</div>
+</body></html>`;
+
+    const printWin = window.open('', '_blank', 'width=1024,height=700');
+    if (printWin) {
+      printWin.document.write(html);
+      printWin.document.close();
+      printWin.onload = () => {
+        printWin.print();
+        // Close after a short delay to ensure print dialog is fully shown
+        setTimeout(() => printWin.close(), 500);
+      };
+    }
+  }, [scorecardData]);
+
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('gross');
   const [tournamentScoringRounds, setTournamentScoringRounds] = useState<any[]>([]);
@@ -10858,7 +10967,7 @@ export default function JazelApp() {
       </Dialog>
       {/* Tournament Scorecard Summary Modal */}
       <Dialog open={scorecardOpen} onOpenChange={setScorecardOpen}>
-        <DialogContent className="w-full h-[95vh] max-h-[95vh] sm:max-w-4xl sm:w-[95vw] flex flex-col overflow-hidden p-2 sm:p-6" id="tournament-scorecard-modal">
+        <DialogContent className="w-full h-[95vh] max-h-[95vh] sm:max-w-4xl sm:w-[95vw] flex flex-col overflow-hidden p-2 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{color: '#39638b'}}>
               <Table2 className="w-5 h-5" />
@@ -11171,7 +11280,7 @@ export default function JazelApp() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.print()}
+                  onClick={handlePrintScorecard}
                   style={{borderColor: '#39638b', color: '#39638b'}}
                 >
                   <Printer className="w-3.5 h-3.5 mr-1" />
