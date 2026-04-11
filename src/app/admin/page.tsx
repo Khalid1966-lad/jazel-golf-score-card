@@ -133,6 +133,7 @@ interface Tournament {
   maxPlayers: number;
   notes: string | null;
   status: string;
+  liveScoringEnabled?: boolean;
   adminId: string | null;
   adminPhone: string | null;
   createdAt: string;
@@ -253,11 +254,16 @@ export default function AdminPage() {
     maxPlayers: 144,
     notes: '',
     status: 'upcoming',
+    liveScoringEnabled: false,
     adminId: '',
     adminPhone: '',
   });
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('handicap');
   const [addParticipantDialogOpen, setAddParticipantDialogOpen] = useState(false);
+  const [selectedFilterGroupId, setSelectedFilterGroupId] = useState<string | null>(null);
+  const [groupFilterUserIds, setGroupFilterUserIds] = useState<string[]>([]);
+  const [groupFilterLoading, setGroupFilterLoading] = useState(false);
+  const [participantSearchQuery, setParticipantSearchQuery] = useState('');
   
   // Tournament Groups state
   const [tournamentViewTab, setTournamentViewTab] = useState<'leaderboard' | 'groups'>('leaderboard');
@@ -2155,6 +2161,7 @@ export default function AdminPage() {
           maxPlayers: editTournamentForm.maxPlayers,
           notes: editTournamentForm.notes || null,
           status: editTournamentForm.status,
+          liveScoringEnabled: editTournamentForm.liveScoringEnabled,
           adminId: editTournamentForm.adminId === 'none' ? null : editTournamentForm.adminId || null,
           adminPhone: editTournamentForm.adminPhone || null,
         })
@@ -2636,6 +2643,7 @@ export default function AdminPage() {
       maxPlayers: tournament.maxPlayers,
       notes: tournament.notes || '',
       status: tournament.status,
+      liveScoringEnabled: tournament.liveScoringEnabled || false,
       adminId: tournament.adminId || 'none',
       adminPhone: tournament.adminPhone || '',
     });
@@ -2671,7 +2679,20 @@ export default function AdminPage() {
     const visibleUsers = users.filter(u => !u.hiddenFromGolfers);
     if (!selectedTournament?.participants) return visibleUsers;
     const participantIds = selectedTournament.participants.map(p => p.userId);
-    return visibleUsers.filter(u => !participantIds.includes(u.id));
+    let available = visibleUsers.filter(u => !participantIds.includes(u.id));
+    // Filter by selected group if a group filter is active
+    if (selectedFilterGroupId && groupFilterUserIds.length > 0) {
+      available = available.filter(u => groupFilterUserIds.includes(u.id));
+    }
+    // Filter by search query
+    if (participantSearchQuery.trim()) {
+      const query = participantSearchQuery.toLowerCase().trim();
+      available = available.filter(u =>
+        (u.name || '').toLowerCase().includes(query) ||
+        (u.email || '').toLowerCase().includes(query)
+      );
+    }
+    return available;
   };
 
   // Sort participants based on selected sort option
@@ -3375,6 +3396,37 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2">
                       {getStatusBadge(selectedTournament.status)}
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 ${selectedTournament.liveScoringEnabled ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                        <span className={`w-2 h-2 rounded-full ${selectedTournament.liveScoringEnabled ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
+                        Live Scoring
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={async () => {
+                          const newValue = !selectedTournament.liveScoringEnabled;
+                          try {
+                            const res = await fetch(`/api/tournaments?id=${selectedTournament.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ liveScoringEnabled: newValue }),
+                            });
+                            if (res.ok) {
+                              setSelectedTournament({ ...selectedTournament, liveScoringEnabled: newValue });
+                              fetchTournaments();
+                              toast({ title: 'Success', description: `Live scoring ${newValue ? 'enabled' : 'disabled'}` });
+                            }
+                          } catch {
+                            toast({ title: 'Error', description: 'Failed to toggle live scoring', variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        <Switch className="pointer-events-none scale-75" checked={!!selectedTournament.liveScoringEnabled} />
+                        <span className="ml-1">Toggle</span>
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Tabs for Leaderboard / Groups */}
@@ -3392,7 +3444,14 @@ export default function AdminPage() {
                           <h3 className="font-semibold">
                             Participants ({selectedTournament.participants?.length || 0}/{selectedTournament.maxPlayers})
                           </h3>
-                          <Dialog open={addParticipantDialogOpen} onOpenChange={setAddParticipantDialogOpen}>
+                          <Dialog open={addParticipantDialogOpen} onOpenChange={(open) => {
+                            setAddParticipantDialogOpen(open);
+                            if (!open) {
+                              setSelectedFilterGroupId(null);
+                              setGroupFilterUserIds([]);
+                              setParticipantSearchQuery('');
+                            }
+                          }}>
                             <DialogTrigger asChild>
                               <Button size="sm" disabled={selectedTournament.status === 'completed' || selectedTournament.status === 'cancelled'}>
                                 <UserPlus className="mr-2 h-4 w-4" />
@@ -3404,23 +3463,85 @@ export default function AdminPage() {
                                 <DialogTitle>Add Participant</DialogTitle>
                                 <DialogDescription>Select a user to add to this tournament</DialogDescription>
                               </DialogHeader>
-                              <div className="py-4">
-                                <Select onValueChange={(userId) => {
-                                  addParticipant(userId);
-                                }}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a user..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {getAvailableUsers().map((user) => (
-                                      <SelectItem key={user.id} value={user.id}>
-                                        {user.name || user.email}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                {getAvailableUsers().length === 0 && (
-                                  <p className="text-sm text-muted-foreground mt-2">No available users to add</p>
+                              <div className="py-2 space-y-3">
+                                {/* Group Filter */}
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs text-muted-foreground">Filter by Group</Label>
+                                  <Select
+                                    value={selectedFilterGroupId || 'all'}
+                                    onValueChange={async (value) => {
+                                      if (value === 'all') {
+                                        setSelectedFilterGroupId(null);
+                                        setGroupFilterUserIds([]);
+                                        return;
+                                      }
+                                      setSelectedFilterGroupId(value);
+                                      setGroupFilterLoading(true);
+                                      try {
+                                        const res = await fetch(`/api/admin/groups?id=${value}&includeMembers=true`);
+                                        if (res.ok) {
+                                          const data = await res.json();
+                                          const memberIds = (data.group?.members || []).map((m: any) => m.userId);
+                                          setGroupFilterUserIds(memberIds);
+                                        }
+                                      } catch {
+                                        setGroupFilterUserIds([]);
+                                      } finally {
+                                        setGroupFilterLoading(false);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="All Groups" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="all">All Groups</SelectItem>
+                                      {groups.filter(g => g._count?.members && g._count.members > 0).map((group) => (
+                                        <SelectItem key={group.id} value={group.id}>
+                                          {group.name} ({group._count?.members || 0})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                {/* Search Input */}
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                  <Input
+                                    placeholder="Search by name or email..."
+                                    value={participantSearchQuery}
+                                    onChange={(e) => setParticipantSearchQuery(e.target.value)}
+                                    className="pl-8"
+                                  />
+                                </div>
+                                {/* User List */}
+                                {groupFilterLoading ? (
+                                  <div className="flex items-center justify-center py-4">
+                                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                    <span className="ml-2 text-sm text-muted-foreground">Loading group members...</span>
+                                  </div>
+                                ) : (
+                                  <div className="max-h-64 overflow-y-auto border rounded-lg">
+                                    {getAvailableUsers().length > 0 ? (
+                                      getAvailableUsers().map((user) => (
+                                        <button
+                                          key={user.id}
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/80 transition-colors border-b last:border-b-0 text-left"
+                                          onClick={() => addParticipant(user.id)}
+                                        >
+                                          <UserCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                                          <span className="truncate">{user.name || user.email}</span>
+                                          {user.handicap !== null && user.handicap !== undefined && (
+                                            <Badge variant="outline" className="ml-auto text-xs font-mono shrink-0">
+                                              {user.handicap.toFixed(1)}
+                                            </Badge>
+                                          )}
+                                        </button>
+                                      ))
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground p-4 text-center">No available users found</p>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </DialogContent>
@@ -6112,6 +6233,16 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label className="text-sm">Live Scoring</Label>
+                <p className="text-xs text-muted-foreground">Show live scoring indicators to players</p>
+              </div>
+              <Switch
+                checked={editTournamentForm.liveScoringEnabled}
+                onCheckedChange={(checked) => setEditTournamentForm({ ...editTournamentForm, liveScoringEnabled: checked })}
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>

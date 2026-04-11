@@ -176,7 +176,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes, status, adminId, adminPhone } = body;
+    const { name, courseId, date, startTime, teeTimeInterval, format, maxPlayers, notes, status, adminId, adminPhone, liveScoringEnabled } = body;
 
     // Verify tournament exists
     const existingTournament = await db.tournament.findUnique({
@@ -220,6 +220,7 @@ export async function PUT(request: NextRequest) {
     if (status !== undefined) updateData.status = status;
     if (adminId !== undefined) updateData.adminId = adminId || null;
     if (adminPhone !== undefined) updateData.adminPhone = adminPhone || null;
+    if (liveScoringEnabled !== undefined) updateData.liveScoringEnabled = liveScoringEnabled;
 
     const tournament = await db.tournament.update({
       where: { id: tournamentId },

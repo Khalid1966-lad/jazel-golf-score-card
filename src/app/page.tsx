@@ -322,6 +322,7 @@ interface Tournament {
   maxPlayers: number;
   notes: string | null;
   status: string;
+  liveScoringEnabled?: boolean;
   adminId: string | null;
   adminPhone: string | null;
   course: {
@@ -1436,6 +1437,17 @@ function ScoringActionButton({
       <div className="w-full px-3 py-2.5 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center gap-2">
         <span className="text-lg">🔒</span>
         <span className="text-sm font-medium text-emerald-700">Scores validated by admin — scoring locked</span>
+      </div>
+    );
+  }
+
+  // Check if tournament is in progress
+  const isNotInProgress = tournament.status !== 'in_progress';
+
+  if (isNotInProgress) {
+    return (
+      <div className="w-full px-3 py-2.5 rounded-md bg-gray-50 border border-gray-200 flex items-center justify-center gap-2">
+        <span className="text-sm font-medium text-gray-500">Tournament is not in progress — scoring unavailable</span>
       </div>
     );
   }
@@ -7037,6 +7049,12 @@ export default function JazelApp() {
                                     {groupLocked && (
                                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">🔒 Validated</Badge>
                                     )}
+                                    {selectedTournament.liveScoringEnabled && selectedTournament.status === 'in_progress' && groupScorer && (
+                                      <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-700 border border-red-200 rounded-full px-2 py-0 animate-pulse font-semibold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                        LIVE SCORING
+                                      </span>
+                                    )}
                                     {groupScorer && (
                                       <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">📋 Scorer: {groupScorer.user.name || 'TBD'}</Badge>
                                     )}
@@ -9760,7 +9778,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.83 • Made with ❤️ for Golfers
+              Version 1.4.84 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10581,7 +10599,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.83</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.84</p>
             </div>
             
             {/* Description */}

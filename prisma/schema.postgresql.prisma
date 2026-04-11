@@ -363,6 +363,7 @@ model Tournament {
   maxPlayers      Int      @default(144)
   notes           String?
   status          String   @default("upcoming")
+  liveScoringEnabled Boolean @default(false) // Admin toggle: show live scoring indicators to players
   adminId         String?
   adminPhone      String?
   createdAt       DateTime @default(now())
