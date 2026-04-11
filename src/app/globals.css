@@ -325,3 +325,62 @@
     opacity: 1;
   }
 }
+
+/* Print styles for tournament scorecard */
+@media print {
+  /* Hide everything except the scorecard modal */
+  body > *:not(#tournament-scorecard-modal) {
+    display: none !important;
+  }
+  
+  /* Show the dialog overlay */
+  [data-radix-popper-content-wrapper] {
+    display: block !important;
+    position: static !important;
+  }
+  
+  /* Style the dialog content for print */
+  [data-radix-dialog-content],
+  #tournament-scorecard-modal,
+  #tournament-scorecard-modal * {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Force the modal to be visible */
+  [role="dialog"] {
+    display: block !important;
+    position: static !important;
+    opacity: 1 !important;
+  }
+  
+  /* Hide buttons that shouldn't be printed */
+  button {
+    display: none !important;
+  }
+  
+  /* Print-friendly table styling */
+  table {
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  /* Color adjustments for print */
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

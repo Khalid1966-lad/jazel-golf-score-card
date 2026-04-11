@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, MapPin, Circle, Trophy, User, Menu, X, 
@@ -14,7 +14,7 @@ import {
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
   Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
   LayoutGrid, List as ListIcon, ClipboardList, MessageCircle, Pencil,
-  Clipboard, Radio, Zap, Lock, Unlock
+  Clipboard, Radio, Zap, Lock, Unlock, Table2, Printer
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -1712,6 +1712,9 @@ export default function JazelApp() {
   // Tournaments state
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [scorecardOpen, setScorecardOpen] = useState(false);
+  const [scorecardData, setScorecardData] = useState<any>(null);
+  const [scorecardLoading, setScorecardLoading] = useState(false);
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('gross');
   const [tournamentScoringRounds, setTournamentScoringRounds] = useState<any[]>([]);
@@ -7213,6 +7216,33 @@ export default function JazelApp() {
                           variant="outline"
                           size="sm"
                           className="h-7 px-2 text-xs"
+                          onClick={async () => {
+                            if (!selectedTournament?.id) return;
+                            setScorecardLoading(true);
+                            try {
+                              const res = await fetch(`/api/tournaments/scorecard?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, { cache: 'no-store' });
+                              if (res.ok) {
+                                const data = await res.json();
+                                setScorecardData(data);
+                                setScorecardOpen(true);
+                              } else {
+                                toast.error('Failed to load scorecard');
+                              }
+                            } catch {
+                              toast.error('Network error loading scorecard');
+                            } finally {
+                              setScorecardLoading(false);
+                            }
+                          }}
+                          disabled={scorecardLoading}
+                        >
+                          <Table2 className={`w-3.5 h-3.5 mr-1 ${scorecardLoading ? 'animate-pulse' : ''}`} />
+                          Scorecard
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
                           onClick={recalculateLeaderboard}
                           disabled={recalculating}
                         >
@@ -9786,7 +9816,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.84 • Made with ❤️ for Golfers
+              Version 1.4.90 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10607,7 +10637,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.84</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.90</p>
             </div>
             
             {/* Description */}
@@ -10792,6 +10822,253 @@ export default function JazelApp() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Tournament Scorecard Summary Modal */}
+      <Dialog open={scorecardOpen} onOpenChange={setScorecardOpen}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto" id="tournament-scorecard-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2" style={{color: '#39638b'}}>
+              <Table2 className="w-5 h-5" />
+              Tournament Scorecard
+            </DialogTitle>
+            <DialogDescription>
+              {scorecardData && (
+                <span>{scorecardData.tournament?.name} — {scorecardData.tournament?.course?.name}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {scorecardLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin" style={{color: '#39638b'}} />
+              <span className="ml-3 text-muted-foreground">Loading scorecard...</span>
+            </div>
+          )}
+
+          {scorecardData && !scorecardLoading && (
+            <div className="space-y-4">
+              {/* Tournament Header Info */}
+              <div className="flex flex-wrap items-center gap-4 text-sm p-3 rounded-lg" style={{backgroundColor: '#f0f6fc', borderColor: '#d6e4ef', border: '1px solid'}}>
+                <div className="flex items-center gap-1.5">
+                  <Trophy className="w-4 h-4" style={{color: '#39638b'}} />
+                  <span className="font-semibold">{scorecardData.tournament?.name}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{scorecardData.tournament?.course?.name} — {scorecardData.tournament?.course?.city}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{new Date(scorecardData.tournament?.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+                <Badge variant="secondary">{scorecardData.tournament?.format}</Badge>
+              </div>
+
+              {/* Scorecard Table */}
+              <div className="overflow-x-auto rounded-lg border" style={{borderColor: '#d6e4ef'}}>
+                <table className="w-full text-xs border-collapse min-w-[700px]">
+                  <thead>
+                    {/* Hole Numbers Row */}
+                    <tr className="bg-muted/50">
+                      <th className="sticky left-0 z-10 bg-muted/50 px-2 py-1.5 text-left font-medium border-r" style={{borderColor: '#d6e4ef', minWidth: '120px'}}>
+                        Player
+                      </th>
+                      {scorecardData.holes?.map((hole: any) => (
+                        <th key={hole.number} className="px-1 py-1.5 text-center font-medium" style={{minWidth: '28px'}}>
+                          {hole.number}
+                        </th>
+                      ))}
+                      <th className="px-2 py-1.5 text-center font-bold" style={{minWidth: '36px', backgroundColor: '#39638b', color: 'white'}}>
+                        TOT
+                      </th>
+                    </tr>
+                    {/* Par Row */}
+                    <tr style={{backgroundColor: '#f1f5f9'}}>
+                      <td className="sticky left-0 z-10 px-2 py-1 text-sm font-semibold border-r" style={{backgroundColor: '#f1f5f9', borderColor: '#d6e4ef'}}>
+                        Par
+                      </td>
+                      {scorecardData.holes?.map((hole: any) => (
+                        <td key={hole.number} className="px-1 py-1 text-center font-medium" style={{backgroundColor: '#f1f5f9'}}>
+                          {hole.par}
+                        </td>
+                      ))}
+                      <td className="px-2 py-1 text-center font-bold" style={{backgroundColor: '#e2e8f0'}}>
+                        {scorecardData.holes?.reduce((sum: number, h: any) => sum + h.par, 0)}
+                      </td>
+                    </tr>
+                    {/* HCP Row */}
+                    <tr style={{backgroundColor: '#e8f0f8'}}>
+                      <td className="sticky left-0 z-10 px-2 py-1 text-sm font-semibold border-r" style={{backgroundColor: '#e8f0f8', borderColor: '#d6e4ef'}}>
+                        HCP
+                      </td>
+                      {scorecardData.holes?.map((hole: any) => (
+                        <td key={hole.number} className="px-1 py-1 text-center font-medium" style={{backgroundColor: '#e8f0f8'}}>
+                          {hole.hcpIndex || '-'}
+                        </td>
+                      ))}
+                      <td className="px-2 py-1 text-center" style={{backgroundColor: '#dce6f0'}}></td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scorecardData.players?.map((player: any, pIdx: number) => {
+                      const totalPar = scorecardData.holes?.reduce((sum: number, h: any) => sum + h.par, 0) || 72;
+                      const grossVsPar = player.gross - totalPar;
+                      const netVsPar = player.net - totalPar;
+                      return (
+                        <Fragment key={pIdx}>
+                          {/* Player Name Row */}
+                          <tr className="border-t" style={{borderColor: '#d6e4ef'}}>
+                            <td className="sticky left-0 z-10 px-2 py-1.5 border-r font-medium bg-white" style={{borderColor: '#d6e4ef'}}>
+                              <div className="flex items-center gap-1">
+                                <span className="truncate max-w-[90px]" title={player.name}>{player.name}</span>
+                                {player.handicap > 0 && (
+                                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">({player.handicap})</span>
+                                )}
+                              </div>
+                              {player.groupLetter && (
+                                <div className="text-[10px] text-muted-foreground">Grp {player.groupLetter}</div>
+                              )}
+                            </td>
+                            {player.scores?.map((score: number | null, sIdx: number) => {
+                              const hole = scorecardData.holes?.[sIdx];
+                              const par = hole?.par || 4;
+                              let bgClass = 'bg-white';
+                              let textClass = '';
+                              if (score !== null) {
+                                const diff = score - par;
+                                if (diff <= -2) { bgClass = 'bg-emerald-100'; textClass = 'text-emerald-700'; }
+                                else if (diff === -1) { bgClass = 'bg-green-50'; textClass = 'text-green-600'; }
+                                else if (diff === 0) { bgClass = 'bg-gray-50'; }
+                                else if (diff === 1) { bgClass = 'bg-red-50'; textClass = 'text-red-500'; }
+                                else if (diff >= 2) { bgClass = 'bg-red-100'; textClass = 'text-red-600'; }
+                              }
+                              return (
+                                <td key={sIdx} className={`px-1 py-1 text-center font-medium ${bgClass} ${textClass}`}>
+                                  {score !== null ? score : ''}
+                                </td>
+                              );
+                            })}
+                            <td className="px-2 py-1 text-center font-bold bg-gray-50 border-l" style={{borderColor: '#d6e4ef'}}>
+                              {player.scores?.some((s: number | null) => s !== null) ? (
+                                <span className={grossVsPar < 0 ? 'text-green-600' : grossVsPar > 0 ? 'text-red-500' : ''}>
+                                  {player.gross}
+                                </span>
+                              ) : '-'}
+                            </td>
+                          </tr>
+                          {/* Net Row */}
+                          <tr className="border-t border-b" style={{borderColor: '#d6e4ef'}}>
+                            <td className="sticky left-0 z-10 px-2 py-1 border-r text-[10px] text-muted-foreground italic" style={{borderColor: '#d6e4ef', backgroundColor: '#fafbfc'}}>
+                              Net
+                            </td>
+                            {player.scores?.map((score: number | null, sIdx: number) => {
+                              const hole = scorecardData.holes?.[sIdx];
+                              const par = hole?.par || 4;
+                              const hcpIdx = hole?.hcpIndex;
+                              const hcp = Math.floor(player.handicap || 0);
+                              const strokesRcvd = hcpIdx ? (Math.floor(hcp / (scorecardData.holes?.length || 18)) + (hcpIdx <= (hcp % (scorecardData.holes?.length || 18)) ? 1 : 0)) : 0;
+                              const netScore = score !== null ? score - strokesRcvd : null;
+                              const netDiff = netScore !== null ? netScore - par : null;
+                              let textClass = 'text-muted-foreground';
+                              if (netDiff !== null) {
+                                if (netDiff <= -1) textClass = 'text-green-500';
+                                else if (netDiff >= 1) textClass = 'text-red-400';
+                              }
+                              return (
+                                <td key={sIdx} className={`px-1 py-0.5 text-center text-[10px] ${textClass}`} style={{backgroundColor: '#fafbfc'}}>
+                                  {netScore !== null ? netScore : ''}
+                                </td>
+                              );
+                            })}
+                            <td className="px-2 py-0.5 text-center text-[10px] font-semibold border-l" style={{borderColor: '#d6e4ef', backgroundColor: '#f0f4f8'}}>
+                              {player.scores?.some((s: number | null) => s !== null) ? (
+                                <span className={netVsPar < 0 ? 'text-green-600' : netVsPar > 0 ? 'text-red-500' : 'text-muted-foreground'}>
+                                  {player.net} {netVsPar !== 0 ? `(${netVsPar > 0 ? '+' : ''}${netVsPar})` : '(E)'}
+                                </span>
+                              ) : '-'}
+                            </td>
+                          </tr>
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {(!scorecardData.players || scorecardData.players.length === 0) && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clipboard className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p>No scores recorded yet</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Build text summary for sharing
+                    if (!scorecardData) return;
+                    const t = scorecardData.tournament;
+                    const holes = scorecardData.holes || [];
+                    const players = scorecardData.players || [];
+                    const totalPar = holes.reduce((sum: number, h: any) => sum + h.par, 0);
+
+                    let text = `⛳ ${t.name}\n`;
+                    text += `📍 ${t.course.name} — ${t.course.city}\n`;
+                    text += `📅 ${new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}\n`;
+                    text += `${'─'.repeat(30)}\n\n`;
+
+                    players.forEach((p: any, idx: number) => {
+                      const vsPar = p.gross - totalPar;
+                      const vsParStr = vsPar > 0 ? `+${vsPar}` : vsPar === 0 ? 'E' : String(vsPar);
+                      const netVsPar = p.net - totalPar;
+                      const netStr = netVsPar > 0 ? `+${netVsPar}` : netVsPar === 0 ? 'E' : String(netVsPar);
+                      text += `${idx + 1}. ${p.name}`;
+                      if (p.groupLetter) text += ` (Grp ${p.groupLetter})`;
+                      if (p.handicap > 0) text += ` [HCP ${p.handicap}]`;
+                      text += `\n   Gross: ${p.gross} (${vsParStr})  Net: ${p.net} (${netStr})\n`;
+                    });
+
+                    text += `\n📱 Jazel Golf Scorecard`;
+
+                    if (navigator.share) {
+                      navigator.share({
+                        title: `${t.name} - Scorecard`,
+                        text: text,
+                      }).catch(() => {
+                        // Fallback to clipboard
+                        navigator.clipboard.writeText(text).then(() => {
+                          toast.success('Scorecard copied to clipboard!');
+                        });
+                      });
+                    } else {
+                      navigator.clipboard.writeText(text).then(() => {
+                        toast.success('Scorecard copied to clipboard!');
+                      }).catch(() => {
+                        toast.error('Could not copy to clipboard');
+                      });
+                    }
+                  }}
+                >
+                  <Share2 className="w-3.5 h-3.5 mr-1" />
+                  Share
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.print()}
+                  style={{borderColor: '#39638b', color: '#39638b'}}
+                >
+                  <Printer className="w-3.5 h-3.5 mr-1" />
+                  Print
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
     </ErrorBoundary>
   );
