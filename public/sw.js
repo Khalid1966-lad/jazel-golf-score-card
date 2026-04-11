@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jazel-golf-v1.4.98';
+const CACHE_NAME = 'jazel-golf-v1.5.2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
