@@ -2109,7 +2109,9 @@ export default function JazelApp() {
   }, []);
 
   // Fetch tournament with participants
+  const [loadingTournamentDetail, setLoadingTournamentDetail] = useState(false);
   const fetchTournamentWithParticipants = useCallback(async (tournamentId: string) => {
+    setLoadingTournamentDetail(true);
     try {
       const response = await fetch(`/api/tournaments?id=${tournamentId}&includeParticipants=true&_t=${Date.now()}`, { cache: 'no-store' });
       if (response.ok) {
@@ -2120,6 +2122,8 @@ export default function JazelApp() {
       }
     } catch (error) {
       console.error('Failed to fetch tournament participants:', error);
+    } finally {
+      setLoadingTournamentDetail(false);
     }
   }, []);
 
@@ -6986,7 +6990,12 @@ export default function JazelApp() {
                   )}
 
                   {/* Groups & Tee Times */}
-                  {selectedTournament.participants && selectedTournament.participants.some(p => p.groupLetter) && (
+                  {loadingTournamentDetail ? (
+                    <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">Loading groups...</span>
+                    </div>
+                  ) : selectedTournament.participants && selectedTournament.participants.some(p => p.groupLetter) ? (
                     <div>
                       <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <Users className="w-4 h-4" style={{color: '#39638b'}} />
@@ -7063,12 +7072,6 @@ export default function JazelApp() {
                                     <span className={`font-medium ${safeColor.headerText}`}>
                                       {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
                                     </span>
-                                    {groupTeeTime && (
-                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
-                                        <Clock className="w-3 h-3" />
-                                        {groupTeeTime}
-                                      </Badge>
-                                    )}
                                     {groupLocked && (
                                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0 flex items-center gap-1"><Lock className="w-3 h-3" /> Validated</Badge>
                                     )}
@@ -7084,6 +7087,12 @@ export default function JazelApp() {
                                     <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
                                   </div>
                                   <div className="flex items-center gap-2 mt-1">
+                                    {groupTeeTime && (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {groupTeeTime}
+                                      </Badge>
+                                    )}
                                     {user && letter !== 'U' && (
                                       <Popover>
                                         <PopoverTrigger asChild>
@@ -7204,7 +7213,7 @@ export default function JazelApp() {
                         );
                       })()}
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Start/Continue Live Scoring Button */}
                   {user && selectedTournament.participants?.some(p => p.isScorer && p.userId === user.id) && (
@@ -7278,7 +7287,12 @@ export default function JazelApp() {
                       </div>
                     </div>
 
-                    {selectedTournament.participants && selectedTournament.participants.length > 0 ? (
+                    {loadingTournamentDetail ? (
+                      <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="text-sm">Loading leaderboard...</span>
+                      </div>
+                    ) : selectedTournament.participants && selectedTournament.participants.length > 0 ? (
                       <div className="border rounded-lg overflow-hidden">
                         <div className="grid grid-cols-12 gap-3 p-3 bg-muted/50 font-medium text-sm items-center">
                           <div className="col-span-1">#</div>
