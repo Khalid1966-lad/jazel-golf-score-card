@@ -7120,7 +7120,7 @@ export default function JazelApp() {
                                         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                       ) : groupLocked ? (
                                         <button
-                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium transition-colors cursor-pointer"
+                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium transition-colors cursor-pointer"
                                           onClick={() => unlockGroupScores(selectedTournament.id, letter)}
                                           title="Unlock scores — allow scorer to edit again"
                                         >
@@ -7129,7 +7129,7 @@ export default function JazelApp() {
                                         </button>
                                       ) : groupHasScores ? (
                                         <button
-                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium transition-colors cursor-pointer"
+                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium transition-colors cursor-pointer"
                                           onClick={() => lockGroupScores(selectedTournament.id, letter)}
                                           title="Lock scores — prevent changes"
                                         >
