@@ -251,7 +251,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Delete a tournament
+// DELETE - Delete a tournament and ALL related data (atomic transaction)
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -270,42 +270,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // 1. Get all scoring rounds for this tournament (to find linked round IDs)
-    try {
-      const scoringRounds = await db.tournamentScoringRound.findMany({
-        where: { tournamentId },
-        select: { roundId: true },
-      });
-      const roundIds = scoringRounds.map(sr => sr.roundId);
+    // Use a transaction to ensure atomicity — all deletes succeed or none do
+    await db.$transaction(async (tx) => {
+      // 1. Delete scoring rounds (FK onDelete: Cascade will also delete linked Round + RoundScore)
+      await tx.tournamentScoringRound.deleteMany({ where: { tournamentId } });
 
-      // 2. Delete scoring rounds (cascades to linked rounds and scores)
-      if (roundIds.length > 0) {
-        await db.tournamentScoringRound.deleteMany({ where: { tournamentId } });
-      }
+      // 2. Delete any remaining tournament-linked rounds (not covered by scoring rounds)
+      await tx.round.deleteMany({ where: { tournamentId } });
 
-      // 3. Delete any remaining tournament-linked rounds not covered by scoring rounds
-      if (roundIds.length > 0) {
-        await db.round.deleteMany({
-          where: { id: { in: roundIds } },
-        });
-      }
+      // 3. Delete all participants (FK onDelete: Cascade also handles this, but explicit is clearer)
+      await tx.tournamentParticipant.deleteMany({ where: { tournamentId } });
 
-      // 4. Also clean up any rounds with this tournamentId that aren't linked via scoring round
-      await db.round.deleteMany({
-        where: { tournamentId },
-      }).catch(() => {}); // Ignore if no column or constraint
-    } catch {
-      // Tables might not exist in some environments
-    }
-
-    // 5. Delete all participants
-    await db.tournamentParticipant.deleteMany({
-      where: { tournamentId }
-    }).catch(() => {});
-
-    // 6. Delete the tournament
-    await db.tournament.delete({
-      where: { id: tournamentId }
+      // 4. Delete the tournament itself
+      await tx.tournament.delete({ where: { id: tournamentId } });
     });
 
     return NextResponse.json({ success: true });

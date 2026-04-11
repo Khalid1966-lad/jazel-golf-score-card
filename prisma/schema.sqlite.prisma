@@ -238,7 +238,7 @@ model Round {
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   course         GolfCourse  @relation(fields: [courseId], references: [id])
   scores         RoundScore[]
-  tournament     Tournament? @relation(fields: [tournamentId], references: [id])
+  tournament     Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
   tournamentScoringRound TournamentScoringRound?
   
   @@map("rounds")

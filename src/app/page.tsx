@@ -9760,7 +9760,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.74 • Made with ❤️ for Golfers
+              Version 1.4.83 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10581,7 +10581,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.74</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.83</p>
             </div>
             
             {/* Description */}
