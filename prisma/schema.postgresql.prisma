@@ -384,8 +384,8 @@ model TournamentParticipant {
   tournamentId    String
   userId          String
   registeredAt    DateTime @default(now())
-  grossScore      Int?
-  netScore        Int?
+  grossScore      Float?
+  netScore        Float?
   groupLetter     String?  // "A", "B", "C", etc.
   positionInGroup Int?     // 1, 2, 3, or 4 (position within the group)
   teeTime         String?  // "08:00", "08:10", etc.

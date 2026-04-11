@@ -7041,6 +7041,7 @@ export default function JazelApp() {
                               const color = getGroupColor(letter);
                               const groupScorer = participants.find(p => p.isScorer);
                               const groupLocked = participants.some(p => p.lockedAt);
+                              const groupTeeTime = participants.find(p => p.teeTime)?.teeTime || null;
                               const safeColor = color || { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
                               return (
                               <div key={letter || 'unknown'} className={`border rounded-lg overflow-hidden ${safeColor.border} ${safeColor.bg}`}>
@@ -7049,6 +7050,12 @@ export default function JazelApp() {
                                     <span className={`font-medium ${safeColor.headerText}`}>
                                       {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
                                     </span>
+                                    {groupTeeTime && (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {groupTeeTime}
+                                      </Badge>
+                                    )}
                                     {groupLocked && (
                                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0 flex items-center gap-1"><Lock className="w-3 h-3" /> Validated</Badge>
                                     )}
@@ -11125,6 +11132,6 @@ export default function JazelApp() {
     </ErrorBoundary>
   );
 }
-// v1.4.93 trigger
+// v1.4.94 trigger
 
 

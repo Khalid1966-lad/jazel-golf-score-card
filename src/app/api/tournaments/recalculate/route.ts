@@ -40,16 +40,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Get all participants
-    const participants = await db.tournamentParticipant.findMany({
+    // Get all participants with current user handicap (always fresh)
+    const participantsWithUser = await db.tournamentParticipant.findMany({
       where: { tournamentId },
+      include: { user: { select: { id: true, handicap: true } } },
     });
 
     // Track per-user: brut vs par (sum of strokes - par per hole), handicap, found
     const playerTotals = new Map<string, { brutVsPar: number; handicap: number; found: boolean; scoredHoles: number }>();
 
-    participants.forEach(p => {
-      playerTotals.set(p.userId, { brutVsPar: 0, handicap: 0, found: false, scoredHoles: 0 });
+    // Build userId -> current handicap map (always fresh from User table)
+    const userIdToHcp = new Map<string, number>();
+    participantsWithUser.forEach(p => {
+      userIdToHcp.set(p.userId, p.user.handicap || 0);
+    });
+
+    participantsWithUser.forEach(p => {
+      playerTotals.set(p.userId, { brutVsPar: 0, handicap: p.user.handicap || 0, found: false, scoredHoles: 0 });
     });
 
     // Process each scoring round
@@ -66,11 +73,12 @@ export async function POST(request: NextRequest) {
         if (p.userId) indexToUser.set(idx + 1, p.userId);
       });
 
-      // Map playerIndex -> handicap
+      // Map playerIndex -> handicap — USE CURRENT USER HANDICAP (not frozen from playerNames)
       const indexToHcp = new Map<number, number>();
-      indexToHcp.set(0, sr.scorer.handicap || 0);
-      playerNames.forEach((p: { handicap?: number }, idx: number) => {
-        indexToHcp.set(idx + 1, p.handicap || 0);
+      indexToHcp.set(0, userIdToHcp.get(sr.scorerId) || 0);
+      playerNames.forEach((p: { userId?: string }, idx: number) => {
+        const uid = p.userId;
+        if (uid) indexToHcp.set(idx + 1, userIdToHcp.get(uid) || 0);
       });
 
       // Per-player per-hole: sum (strokes - par) for scored holes only (strokes > 0)
@@ -101,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update each participant
-    for (const participant of participants) {
+    for (const participant of participantsWithUser) {
       const totals = playerTotals.get(participant.userId);
 
       // Skip locked participants — their scores are preserved from admin validation
@@ -120,7 +128,7 @@ export async function POST(request: NextRequest) {
           },
         });
       } else {
-        const netVsPar = totals.brutVsPar - totals.handicap;
+        const netVsPar = Math.round((totals.brutVsPar - totals.handicap) * 10) / 10;
 
         await db.tournamentParticipant.update({
           where: {
@@ -134,7 +142,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, recalculated: participants.length });
+    return NextResponse.json({ success: true, recalculated: participantsWithUser.length });
   } catch (error) {
     console.error('Error recalculating tournament scores:', error);
     return NextResponse.json({ error: 'Failed to recalculate scores' }, { status: 500 });
