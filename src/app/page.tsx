@@ -1435,7 +1435,7 @@ function ScoringActionButton({
   if (isGroupLocked) {
     return (
       <div className="w-full px-3 py-2.5 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center gap-2">
-        <span className="text-lg">🔒</span>
+        <Lock className="w-4 h-4 text-emerald-600" />
         <span className="text-sm font-medium text-emerald-700">Scores validated by admin — scoring locked</span>
       </div>
     );
@@ -4272,7 +4272,7 @@ export default function JazelApp() {
               (p: any) => p.groupLetter === round.tournamentGroupLetter && p.lockedAt
             );
             if (groupLocked) {
-              toast.error('🔒 This group\'s scores are locked by admin. Scoring is disabled.');
+              toast.error('This group\'s scores are locked by admin. Scoring is disabled.');
               return;
             }
           }
@@ -7047,7 +7047,7 @@ export default function JazelApp() {
                                       {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
                                     </span>
                                     {groupLocked && (
-                                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">🔒 Validated</Badge>
+                                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0 flex items-center gap-1"><Lock className="w-3 h-3" /> Validated</Badge>
                                     )}
                                     {selectedTournament.liveScoringEnabled && selectedTournament.status === 'in_progress' && groupScorer && (
                                       <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-700 border border-red-200 rounded-full px-2 py-0 animate-pulse font-semibold">
@@ -7120,19 +7120,21 @@ export default function JazelApp() {
                                         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                       ) : groupLocked ? (
                                         <button
-                                          className="text-xl hover:scale-110 transition-transform cursor-pointer"
+                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium transition-colors cursor-pointer"
                                           onClick={() => unlockGroupScores(selectedTournament.id, letter)}
                                           title="Unlock scores — allow scorer to edit again"
                                         >
-                                          🔒
+                                          <Unlock className="w-4 h-4" />
+                                          Unlock
                                         </button>
                                       ) : groupHasScores ? (
                                         <button
-                                          className="text-xl hover:scale-110 transition-transform cursor-pointer"
+                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium transition-colors cursor-pointer"
                                           onClick={() => lockGroupScores(selectedTournament.id, letter)}
                                           title="Lock scores — prevent changes"
                                         >
-                                          🔓
+                                          <Lock className="w-4 h-4" />
+                                          Lock
                                         </button>
                                       ) : null}
                                       {groupLocked && (
@@ -7291,7 +7293,7 @@ export default function JazelApp() {
                             <div key={participant.userId} className="grid grid-cols-12 gap-3 p-3 items-center border-t">
                               <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
                               <div className="col-span-3 font-medium flex items-center gap-1.5">
-                                {participant.lockedAt && <span className="text-xs" title="Score validated by admin">🔒</span>}
+                                {participant.lockedAt && <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Score validated by admin" />}
                                 {participant.user.name || 'Unnamed'}
                                 {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
                               </div>
