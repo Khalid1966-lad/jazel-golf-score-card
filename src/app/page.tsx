@@ -7041,7 +7041,7 @@ export default function JazelApp() {
                               const safeColor = color || { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
                               return (
                               <div key={letter || 'unknown'} className={`border rounded-lg overflow-hidden ${safeColor.border} ${safeColor.bg}`}>
-                                <div className={`${safeColor.headerBg} p-3 flex items-center justify-between`}>
+                                <div className={`${safeColor.headerBg} p-3`}>
                                   <div className="flex items-center gap-2">
                                     <span className={`font-medium ${safeColor.headerText}`}>
                                       {letter === 'U' ? 'Unassigned' : `Group ${letter}`}
@@ -7058,16 +7058,18 @@ export default function JazelApp() {
                                     {groupScorer && (
                                       <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">📋 Scorer</Badge>
                                     )}
+                                    <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 mt-1">
                                     {user && letter !== 'U' && (
                                       <Popover>
                                         <PopoverTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-white/50" title="Assign Scorer">
-                                            <Clipboard className="w-3.5 h-3.5" />
+                                          <Button variant="ghost" size="sm" className="h-7 px-2 hover:bg-white/50" title="Assign Scorer">
+                                            <Clipboard className="w-3.5 h-3.5 mr-1" />
+                                            Assign Scorer
                                           </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-56 p-2" align="end">
+                                        <PopoverContent className="w-56 p-2" align="start">
                                           <p className="text-xs font-medium text-muted-foreground mb-2 px-1">Assign scorer for Group {letter}</p>
                                           <div className="space-y-1">
                                             {participants.map((p) => (
@@ -7105,7 +7107,6 @@ export default function JazelApp() {
                                         </PopoverContent>
                                       </Popover>
                                     )}
-                                    <Badge variant="outline" className="text-xs">{participants.length} players</Badge>
                                   </div>
                                 </div>
                                 {/* Admin Lock/Unlock group scores — own line */}
