@@ -7072,6 +7072,17 @@ export default function JazelApp() {
                     </div>
                   </div>
 
+                  {/* Tournament Notes */}
+                  {selectedTournament.notes && (
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <Clipboard className="w-4 h-4" style={{color: '#39638b'}} />
+                        Notes
+                      </h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedTournament.notes}</p>
+                    </div>
+                  )}
+
                   {/* Tournament Admin Info */}
                   {(selectedTournament.admin || selectedTournament.adminPhone) && (
                     <div className="p-4 bg-muted/30 rounded-lg">
