@@ -10824,7 +10824,7 @@ export default function JazelApp() {
       </Dialog>
       {/* Tournament Scorecard Summary Modal */}
       <Dialog open={scorecardOpen} onOpenChange={setScorecardOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto" id="tournament-scorecard-modal">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] flex flex-col overflow-hidden" id="tournament-scorecard-modal">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2" style={{color: '#39638b'}}>
               <Table2 className="w-5 h-5" />
@@ -10845,7 +10845,7 @@ export default function JazelApp() {
           )}
 
           {scorecardData && !scorecardLoading && (
-            <div className="space-y-4">
+            <div className="flex-1 flex flex-col min-h-0 gap-3 pt-2">
               {/* Tournament Header Info */}
               <div className="flex flex-wrap items-center gap-4 text-sm p-3 rounded-lg" style={{backgroundColor: '#f0f6fc', borderColor: '#d6e4ef', border: '1px solid'}}>
                 <div className="flex items-center gap-1.5">
@@ -10864,48 +10864,48 @@ export default function JazelApp() {
               </div>
 
               {/* Scorecard Table */}
-              <div className="overflow-x-auto rounded-lg border" style={{borderColor: '#d6e4ef'}}>
+              <div className="flex-1 min-h-0 overflow-auto rounded-lg border" style={{borderColor: '#d6e4ef'}}>
                 <table className="w-full text-xs border-collapse min-w-[700px]">
                   <thead>
                     {/* Hole Numbers Row */}
                     <tr className="bg-muted/50">
-                      <th className="sticky left-0 z-10 bg-muted/50 px-2 py-1.5 text-left font-medium border-r" style={{borderColor: '#d6e4ef', minWidth: '120px'}}>
+                      <th className="sticky left-0 top-0 z-[30] h-7 bg-muted/50 px-2 text-left font-medium border-r" style={{borderColor: '#d6e4ef', minWidth: '120px'}}>
                         Player
                       </th>
                       {scorecardData.holes?.map((hole: any) => (
-                        <th key={hole.number} className="px-1 py-1.5 text-center font-medium" style={{minWidth: '28px'}}>
+                        <th key={hole.number} className="sticky top-0 z-[20] h-7 bg-muted/50 px-1 text-center font-medium" style={{minWidth: '28px'}}>
                           {hole.number}
                         </th>
                       ))}
-                      <th className="px-2 py-1.5 text-center font-bold" style={{minWidth: '44px', backgroundColor: '#39638b', color: 'white'}}>
+                      <th className="sticky top-0 z-[20] h-7 px-2 text-center font-bold" style={{minWidth: '44px', backgroundColor: '#39638b', color: 'white'}}>
                         Brut
                       </th>
                     </tr>
                     {/* Par Row */}
                     <tr style={{backgroundColor: '#f1f5f9'}}>
-                      <td className="sticky left-0 z-10 px-2 py-1 text-sm font-semibold border-r" style={{backgroundColor: '#f1f5f9', borderColor: '#d6e4ef'}}>
+                      <td className="sticky left-0 z-[30] h-7 px-2 text-sm font-semibold border-r" style={{top: '28px', backgroundColor: '#f1f5f9', borderColor: '#d6e4ef'}}>
                         Par
                       </td>
                       {scorecardData.holes?.map((hole: any) => (
-                        <td key={hole.number} className="px-1 py-1 text-center font-medium" style={{backgroundColor: '#f1f5f9'}}>
+                        <td key={hole.number} className="sticky z-[20] h-7 px-1 text-center font-medium" style={{top: '28px', backgroundColor: '#f1f5f9'}}>
                           {hole.par}
                         </td>
                       ))}
-                      <td className="px-2 py-1 text-center font-bold" style={{backgroundColor: '#e2e8f0'}}>
+                      <td className="sticky z-[20] h-7 px-2 text-center font-bold" style={{top: '28px', backgroundColor: '#e2e8f0'}}>
                         {scorecardData.holes?.reduce((sum: number, h: any) => sum + h.par, 0)}
                       </td>
                     </tr>
                     {/* HCP Row */}
                     <tr style={{backgroundColor: '#e8f0f8'}}>
-                      <td className="sticky left-0 z-10 px-2 py-1 text-sm font-semibold border-r" style={{backgroundColor: '#e8f0f8', borderColor: '#d6e4ef'}}>
+                      <td className="sticky left-0 z-[30] h-7 px-2 text-sm font-semibold border-r" style={{top: '56px', backgroundColor: '#e8f0f8', borderColor: '#d6e4ef'}}>
                         HCP
                       </td>
                       {scorecardData.holes?.map((hole: any) => (
-                        <td key={hole.number} className="px-1 py-1 text-center font-medium" style={{backgroundColor: '#e8f0f8'}}>
+                        <td key={hole.number} className="sticky z-[20] h-7 px-1 text-center font-medium" style={{top: '56px', backgroundColor: '#e8f0f8'}}>
                           {hole.hcpIndex || '-'}
                         </td>
                       ))}
-                      <td className="px-2 py-1 text-center" style={{backgroundColor: '#dce6f0'}}></td>
+                      <td className="sticky z-[20] h-7 px-2 text-center" style={{top: '56px', backgroundColor: '#dce6f0'}}></td>
                     </tr>
                   </thead>
                   <tbody>
@@ -11053,6 +11053,6 @@ export default function JazelApp() {
     </ErrorBoundary>
   );
 }
-// v1.4.79 trigger
+// v1.4.91 trigger
 
 

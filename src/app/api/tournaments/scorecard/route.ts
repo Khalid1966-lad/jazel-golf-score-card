@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
 
         if (!hasAnyScore) continue;
 
-        const netScore = brutVsPar - pInfo.handicap;
+        const netScore = Math.round((brutVsPar - pInfo.handicap) * 10) / 10;
 
         playerMap.set(pInfo.userId, {
           name: pInfo.name,
@@ -271,7 +271,7 @@ export async function GET(request: NextRequest) {
 
         if (!hasAnyScore) continue;
 
-        const netScore = brutVsPar - pInfo.handicap;
+        const netScore = Math.round((brutVsPar - pInfo.handicap) * 10) / 10;
 
         playerMap.set(pInfo.userId, {
           name: pInfo.name,
