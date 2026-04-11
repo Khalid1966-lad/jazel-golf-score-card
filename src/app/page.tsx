@@ -10861,6 +10861,12 @@ export default function JazelApp() {
                   <span>{new Date(scorecardData.tournament?.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 <Badge variant="secondary">{scorecardData.tournament?.format}</Badge>
+                {scorecardData.isFrozen && (
+                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 gap-1">
+                    <Lock className="w-3 h-3" />
+                    Frozen
+                  </Badge>
+                )}
               </div>
 
               {/* Scorecard Table */}
@@ -10987,7 +10993,71 @@ export default function JazelApp() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-between gap-2 pt-2">
+                {/* Freeze Scorecard button - only visible to admin when not frozen */}
+                {user?.id === selectedTournament?.adminId && !scorecardData.isFrozen && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 h-7 px-2 text-xs"
+                    onClick={async () => {
+                      if (!selectedTournament?.id) return;
+                      try {
+                        const res = await fetch('/api/tournaments/snapshot', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ tournamentId: selectedTournament.id, adminId: user!.id }),
+                        });
+                        if (res.ok) {
+                          toast.success('Scorecard frozen — scores are now immutable');
+                          // Reload scorecard to show frozen badge
+                          const res2 = await fetch(`/api/tournaments/scorecard?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, { cache: 'no-store' });
+                          if (res2.ok) setScorecardData(await res2.json());
+                        } else {
+                          const err = await res.json();
+                          toast.error(err.error || 'Failed to freeze scorecard');
+                        }
+                      } catch {
+                        toast.error('Network error');
+                      }
+                    }}
+                  >
+                    <Lock className="w-3.5 h-3.5 mr-1" />
+                    Freeze Scorecard
+                  </Button>
+                )}
+                {/* Unfreeze button - admin only */}
+                {user?.id === selectedTournament?.adminId && scorecardData.isFrozen && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-amber-700 border-amber-300 hover:bg-amber-50 h-7 px-2 text-xs"
+                    onClick={async () => {
+                      if (!selectedTournament?.id) return;
+                      try {
+                        const res = await fetch('/api/tournaments/snapshot', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ tournamentId: selectedTournament.id, adminId: user!.id }),
+                        });
+                        if (res.ok) {
+                          toast.success('Scorecard unfrozen — scores can be modified');
+                          const res2 = await fetch(`/api/tournaments/scorecard?tournamentId=${selectedTournament.id}&_t=${Date.now()}`, { cache: 'no-store' });
+                          if (res2.ok) setScorecardData(await res2.json());
+                        } else {
+                          const err = await res.json();
+                          toast.error(err.error || 'Failed to unfreeze');
+                        }
+                      } catch {
+                        toast.error('Network error');
+                      }
+                    }}
+                  >
+                    <Unlock className="w-3.5 h-3.5 mr-1" />
+                    Unfreeze
+                  </Button>
+                )}
+                <div className="flex items-center gap-2 ml-auto">
                 <Button
                   variant="outline"
                   size="sm"
@@ -11044,6 +11114,7 @@ export default function JazelApp() {
                   <Printer className="w-3.5 h-3.5 mr-1" />
                   Print
                 </Button>
+                </div>
               </div>
             </div>
           )}
@@ -11054,6 +11125,6 @@ export default function JazelApp() {
     </ErrorBoundary>
   );
 }
-// v1.4.91 trigger
+// v1.4.93 trigger
 
 

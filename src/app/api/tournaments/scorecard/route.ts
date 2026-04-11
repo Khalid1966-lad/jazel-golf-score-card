@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/tournaments/scorecard?tournamentId=xxx
 // Returns all data needed for the tournament scorecard summary
+// If a frozen snapshot exists, returns it (immutable). Otherwise calculates live.
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'tournamentId is required' }, { status: 400 });
     }
 
-    // 1. Fetch tournament with course data
+    // 1. Fetch tournament with course data + check for frozen snapshot
     const tournament = await db.tournament.findUnique({
       where: { id: tournamentId },
       include: {
@@ -29,7 +30,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // 2. Fetch all course holes ordered by holeNumber
+    // 1b. If a frozen scorecard snapshot exists, return it directly (immutable)
+    if (tournament.scorecardSnapshot) {
+      try {
+        const snapshot = JSON.parse(tournament.scorecardSnapshot);
+        return NextResponse.json({
+          ...snapshot,
+          isFrozen: true,
+          frozenAt: snapshot.frozenAt,
+        });
+      } catch {
+        // If snapshot JSON is corrupted, fall through to live calculation
+        console.warn('Scorecard snapshot JSON is corrupted, falling back to live calculation');
+      }
+    }
+
+    // 2. No snapshot — calculate live from round data
     const holes = await db.courseHole.findMany({
       where: { courseId: tournament.courseId },
       orderBy: { holeNumber: 'asc' },
@@ -325,7 +341,7 @@ export async function GET(request: NextRequest) {
       players,
     };
 
-    return NextResponse.json(response);
+    return NextResponse.json({ ...response, isFrozen: false });
   } catch (error) {
     console.error('Error fetching tournament scorecard:', error);
     return NextResponse.json({ error: 'Failed to fetch scorecard data' }, { status: 500 });

@@ -364,6 +364,7 @@ model Tournament {
   notes           String?
   status          String   @default("upcoming")
   liveScoringEnabled Boolean @default(false) // Admin toggle: show live scoring indicators to players
+  scorecardSnapshot String?   // JSON: frozen complete scorecard data — immutable after tournament finalized
   adminId         String?
   adminPhone      String?
   createdAt       DateTime @default(now())
