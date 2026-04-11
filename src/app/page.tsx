@@ -7041,7 +7041,20 @@ export default function JazelApp() {
                               const color = getGroupColor(letter);
                               const groupScorer = participants.find(p => p.isScorer);
                               const groupLocked = participants.some(p => p.lockedAt);
-                              const groupTeeTime = participants.find(p => p.teeTime)?.teeTime || null;
+                              // Use stored tee time if available, otherwise calculate from tournament start time
+                              const storedTeeTime = participants.find(p => p.teeTime)?.teeTime || null;
+                              let calculatedTeeTime: string | null = null;
+                              if (!storedTeeTime && selectedTournament.startTime && letter !== 'U') {
+                                const startMinutes = (() => {
+                                  const [h, m] = selectedTournament.startTime.split(':').map(Number);
+                                  return h * 60 + m;
+                                })();
+                                const groupIndex = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+                                const interval = selectedTournament.teeTimeInterval || 10;
+                                const teeTimeMinutes = startMinutes + groupIndex * interval;
+                                calculatedTeeTime = `${String(Math.floor(teeTimeMinutes / 60)).padStart(2, '0')}:${String(teeTimeMinutes % 60).padStart(2, '0')}`;
+                              }
+                              const groupTeeTime = storedTeeTime || calculatedTeeTime;
                               const safeColor = color || { bg: 'bg-gray-50', border: 'border-gray-200', headerBg: 'bg-gray-100', headerText: 'text-gray-500' };
                               return (
                               <div key={letter || 'unknown'} className={`border rounded-lg overflow-hidden ${safeColor.border} ${safeColor.bg}`}>
@@ -9823,7 +9836,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.90 • Made with ❤️ for Golfers
+              Version 1.4.95 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10644,7 +10657,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.90</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.95</p>
             </div>
             
             {/* Description */}

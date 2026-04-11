@@ -509,3 +509,21 @@ Stage Summary:
 - Lint passes with 0 errors (1 pre-existing warning)
 - Dev server compiles and runs successfully
 - No existing logic was modified — all changes are additive
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix tee time not showing on player/user side tournament groups
+
+Work Log:
+- Investigated why tee time showed in admin panel but not player side
+- Found admin panel uses `calculateGroupTeeTime()` as fallback when `teeTime` not stored on participants
+- Player side only checked `participants.find(p => p.teeTime)?.teeTime` with no fallback
+- Added calculation fallback in player-side group header rendering
+- Uses tournament `startTime` and `teeTimeInterval` to compute tee time when not stored
+- Updated version to 1.4.95
+
+Stage Summary:
+- Fixed tee time display on player/user side tournament tab groups
+- Added calculated tee time fallback matching admin panel behavior
+- Version bumped to 1.4.95
+
