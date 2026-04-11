@@ -4142,7 +4142,6 @@ export default function AdminPage() {
                           <Select
                             value={newTournamentForm.courseId}
                             onValueChange={(value) => setNewTournamentForm({ ...newTournamentForm, courseId: value })}
-                            disabled={coursesLocked && !isSuperAdmin(currentUser?.email)}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select a course..." />
@@ -4155,9 +4154,6 @@ export default function AdminPage() {
                               ))}
                             </SelectContent>
                           </Select>
-                          {coursesLocked && !isSuperAdmin(currentUser?.email) && (
-                            <p className="text-xs text-amber-600">Course selection is locked by Super Admin</p>
-                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
@@ -6327,7 +6323,6 @@ export default function AdminPage() {
               <Select
                 value={editTournamentForm.courseId}
                 onValueChange={(value) => setEditTournamentForm({ ...editTournamentForm, courseId: value })}
-                disabled={coursesLocked && !isSuperAdmin(currentUser?.email)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a course..." />
@@ -6340,9 +6335,6 @@ export default function AdminPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {coursesLocked && !isSuperAdmin(currentUser?.email) && (
-                <p className="text-xs text-amber-600">Course selection is locked by Super Admin</p>
-              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
