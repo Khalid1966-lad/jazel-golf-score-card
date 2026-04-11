@@ -2364,7 +2364,7 @@ export default function JazelApp() {
       setEditingRoundId(round.id);
       // Parse scores for main player (playerIndex === 0)
       const mainScores = (round.scores || []).filter((s: any) => !s.playerIndex || s.playerIndex === 0);
-      setScores(mainScores);
+      setScores([...mainScores].sort((a: any, b: any) => a.holeNumber - b.holeNumber));
       // Parse additional players
       let players: AdditionalPlayer[] = [];
       if (round.playerNames) {
@@ -2476,7 +2476,7 @@ export default function JazelApp() {
       setSelectedCourse(courseData as any);
       setEditingRoundId(round.id);
       const mainScores = (round.scores || []).filter((s: any) => !s.playerIndex || s.playerIndex === 0);
-      setScores(mainScores);
+      setScores([...mainScores].sort((a: any, b: any) => a.holeNumber - b.holeNumber));
       let players: AdditionalPlayer[] = [];
       if (round.playerNames) {
         try {

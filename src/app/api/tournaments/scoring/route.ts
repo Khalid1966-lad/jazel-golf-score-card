@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         // Return the existing scoring round
         const existingRound = await db.round.findUnique({
           where: { id: existingScoring.roundId },
-          include: { scores: true },
+          include: { scores: { orderBy: { holeNumber: 'asc' } } },
         });
         return NextResponse.json({
           scoringRound: existingScoring,
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
           ),
         },
       },
-      include: { scores: true },
+      include: { scores: { orderBy: { holeNumber: 'asc' } } },
     });
 
     // Create the TournamentScoringRound link
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
           scorer: { select: { id: true, name: true, avatar: true } },
           round: {
             include: {
-              scores: true,
+              scores: { orderBy: { holeNumber: 'asc' } },
               course: {
                 include: {
                   holes: { orderBy: { holeNumber: 'asc' } },
