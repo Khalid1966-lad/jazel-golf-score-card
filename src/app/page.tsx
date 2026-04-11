@@ -10877,8 +10877,8 @@ export default function JazelApp() {
                           {hole.number}
                         </th>
                       ))}
-                      <th className="px-2 py-1.5 text-center font-bold" style={{minWidth: '36px', backgroundColor: '#39638b', color: 'white'}}>
-                        TOT
+                      <th className="px-2 py-1.5 text-center font-bold" style={{minWidth: '44px', backgroundColor: '#39638b', color: 'white'}}>
+                        Brut
                       </th>
                     </tr>
                     {/* Par Row */}
@@ -10910,12 +10910,14 @@ export default function JazelApp() {
                   </thead>
                   <tbody>
                     {scorecardData.players?.map((player: any, pIdx: number) => {
-                      const totalPar = scorecardData.holes?.reduce((sum: number, h: any) => sum + h.par, 0) || 72;
-                      const grossVsPar = player.gross - totalPar;
-                      const netVsPar = player.net - totalPar;
+                      const hasScores = player.scores?.some((s: number | null) => s !== null);
+                      const brut = player.gross; // brut vs par (same as leaderboard grossScore)
+                      const net = player.net; // brut vs par - handicap (same as leaderboard netScore)
+                      const brutStr = brut > 0 ? `+${brut}` : brut === 0 ? 'E' : `${brut}`;
+                      const netStr = net > 0 ? `+${net}` : net === 0 ? 'E' : `${net}`;
                       return (
                         <Fragment key={pIdx}>
-                          {/* Player Name Row */}
+                          {/* Player Name Row — Raw strokes per hole + Brut total */}
                           <tr className="border-t" style={{borderColor: '#d6e4ef'}}>
                             <td className="sticky left-0 z-10 px-2 py-1.5 border-r font-medium bg-white" style={{borderColor: '#d6e4ef'}}>
                               <div className="flex items-center gap-1">
@@ -10948,41 +10950,23 @@ export default function JazelApp() {
                               );
                             })}
                             <td className="px-2 py-1 text-center font-bold bg-gray-50 border-l" style={{borderColor: '#d6e4ef'}}>
-                              {player.scores?.some((s: number | null) => s !== null) ? (
-                                <span className={grossVsPar < 0 ? 'text-green-600' : grossVsPar > 0 ? 'text-red-500' : ''}>
-                                  {player.gross}
+                              {hasScores ? (
+                                <span className={brut < 0 ? 'text-green-600' : brut > 0 ? 'text-red-500' : ''}>
+                                  {brutStr}
                                 </span>
                               ) : '-'}
                             </td>
                           </tr>
-                          {/* Net Row */}
+                          {/* Net Row — Net total only */}
                           <tr className="border-t border-b" style={{borderColor: '#d6e4ef'}}>
                             <td className="sticky left-0 z-10 px-2 py-1 border-r text-[10px] text-muted-foreground italic" style={{borderColor: '#d6e4ef', backgroundColor: '#fafbfc'}}>
                               Net
                             </td>
-                            {player.scores?.map((score: number | null, sIdx: number) => {
-                              const hole = scorecardData.holes?.[sIdx];
-                              const par = hole?.par || 4;
-                              const hcpIdx = hole?.hcpIndex;
-                              const hcp = Math.floor(player.handicap || 0);
-                              const strokesRcvd = hcpIdx ? (Math.floor(hcp / (scorecardData.holes?.length || 18)) + (hcpIdx <= (hcp % (scorecardData.holes?.length || 18)) ? 1 : 0)) : 0;
-                              const netScore = score !== null ? score - strokesRcvd : null;
-                              const netDiff = netScore !== null ? netScore - par : null;
-                              let textClass = 'text-muted-foreground';
-                              if (netDiff !== null) {
-                                if (netDiff <= -1) textClass = 'text-green-500';
-                                else if (netDiff >= 1) textClass = 'text-red-400';
-                              }
-                              return (
-                                <td key={sIdx} className={`px-1 py-0.5 text-center text-[10px] ${textClass}`} style={{backgroundColor: '#fafbfc'}}>
-                                  {netScore !== null ? netScore : ''}
-                                </td>
-                              );
-                            })}
+                            <td colSpan={scorecardData.holes?.length || 18} className="border-r" style={{borderColor: '#d6e4ef', backgroundColor: '#fafbfc'}}></td>
                             <td className="px-2 py-0.5 text-center text-[10px] font-semibold border-l" style={{borderColor: '#d6e4ef', backgroundColor: '#f0f4f8'}}>
-                              {player.scores?.some((s: number | null) => s !== null) ? (
-                                <span className={netVsPar < 0 ? 'text-green-600' : netVsPar > 0 ? 'text-red-500' : 'text-muted-foreground'}>
-                                  {player.net} {netVsPar !== 0 ? `(${netVsPar > 0 ? '+' : ''}${netVsPar})` : '(E)'}
+                              {hasScores ? (
+                                <span className={net < 0 ? 'text-green-600' : net > 0 ? 'text-red-500' : 'text-muted-foreground'}>
+                                  {netStr}
                                 </span>
                               ) : '-'}
                             </td>
@@ -11010,9 +10994,7 @@ export default function JazelApp() {
                     // Build text summary for sharing
                     if (!scorecardData) return;
                     const t = scorecardData.tournament;
-                    const holes = scorecardData.holes || [];
                     const players = scorecardData.players || [];
-                    const totalPar = holes.reduce((sum: number, h: any) => sum + h.par, 0);
 
                     let text = `⛳ ${t.name}\n`;
                     text += `📍 ${t.course.name} — ${t.course.city}\n`;
@@ -11020,14 +11002,12 @@ export default function JazelApp() {
                     text += `${'─'.repeat(30)}\n\n`;
 
                     players.forEach((p: any, idx: number) => {
-                      const vsPar = p.gross - totalPar;
-                      const vsParStr = vsPar > 0 ? `+${vsPar}` : vsPar === 0 ? 'E' : String(vsPar);
-                      const netVsPar = p.net - totalPar;
-                      const netStr = netVsPar > 0 ? `+${netVsPar}` : netVsPar === 0 ? 'E' : String(netVsPar);
+                      const brutStr = p.gross > 0 ? `+${p.gross}` : p.gross === 0 ? 'E' : String(p.gross);
+                      const netStr = p.net > 0 ? `+${p.net}` : p.net === 0 ? 'E' : String(p.net);
                       text += `${idx + 1}. ${p.name}`;
                       if (p.groupLetter) text += ` (Grp ${p.groupLetter})`;
                       if (p.handicap > 0) text += ` [HCP ${p.handicap}]`;
-                      text += `\n   Gross: ${p.gross} (${vsParStr})  Net: ${p.net} (${netStr})\n`;
+                      text += `\n   Brut: ${brutStr}  Net: ${netStr}\n`;
                     });
 
                     text += `\n📱 Jazel Golf Scorecard`;

@@ -106,6 +106,8 @@ export async function GET(request: NextRequest) {
     const totalHoles = holes.length || 18;
 
     // Build players array with per-hole scores
+    // grossScore = brut vs par = sum of (strokes - par) for scored holes (same as leaderboard)
+    // netScore = brut vs par - handicap (same as leaderboard)
     const playerMap = new Map<string, {
       name: string;
       handicap: number;
@@ -115,13 +117,8 @@ export async function GET(request: NextRequest) {
       net: number;
     }>();
 
-    // Helper to calculate strokes received per hole based on handicap
-    function getStrokesReceived(playerHcp: number, hcpIndex: number | null): number {
-      if (!hcpIndex) return 0;
-      const hcp = Math.floor(playerHcp);
-      if (hcp <= 0) return 0;
-      return Math.floor(hcp / totalHoles) + (hcpIndex <= (hcp % totalHoles) ? 1 : 0);
-    }
+    // No longer needed — we use the same formula as recalculate
+    // (strokes received per hole is removed; net = brut - handicap)
 
     // Process scoring rounds
     for (const sr of scoringRounds) {
@@ -179,28 +176,28 @@ export async function GET(request: NextRequest) {
           }
         });
 
-        // Calculate gross and net
-        let gross = 0;
-        let net = 0;
+        // Calculate gross (brut vs par) and net (brut vs par - handicap) — same as leaderboard
+        let brutVsPar = 0;
         let hasAnyScore = false;
         holes.forEach((hole, idx) => {
           if (scores[idx] !== null) {
             hasAnyScore = true;
-            gross += scores[idx]!;
-            const strokesRcvd = getStrokesReceived(pInfo.handicap, hole.handicap);
-            net += (scores[idx]! - strokesRcvd);
+            const par = hole.par || 4;
+            brutVsPar += (scores[idx]! - par);
           }
         });
 
         if (!hasAnyScore) continue;
+
+        const netScore = brutVsPar - pInfo.handicap;
 
         playerMap.set(pInfo.userId, {
           name: pInfo.name,
           handicap: pInfo.handicap,
           groupLetter: pInfo.groupLetter,
           scores,
-          gross,
-          net,
+          gross: brutVsPar,
+          net: netScore,
         });
       }
     }
@@ -262,27 +259,27 @@ export async function GET(request: NextRequest) {
           }
         });
 
-        let gross = 0;
-        let net = 0;
+        let brutVsPar = 0;
         let hasAnyScore = false;
         holes.forEach((hole, idx) => {
           if (scores[idx] !== null) {
             hasAnyScore = true;
-            gross += scores[idx]!;
-            const strokesRcvd = getStrokesReceived(pInfo.handicap, hole.handicap);
-            net += (scores[idx]! - strokesRcvd);
+            const par = hole.par || 4;
+            brutVsPar += (scores[idx]! - par);
           }
         });
 
         if (!hasAnyScore) continue;
+
+        const netScore = brutVsPar - pInfo.handicap;
 
         playerMap.set(pInfo.userId, {
           name: pInfo.name,
           handicap: pInfo.handicap,
           groupLetter: pInfo.groupLetter,
           scores,
-          gross,
-          net,
+          gross: brutVsPar,
+          net: netScore,
         });
       }
     }
