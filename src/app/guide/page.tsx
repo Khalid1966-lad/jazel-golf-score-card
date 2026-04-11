@@ -41,7 +41,11 @@ import {
   Save,
   Info,
   Globe,
-  MailOpen
+  MailOpen,
+  Shield,
+  Clipboard,
+  Snowflake,
+  AlertTriangle
 } from 'lucide-react';
 
 interface GuideSection {
@@ -1328,17 +1332,229 @@ function TournamentsSection() {
             Tournaments
           </CardTitle>
           <CardDescription>
-            Compete in organized golf events
+            Compete in organized golf events with live scoring
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
             Join golf tournaments organized by your club or golf association. Track standings,
-            compare scores with other players, and compete for the top spot!
+            compare scores with other players, and compete for the top spot! Tournaments support
+            live scoring so everyone can follow the action in real-time.
           </p>
         </CardContent>
       </Card>
 
+      {/* Tournament Management Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-3">
+            <Shield className="w-5 h-5" style={{ color: '#39638b' }} />
+            Tournament Management Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Tournaments are managed by an <strong>Admin</strong> (the tournament organizer) and
+            <strong> Scorers</strong> (players assigned to record scores for their group).
+            Here's how it works:
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-4 border rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-5 h-5 text-emerald-700" />
+                <h4 className="font-semibold text-emerald-800">Admin (Tournament Organizer)</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Creates the tournament, assigns players to groups, sets tee times, designates scorers,
+                enables live scoring, validates group scores, and can freeze the final scorecard.
+              </p>
+            </div>
+            <div className="p-4 border rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Clipboard className="w-5 h-5 text-amber-700" />
+                <h4 className="font-semibold text-amber-800">Scorer (Group Score Keeper)</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                A player in each group assigned to record scores for all group members during the round.
+                Uses the live scoring feature to enter hole-by-hole scores in real-time.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Admin Guide */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-3">
+            <Shield className="w-5 h-5" style={{ color: '#39638b' }} />
+            Admin Guide — Creating & Managing Tournaments
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            As a tournament admin, you have full control over the event:
+          </p>
+          <div className="space-y-3">
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">1</span>
+                Create Tournament
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Go to the <strong>Admin Panel → Tournaments</strong> tab. Fill in the tournament name,
+                select the course, set the date, start time, tee time interval (e.g., 10 minutes between groups),
+                format (Stroke Play, Stableford, etc.), and max players. Optionally add your phone number
+                as tournament contact.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">2</span>
+                Manage Participants
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Add registered players to the tournament. Search by name and add them one by one.
+                Each player becomes a tournament participant.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">3</span>
+                Assign Groups & Tee Times
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Drag players into groups (A, B, C, etc.) or use auto-generate. Each group gets an
+                automatically calculated tee time based on the tournament start time and the interval you set.
+                Groups are renumbered automatically if needed.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">4</span>
+                Designate Scorers
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                In each group, assign one player as the <strong>Scorer</strong> (marked with 📋).
+                The scorer is responsible for recording scores for all group members during the round.
+                This can also be done from the player side by any logged-in user in the group.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">5</span>
+                Enable Live Scoring
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Toggle <strong>Live Scoring</strong> ON in the admin panel. This activates real-time
+                score updates via WebSocket. All viewers see a pulsing <span className="text-red-600 font-semibold">● LIVE</span> indicator
+                and scores update automatically as scorers enter them.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">6</span>
+                Validate Group Scores (Lock/Unlock)
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                After a group finishes, the admin (or scorer) can <strong>Lock</strong> the group's scores
+                to mark them as validated. A <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">✓ Validated</Badge> badge appears on the group.
+                Scores can be unlocked if corrections are needed. Locking all groups automatically creates an immutable snapshot.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">7</span>
+                Freeze Scorecard (Final Results)
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                When the tournament is complete, <strong>Freeze</strong> the scorecard to lock all results permanently.
+                A frozen scorecard creates an immutable snapshot — even if scores are modified or deleted later,
+                the frozen version remains unchanged. The only way to remove a frozen scorecard is by deleting
+                the entire tournament. Freezing happens automatically when all groups are locked.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">8</span>
+                Recalculate Leaderboard
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Use the <strong>Refresh</strong> button to recalculate all gross and net scores from the actual
+                hole-by-hole round data. This fetches the latest handicap values for all players. Useful if
+                handicaps were updated after scores were initially calculated.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Scorer Guide */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-3">
+            <Clipboard className="w-5 h-5" style={{ color: '#39638b' }} />
+            Scorer Guide — Live Scoring
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            If you've been assigned as the scorer for your group, here's what you need to know:
+          </p>
+          <div className="space-y-3">
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1">Starting Live Scoring</h4>
+              <p className="text-sm text-muted-foreground">
+                When the tournament is in progress and live scoring is enabled, you'll see a green banner
+                at the top of the tournament details with a <strong>"Start Scoring"</strong> button.
+                Tap it to begin recording scores for your group.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1">Recording Scores</h4>
+              <p className="text-sm text-muted-foreground">
+                Enter strokes for each hole for every player in your group. Move through holes sequentially.
+                Scores are saved automatically as you enter them. Other players and viewers see updates
+                in real-time on the leaderboard.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1">Resuming After Interruption</h4>
+              <p className="text-sm text-muted-foreground">
+                If you close the app or lose connection, tap <strong>"Continue Scoring"</strong> when you return.
+                Your previously entered scores are preserved and you can pick up where you left off.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1">Viewing the Scorecard</h4>
+              <p className="text-sm text-muted-foreground">
+                The <strong>"View Scorecard"</strong> button shows the full tournament scorecard with all
+                players, per-hole scores, par, handicap index, gross, and net totals. The scorecard can be
+                shared via the Share button (generates a complete text summary) or printed.
+              </p>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-1">Important Notes</h4>
+              <ul className="text-sm text-muted-foreground space-y-1 mt-1">
+                <li className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                  Once a group's scores are <strong>locked/validated</strong>, scores cannot be modified by the scorer
+                </li>
+                <li className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                  The admin can unlock scores if corrections are needed
+                </li>
+                <li className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-500 shrink-0" />
+                  Net scores are calculated as: <strong>Brut (vs par) - Player Handicap</strong>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tournament Status Colors */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Tournament Status Colors</CardTitle>
@@ -1368,6 +1584,7 @@ function TournamentsSection() {
         </CardContent>
       </Card>
 
+      {/* Tournament Details */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Tournament Details</CardTitle>
@@ -1414,9 +1631,10 @@ function TournamentsSection() {
         </CardContent>
       </Card>
 
+      {/* Tournament Groups */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Tournament Groups</CardTitle>
+          <CardTitle className="text-xl">Tournament Groups & Tee Times</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
@@ -1425,7 +1643,7 @@ function TournamentsSection() {
           <ul className="space-y-2 text-sm">
             <li className="flex items-center gap-2">
               <Check className="w-4 h-4 text-green-600" />
-              Each group has a different tee time
+              Each group has a different tee time based on the start time and interval
             </li>
             <li className="flex items-center gap-2">
               <Check className="w-4 h-4 text-green-600" />
@@ -1435,30 +1653,43 @@ function TournamentsSection() {
               <Check className="w-4 h-4 text-green-600" />
               See who you're playing with before the round
             </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              Each group's <strong>Scorer</strong> (📋) and <strong>validation status</strong> (🔒) are shown
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <span className="text-red-600 font-semibold">● LIVE SCORING</span> indicator appears when live scoring is active
+            </li>
           </ul>
         </CardContent>
       </Card>
 
+      {/* Leaderboards & Scoring */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Leaderboards & Scoring</CardTitle>
+          <CardTitle className="text-xl">Leaderboard & Scorecard</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Tournament leaderboards show:
+            Tournament leaderboards show all player rankings with detailed scoring:
           </p>
           <ul className="space-y-2 text-sm">
             <li className="flex items-center gap-2">
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              Player names and handicaps
+              Player rank, name, and handicap
             </li>
             <li className="flex items-center gap-2">
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <strong>Gross Score</strong> - Actual strokes taken
+              Group assignment
             </li>
             <li className="flex items-center gap-2">
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <strong>Net Score</strong> - Gross score minus handicap
+              <strong>Gross (Brut)</strong> — Total strokes relative to par (e.g., +5 means 5 over par)
+            </li>
+            <li className="flex items-center gap-2">
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              <strong>Net</strong> — Gross minus handicap (e.g., +1.5 means 1.5 over par after handicap)
             </li>
           </ul>
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mt-4">
@@ -1466,9 +1697,54 @@ function TournamentsSection() {
               <strong>Sorting:</strong> Tap column headers to sort by handicap, gross score, or net score.
             </p>
           </div>
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg mt-2">
+            <p className="text-sm text-emerald-700">
+              <strong>Scorecard:</strong> Tap the "View Scorecard" button to see the full scorecard grid
+              with per-hole scores for all players, par row, handicap index row, and totals.
+              Use the Share button to copy a complete scorecard summary, or Print for a paper copy.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
+      {/* Scorecard Freeze */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-3">
+            <Snowflake className="w-5 h-5" style={{ color: '#39638b' }} />
+            Scorecard Freeze System
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            The freeze system ensures tournament results are permanently preserved:
+          </p>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <strong>Auto-freeze:</strong> When the admin locks all groups, the scorecard is automatically frozen
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <strong>Auto-unfreeze:</strong> Unlocking any group unfreezes the scorecard
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <strong>Manual freeze:</strong> Admin can freeze/unfreeze at any time via the scorecard modal
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <strong>Immutable:</strong> Frozen scorecards cannot be modified, even if scores are changed or deleted
+            </li>
+            <li className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              <strong>Permanent:</strong> Only deleting the entire tournament removes a frozen scorecard
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Tournament Badges */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Tournament Badges</CardTitle>

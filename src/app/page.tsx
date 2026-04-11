@@ -9850,7 +9850,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.4.97 • Made with ❤️ for Golfers
+              Version 1.4.98 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -10671,7 +10671,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.4.97</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.4.98</p>
             </div>
             
             {/* Description */}
@@ -11096,25 +11096,55 @@ export default function JazelApp() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // Build text summary for sharing
+                    // Build comprehensive text scorecard for sharing
                     if (!scorecardData) return;
                     const t = scorecardData.tournament;
+                    const holes = scorecardData.holes || [];
                     const players = scorecardData.players || [];
 
+                    // Calculate total par
+                    const totalPar = holes.reduce((sum: number, h: any) => sum + (h.par || 0), 0);
+
+                    // Build header
                     let text = `⛳ ${t.name}\n`;
                     text += `📍 ${t.course.name} — ${t.course.city}\n`;
-                    text += `📅 ${new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}\n`;
-                    text += `${'─'.repeat(30)}\n\n`;
+                    text += `📅 ${new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+                    if (t.format) text += `  |  ${t.format}`;
+                    text += `\n`;
+                    text += `${'─'.repeat(32)}\n\n`;
 
+                    // Build hole numbers row
+                    const holeNums = holes.map((h: any) => String(h.number).padStart(2));
+                    text += `Hole    ${holeNums.join(' ')}  Tot\n`;
+
+                    // Build par row
+                    const parVals = holes.map((h: any) => String(h.par).padStart(2));
+                    text += `Par     ${parVals.join(' ')}  ${String(totalPar).padStart(3)}\n`;
+
+                    // Build HCP index row
+                    const hcpVals = holes.map((h: any) => h.hcpIndex ? String(h.hcpIndex).padStart(2) : '  ');
+                    text += `HcpIdx  ${hcpVals.join(' ')}\n`;
+
+                    text += `${'─'.repeat(32)}\n`;
+
+                    // Build each player row
                     players.forEach((p: any, idx: number) => {
+                      const nameStr = `${idx + 1}. ${p.name}`.substring(0, 8).padEnd(8);
+                      const scores = p.scores || [];
+                      const scoreStrs = scores.map((s: number | null) => s !== null ? String(s).padStart(2) : ' -');
+
+                      // Total strokes
+                      const totalStrokes = scores.reduce((sum: number, s: number | null) => sum + (s || 0), 0);
                       const brutStr = p.gross > 0 ? `+${p.gross}` : p.gross === 0 ? 'E' : String(p.gross);
                       const netStr = p.net > 0 ? `+${p.net}` : p.net === 0 ? 'E' : String(p.net);
-                      text += `${idx + 1}. ${p.name}`;
-                      if (p.groupLetter) text += ` (Grp ${p.groupLetter})`;
-                      if (p.handicap > 0) text += ` [HCP ${p.handicap}]`;
-                      text += `\n   Brut: ${brutStr}  Net: ${netStr}\n`;
+
+                      text += `${nameStr} ${scoreStrs.join(' ')}  ${String(totalStrokes).padStart(3)}\n`;
+                      text += `        Hcp:${p.handicap || 0}`;
+                      if (p.groupLetter) text += ` Grp:${p.groupLetter}`;
+                      text += ` B:${brutStr} N:${netStr}\n`;
                     });
 
+                    text += `${'─'.repeat(32)}\n`;
                     text += `\n📱 Jazel Golf Scorecard`;
 
                     if (navigator.share) {
@@ -11122,7 +11152,6 @@ export default function JazelApp() {
                         title: `${t.name} - Scorecard`,
                         text: text,
                       }).catch(() => {
-                        // Fallback to clipboard
                         navigator.clipboard.writeText(text).then(() => {
                           toast.success('Scorecard copied to clipboard!');
                         });
@@ -11159,6 +11188,6 @@ export default function JazelApp() {
     </ErrorBoundary>
   );
 }
-// v1.4.97 trigger
+// v1.4.98 trigger
 
 

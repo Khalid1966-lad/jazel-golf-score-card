@@ -5593,7 +5593,7 @@ export default function AdminPage() {
                 {/* Backup Info */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold">What's Included in Backup</h3>
-                  <p className="text-xs text-muted-foreground">All 26 database tables + static files</p>
+                  <p className="text-xs text-muted-foreground">All 27 database tables + static files</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 text-sm">
                     {/* Users & Auth */}
                     <div className="space-y-1">
@@ -5677,6 +5677,10 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-green-600 shrink-0" />
                         <span>Tournament Participants</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        <span>Tournament Scoring Rounds</span>
                       </div>
                     </div>
                     {/* Groups & Messages */}
