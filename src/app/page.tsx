@@ -7113,33 +7113,30 @@ export default function JazelApp() {
                                 {user && letter !== 'U' && (() => {
                                   const groupLocked = participants.some(p => p.lockedAt);
                                   const groupHasScores = participants.some(p => p.grossScore !== null);
-                                  if (!groupLocked && !groupHasScores && lockingGroup !== letter) return null;
+                                  if (!groupHasScores && lockingGroup !== letter) return null;
                                   return (
                                     <div className="px-3 py-2 flex items-center gap-2 border-b border-white/50">
                                       {lockingGroup === letter ? (
                                         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                       ) : groupLocked ? (
                                         <button
-                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium transition-colors cursor-pointer"
+                                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors cursor-pointer"
                                           onClick={() => unlockGroupScores(selectedTournament.id, letter)}
-                                          title="Unlock scores — allow scorer to edit again"
+                                          title="Click to unlock scores"
                                         >
-                                          <Unlock className="w-4 h-4" />
-                                          Unlock
+                                          <Lock className="w-4 h-4" />
+                                          Locked
                                         </button>
                                       ) : groupHasScores ? (
                                         <button
                                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium transition-colors cursor-pointer"
                                           onClick={() => lockGroupScores(selectedTournament.id, letter)}
-                                          title="Lock scores — prevent changes"
+                                          title="Click to lock scores"
                                         >
-                                          <Lock className="w-4 h-4" />
-                                          Lock
+                                          <Unlock className="w-4 h-4" />
+                                          Unlocked
                                         </button>
                                       ) : null}
-                                      {groupLocked && (
-                                        <span className="text-[11px] text-emerald-600">Scores validated — safe to delete scorecard</span>
-                                      )}
                                     </div>
                                   );
                                 })()}
