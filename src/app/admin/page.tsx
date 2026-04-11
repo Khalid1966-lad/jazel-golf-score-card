@@ -367,6 +367,10 @@ export default function AdminPage() {
   const [courseRestoreLoading, setCourseRestoreLoading] = useState(false);
   const [selectedCourseBackupFile, setSelectedCourseBackupFile] = useState<File | null>(null);
 
+  // Courses lock state (super admin can lock editing for regular admins)
+  const [coursesLocked, setCoursesLocked] = useState(false);
+  const [coursesLockLoading, setCoursesLockLoading] = useState(false);
+
   // Repair Shops state
   const [repairShops, setRepairShops] = useState<any[]>([]);
   const [repairShopsLoading, setRepairShopsLoading] = useState(false);
@@ -1032,6 +1036,22 @@ export default function AdminPage() {
     }
   }, [adminPermissions?.isSuperAdmin]);
 
+  // Fetch courses lock status on mount
+  useEffect(() => {
+    const fetchCoursesLock = async () => {
+      try {
+        const res = await fetch('/api/admin/settings/courses-locked');
+        if (res.ok) {
+          const data = await res.json();
+          setCoursesLocked(data.locked);
+        }
+      } catch {
+        // Default to unlocked
+      }
+    };
+    fetchCoursesLock();
+  }, []);
+
   // Fetch groups data when tournament is selected and tab is groups
   useEffect(() => {
     if (selectedTournament && tournamentViewTab === 'groups') {
@@ -1349,6 +1369,35 @@ export default function AdminPage() {
       });
     } finally {
       setCourseRestoreLoading(false);
+    }
+  };
+
+  // Toggle courses lock (super admin only)
+  const toggleCoursesLock = async () => {
+    try {
+      setCoursesLockLoading(true);
+      const newLocked = !coursesLocked;
+      const res = await fetch('/api/admin/settings/courses-locked', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locked: newLocked }),
+      });
+      if (res.ok) {
+        setCoursesLocked(newLocked);
+        toast({
+          title: newLocked ? 'Courses Locked' : 'Courses Unlocked',
+          description: newLocked
+            ? 'Regular admins can no longer edit courses or holes'
+            : 'Regular admins can now edit courses and holes',
+        });
+      } else {
+        const err = await res.json();
+        toast({ title: 'Error', description: err.error || 'Failed to toggle', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Network error', variant: 'destructive' });
+    } finally {
+      setCoursesLockLoading(false);
     }
   };
 
@@ -2910,6 +2959,45 @@ export default function AdminPage() {
           </TabsList>
 
           <TabsContent value="courses" className="space-y-6">
+            {/* Courses Lock Toggle - Super Admin Only */}
+            {isSuperAdmin(currentUser?.email) && (
+              <Card className={coursesLocked ? 'border-amber-300 bg-amber-50/50' : ''}>
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${coursesLocked ? 'bg-amber-100' : 'bg-gray-100'}`}>
+                        <Lock className={`w-5 h-5 ${coursesLocked ? 'text-amber-600' : 'text-gray-500'}`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">Lock Courses Editing</p>
+                        <p className="text-xs text-muted-foreground">
+                          {coursesLocked
+                            ? 'Regular admins cannot edit, add, or delete courses or holes'
+                            : 'Regular admins can edit courses assigned to them'}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={coursesLocked}
+                      onCheckedChange={toggleCoursesLock}
+                      disabled={coursesLockLoading}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Locked notice for regular admins */}
+            {!isSuperAdmin(currentUser?.email) && coursesLocked && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+                <Lock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium">Courses are locked by Super Admin</p>
+                  <p className="mt-1">You cannot add, edit, or delete courses or holes while courses are locked.</p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -2922,7 +3010,7 @@ export default function AdminPage() {
               </div>
               <Dialog open={addCourseDialogOpen} onOpenChange={setAddCourseDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" />Add Course</Button>
+                  <Button disabled={coursesLocked && !isSuperAdmin(currentUser?.email)}><Plus className="mr-2 h-4 w-4" />Add Course</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
@@ -3044,27 +3132,27 @@ export default function AdminPage() {
                         </div>
                       )}
                       <div className="flex gap-2 pt-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => openEditDialog(course)}
-                          disabled={!canEditCourse(course, currentUser?.email, currentUser?.id)}
+                          disabled={!canEditCourse(course, currentUser?.email, currentUser?.id) || (coursesLocked && !isSuperAdmin(currentUser?.email))}
                         >
                           <Edit2 className="mr-1 h-3 w-3" />Edit
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => openHolesEditDialog(course)}
-                          disabled={!canEditCourse(course, currentUser?.email, currentUser?.id)}
+                          disabled={!canEditCourse(course, currentUser?.email, currentUser?.id) || (coursesLocked && !isSuperAdmin(currentUser?.email))}
                         >
                           <ChevronRight className="mr-1 h-3 w-3" />Holes
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
+                        <Button
+                          size="sm"
+                          variant="destructive"
                           onClick={() => deleteCourse(course)}
-                          disabled={!canEditCourse(course, currentUser?.email, currentUser?.id)}
+                          disabled={!canEditCourse(course, currentUser?.email, currentUser?.id) || (coursesLocked && !isSuperAdmin(currentUser?.email))}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
