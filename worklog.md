@@ -453,3 +453,59 @@ Stage Summary:
 - All 3 features implemented across 5 files
 - Lint passes with 0 errors (1 pre-existing warning in prisma.config.ts)
 - Dev server compiles and runs successfully
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add Tournament Scorecard Summary feature
+
+Work Log:
+
+### API Endpoint: `/api/tournaments/scorecard/route.ts`
+- Created new GET endpoint that accepts `?tournamentId=xxx`
+- Fetches tournament with course data, all course holes (par + HCP index), all participants with user info
+- Processes TournamentScoringRounds: builds per-player scores from RoundScores grouped by playerIndex
+  - playerIndex 0 = scorer (from TournamentScoringRound.scorerId)
+  - playerIndex 1,2,3 = other players from Round.playerNames JSON
+- Handles standalone Rounds with tournamentId but no TournamentScoringRound (edge case)
+- Handles participants with grossScore/netScore but no detailed hole scores
+- Calculates net scores using strokes received formula based on hole HCP index
+- Sorts players by netScore (nulls last)
+- Returns JSON: `{ tournament, holes[], players[] }` where each player has name, handicap, groupLetter, scores (18 values or null), gross, net
+
+### UI: Scorecard Button + Modal in `src/app/page.tsx`
+- Added `Fragment` to react imports
+- Added `Table2` and `Printer` to lucide-react imports
+- Added 3 state variables: `scorecardOpen`, `scorecardData`, `scorecardLoading`
+- Added "Scorecard" button with Table2 icon next to the existing Refresh button in the leaderboard header area
+  - Only visible when selectedTournament exists
+  - Fetches from `/api/tournaments/scorecard?tournamentId=xxx` with cache-busting
+- Added full scorecard Dialog modal with:
+  - Tournament info header (name, course, city, date, format badge)
+  - Responsive scorecard table with horizontal scroll on mobile
+  - Sticky left column for player names
+  - Hole numbers header row
+  - Par row with light gray background
+  - HCP row with light blue/gray background
+  - Per-player: gross score row (color-coded: green for birdie+, red for bogey+) + net score row (lighter shade)
+  - Total column with bold text and +/- par indicators
+  - Empty state when no scores recorded
+  - Share button (Web Share API with clipboard fallback)
+  - Print button (calls window.print())
+
+### Print Styles in `src/app/globals.css`
+- Added `@media print` section that hides everything except the modal content
+- Forces dialog to be visible and full-width for printing
+- Hides all buttons during print
+- Enables color printing with `print-color-adjust: exact`
+- Page-break settings for table rows
+
+### Files Modified:
+- `/src/app/api/tournaments/scorecard/route.ts` (NEW)
+- `/src/app/page.tsx` (MODIFIED - added imports, state, button, modal)
+- `/src/app/globals.css` (MODIFIED - added print styles)
+
+Stage Summary:
+- Lint passes with 0 errors (1 pre-existing warning)
+- Dev server compiles and runs successfully
+- No existing logic was modified — all changes are additive
