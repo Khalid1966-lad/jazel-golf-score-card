@@ -394,3 +394,62 @@ Stage Summary:
 - Lock prevents score changes via scorecard save AND recalculate
 - Unlock re-enables editing if scorecard still exists
 - Force pushed to both main and master branches
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Implement 3 features - Group filter for participants, Live Scoring toggle, Disable scoring when not in progress
+
+Work Log:
+
+### FEATURE 1: Group Filter When Adding Participants to Tournament
+- Added state variables: `selectedFilterGroupId`, `groupFilterUserIds`, `groupFilterLoading`, `participantSearchQuery`
+- Modified `getAvailableUsers()` to support group filter and search query filtering
+- Replaced simple Select dropdown with a full dialog containing:
+  - Group filter dropdown (shows all groups with member counts + "All Groups" option)
+  - Search input with search icon for filtering by name/email
+  - Scrollable user list (max-h-64) with clickable user cards showing name, handicap badge
+  - Loading state for group member fetching
+  - Reset filters when dialog closes
+
+### FEATURE 2: Live Scoring Toggle + Flashing Indicator
+**Schema Changes:**
+- Added `liveScoringEnabled Boolean @default(false)` to Tournament model in all 3 schema files:
+  - prisma/schema.prisma
+  - prisma/schema.sqlite.prisma
+  - prisma/schema.postgresql.prisma
+- Ran `bun run db:push` to sync schema
+
+**API Changes (src/app/api/tournaments/route.ts):**
+- Added `liveScoringEnabled` to destructured body in PUT handler
+- Added `if (liveScoringEnabled !== undefined) updateData.liveScoringEnabled = liveScoringEnabled;`
+
+**Admin Page (src/app/admin/page.tsx):**
+- Added `liveScoringEnabled?: boolean` to Tournament interface
+- Added `liveScoringEnabled: false` to `editTournamentForm` initial state
+- Added `liveScoringEnabled: tournament.liveScoringEnabled || false` when populating edit form
+- Added `liveScoringEnabled: editTournamentForm.liveScoringEnabled` to `updateTournament` API call
+- Added Switch toggle in edit tournament dialog (below Status field) with label and description
+- Added quick toggle in tournament detail view (info bar) with:
+  - Visual badge showing current state (red pulse when enabled, gray when disabled)
+  - Toggle button that directly calls PUT API without opening edit dialog
+  - Toast notification on success
+
+**Player Page (src/app/page.tsx):**
+- Added `liveScoringEnabled?: boolean` to Tournament interface
+- Added flashing "🔴 LIVE SCORING" badge next to group headers when:
+  - `tournament.liveScoringEnabled` is true
+  - Tournament status is `in_progress`
+  - Group has a scorer assigned
+- Uses `animate-pulse` class for flashing effect with red dot + bold text
+
+### FEATURE 3: Disable Scoring Button When Tournament Not In Progress
+- In `ScoringActionButton` component, added check for `tournament.status !== 'in_progress'`
+- Shows a gray disabled message "Tournament is not in progress — scoring unavailable" instead of scoring buttons
+- Applied AFTER locked check and AFTER checking loading state
+- Affects both "Start Live Scoring" and "Continue Scoring" buttons
+
+Stage Summary:
+- All 3 features implemented across 5 files
+- Lint passes with 0 errors (1 pre-existing warning in prisma.config.ts)
+- Dev server compiles and runs successfully
