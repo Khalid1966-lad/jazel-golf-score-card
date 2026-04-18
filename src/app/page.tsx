@@ -4544,7 +4544,7 @@ export default function JazelApp() {
   };
 
   // Match Play: Calculate per-hole results between main player and first additional player
-  const getMatchPlayHoleResults = useCallback((): ('A' | 'B' | null)[] => {
+  const getMatchPlayHoleResults = useCallback((): ('A' | 'B' | 'H' | null)[] => {
     if (!matchPlayEnabled || additionalPlayers.length !== 1) return [];
     const opponent = additionalPlayers[0];
     const mainHcp = user?.handicap || null;
@@ -4571,7 +4571,7 @@ export default function JazelApp() {
       
       if (mainNet < oppNet) results.push('A'); // Main player wins
       else if (oppNet < mainNet) results.push('B'); // Opponent wins
-      else results.push(null); // Halved
+      else results.push('H'); // Halved
     }
     return results;
   }, [matchPlayEnabled, additionalPlayers, user?.handicap, scores, playerScores, selectedCourse, holesPlayed, holesType]);
@@ -4590,6 +4590,7 @@ export default function JazelApp() {
     for (const r of results) {
       if (r === 'A') { aWins++; playedCount++; }
       else if (r === 'B') { bWins++; playedCount++; }
+      else if (r === 'H') { playedCount++; } // Halved hole counts as played
     }
     
     const totalHoles = results.length;
@@ -5915,6 +5916,7 @@ export default function JazelApp() {
                                     const matchStatus = getMatchPlayStatus();
                                     if (holeResult === 'A') return {backgroundColor: 'rgba(34, 197, 94, 0.15)'};
                                     if (holeResult === 'B') return {backgroundColor: 'rgba(239, 68, 68, 0.15)'};
+                                    if (holeResult === 'H') return {backgroundColor: 'rgba(251, 191, 36, 0.12)'};
                                     // If match is closed and this hole wasn't played
                                     if (matchStatus?.closed && holeResult === undefined) return {backgroundColor: 'rgba(156, 163, 175, 0.1)'};
                                     return {};
@@ -5933,6 +5935,7 @@ export default function JazelApp() {
                                   const holeResult = matchResults[holeIndex];
                                   if (holeResult === 'A') return {backgroundColor: 'rgba(34, 197, 94, 0.85)', color: 'white'};
                                   if (holeResult === 'B') return {backgroundColor: 'rgba(239, 68, 68, 0.85)', color: 'white'};
+                                  if (holeResult === 'H') return {backgroundColor: 'rgba(251, 191, 36, 0.75)', color: 'white'};
                                   return {};
                                 })() : {}}
                               >
@@ -5945,6 +5948,7 @@ export default function JazelApp() {
                                     const holeResult = matchResults[holeIndex];
                                     if (holeResult === 'A') return <span className="text-[8px] font-bold">W</span>;
                                     if (holeResult === 'B') return <span className="text-[8px] font-bold">L</span>;
+                                    if (holeResult === 'H') return <span className="text-[8px] font-bold">T</span>;
                                     return <span className="text-[8px] text-gray-400">-</span>;
                                   })()}
                                 </div>
