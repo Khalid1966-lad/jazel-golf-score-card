@@ -4616,9 +4616,9 @@ export default function JazelApp() {
     
     // Match in progress - don't show status until at least 1 hole is played
     if (playedCount === 0) return null;
-    if (diff === 0) return { text: `AS · Hole ${playedCount + 1}`, closed: false, winner: null };
-    if (diff > 0) return { text: `${playerName} ${diff}UP · Hole ${playedCount + 1}`, closed: false, winner: null };
-    return { text: `${oppName} ${-diff}UP · Hole ${playedCount + 1}`, closed: false, winner: null };
+    if (diff === 0) return { text: 'AS', closed: false, winner: null };
+    if (diff > 0) return { text: `${playerName} ${diff}UP`, closed: false, winner: null };
+    return { text: `${oppName} ${-diff}UP`, closed: false, winner: null };
   }, [matchPlayEnabled, additionalPlayers, user?.name, getMatchPlayHoleResults]);
 
   // Match Play: Get stroke dots info (which holes give strokes to the higher HCP player)
