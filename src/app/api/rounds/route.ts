@@ -132,6 +132,8 @@ export async function POST(request: NextRequest) {
       playerHandicap,
       holesPlayed = 18,
       holesType = null,
+      matchPlay = false,
+      matchPlayResult = null,
       completed = true,  // Allow saving as draft (completed: false)
       tournamentId = null,
       tournamentGroupLetter = null,
@@ -228,6 +230,8 @@ export async function POST(request: NextRequest) {
         notes,
         holesPlayed,
         holesType,
+        matchPlay,
+        matchPlayResult,
         totalStrokes,
         totalPutts,
         fairwaysHit,
@@ -303,7 +307,7 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { roundId, scores, playerNames, playerScores, playerHandicap, teeId, holesPlayed, holesType, completed } = body;
+    const { roundId, scores, playerNames, playerScores, playerHandicap, teeId, holesPlayed, holesType, matchPlay, matchPlayResult, completed } = body;
 
     if (!roundId) {
       return NextResponse.json(
@@ -431,6 +435,8 @@ export async function PUT(request: NextRequest) {
         playerHandicap: playerHandicap !== undefined ? playerHandicap : existingRound.playerHandicap,
         holesPlayed: holesPlayed || existingRound.holesPlayed,
         holesType: holesType !== undefined ? holesType : existingRound.holesType,
+        matchPlay: matchPlay !== undefined ? matchPlay : existingRound.matchPlay,
+        matchPlayResult: matchPlayResult !== undefined ? matchPlayResult : existingRound.matchPlayResult,
         totalStrokes,
         totalPutts,
         fairwaysHit,

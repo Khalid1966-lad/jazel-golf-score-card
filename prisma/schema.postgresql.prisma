@@ -229,6 +229,8 @@ model Round {
   playerHandicap Float?   // Main player's handicap at time of round (locked)
   holesPlayed    Int      @default(18) // 9 or 18
   holesType      String?  // "front" or "back" for 9-hole rounds, null for 18
+  matchPlay      Boolean  @default(false) // Whether this was a match play round
+  matchPlayResult String?  // e.g. "Khalid 3&2" or "You wins 2UP"
   tournamentId   String?  // If this round is for a tournament, links to it
   tournamentGroupLetter String? // Which group this round covers (e.g. "A", "B")
   isShared       Boolean  @default(false) // Whether the round is shared publicly

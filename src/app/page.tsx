@@ -706,6 +706,14 @@ function RoundHistoryCard({
           {/* Main row - always visible */}
           <div className="flex items-center justify-between">
             <div className="flex-1">
+              {/* Match Play banner */}
+              {(round as any).matchPlay && (
+                <div className="mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-sm font-semibold" style={{background: 'linear-gradient(135deg, #39638b, #2a4a6b)', color: 'white'}}>
+                    ⚔️ Match Play{(round as any).matchPlayResult ? ` — ${(round as any).matchPlayResult}` : ''}
+                  </span>
+                </div>
+              )}
               {/* Tournament badge - first row, prominent */}
               {(round as any).tournamentId && (
                 <div className="mb-1.5">
@@ -3923,6 +3931,8 @@ export default function JazelApp() {
 
       // Check if we're editing an existing round or creating new
       if (editingRoundId) {
+        // Get match play result if applicable
+        const mpStatus = matchPlayEnabled && additionalPlayers.length === 1 ? getMatchPlayStatus() : null;
         // Update existing round - send ALL holes with their current scores
         const response = await fetch('/api/rounds', {
           method: 'PUT',
@@ -3936,6 +3946,8 @@ export default function JazelApp() {
             playerScores: playerScoresArray,
             holesPlayed: holesPlayed,
             holesType: holesType,
+            matchPlay: matchPlayEnabled && additionalPlayers.length === 1,
+            matchPlayResult: mpStatus?.text || null,
             completed,
           }),
         });
@@ -4001,6 +4013,8 @@ export default function JazelApp() {
           toast.error(data.error || 'Failed to update round');
         }
       } else {
+        // Get match play result if applicable
+        const mpStatus = matchPlayEnabled && additionalPlayers.length === 1 ? getMatchPlayStatus() : null;
         // Create new round - only send scores with strokes
         const response = await fetch('/api/rounds', {
           method: 'POST',
@@ -4015,6 +4029,8 @@ export default function JazelApp() {
             playerScores: playerScoresArray,
             holesPlayed: holesPlayed,
             holesType: holesPlayed === 9 ? holesType : null,
+            matchPlay: matchPlayEnabled && additionalPlayers.length === 1,
+            matchPlayResult: mpStatus?.text || null,
             completed,
           }),
         });
