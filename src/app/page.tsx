@@ -1573,6 +1573,9 @@ export default function JazelApp() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [playerToDelete, setPlayerToDelete] = useState<AdditionalPlayer | null>(null);
   
+  // Match Play state
+  const [matchPlayEnabled, setMatchPlayEnabled] = useState(false);
+  
   // Scorecard scroll state
   const scorecardRef = useRef<HTMLDivElement>(null);
   const [canScrollLeftState, setCanScrollLeft] = useState(false);
@@ -3669,6 +3672,11 @@ export default function JazelApp() {
     
     setNewPlayerName('');
     toast.success(`${name} added to the round`);
+    
+    // Auto-disable match play if more than 2 total players
+    if (additionalPlayers.length >= 1 && matchPlayEnabled) {
+      setMatchPlayEnabled(false);
+    }
   };
   
   const removePlayer = (playerId: string) => {
@@ -4497,6 +4505,121 @@ export default function JazelApp() {
     // hardest holes (lowest SI) get the extra strokes from the remainder
     return fullStrokes + (holeHandicap <= remainder ? 1 : 0);
   };
+
+  // Match Play: Calculate net score for a player on a hole
+  const getMatchPlayNetScore = (strokes: number, holeHandicapIndex: number | null, playerHandicap: number | null, opponentHandicap: number | null): number => {
+    if (strokes <= 0) return 999; // Unplayed
+    // In match play, the higher handicap player gets strokes equal to the difference
+    if (!playerHandicap || !opponentHandicap || playerHandicap <= 0 || opponentHandicap <= 0) {
+      return strokes; // No handicap adjustment
+    }
+    const hcpDiff = Math.abs(playerHandicap - opponentHandicap);
+    if (hcpDiff === 0) return strokes; // Same handicap
+    // The higher HCP player receives strokes on the hardest holes
+    if (playerHandicap > opponentHandicap) {
+      // This player is higher HCP, they get strokes
+      const fullStrokes = Math.floor(hcpDiff / 18);
+      const remainder = hcpDiff % 18;
+      const strokesReceived = fullStrokes + ((holeHandicapIndex !== null && holeHandicapIndex <= remainder) ? 1 : 0);
+      return strokes - strokesReceived;
+    }
+    return strokes; // This player is lower HCP, no adjustment
+  };
+
+  // Match Play: Calculate per-hole results between main player and first additional player
+  const getMatchPlayHoleResults = useCallback((): ('A' | 'B' | null)[] => {
+    if (!matchPlayEnabled || additionalPlayers.length !== 1) return [];
+    const opponent = additionalPlayers[0];
+    const mainHcp = user?.handicap || null;
+    const oppHcp = opponent.handicap || null;
+    
+    const startHole = holesPlayed === 9 && holesType === 'back' ? 10 : 1;
+    const endHole = holesPlayed === 9 ? (holesType === 'back' ? 18 : 9) : (holesPlayed === 18 ? 18 : Math.min(selectedCourse?.totalHoles || 18, 18));
+    
+    const results: ('A' | 'B' | null)[] = [];
+    for (let h = startHole; h <= endHole; h++) {
+      const hole = (selectedCourse?.holes || []).find(hl => hl.holeNumber === h);
+      const mainScore = scores.find(s => s.holeNumber === h);
+      const oppScore = playerScores.get(0)?.find(s => s.holeNumber === h);
+      const mainStrokes = mainScore?.strokes || 0;
+      const oppStrokes = oppScore?.strokes || 0;
+      
+      if (mainStrokes <= 0 || oppStrokes <= 0) {
+        results.push(null); // Not played yet
+        continue;
+      }
+      
+      const mainNet = getMatchPlayNetScore(mainStrokes, hole?.handicap || null, mainHcp, oppHcp);
+      const oppNet = getMatchPlayNetScore(oppStrokes, hole?.handicap || null, oppHcp, mainHcp);
+      
+      if (mainNet < oppNet) results.push('A'); // Main player wins
+      else if (oppNet < mainNet) results.push('B'); // Opponent wins
+      else results.push(null); // Halved
+    }
+    return results;
+  }, [matchPlayEnabled, additionalPlayers, user?.handicap, scores, playerScores, selectedCourse, holesPlayed, holesType]);
+
+  // Match Play: Calculate running match status
+  const getMatchPlayStatus = useCallback(() => {
+    if (!matchPlayEnabled || additionalPlayers.length !== 1) return null;
+    const results = getMatchPlayHoleResults();
+    const playerName = user?.name?.split(' ')[0] || 'You';
+    const oppName = additionalPlayers[0].name.split(' ')[0];
+    
+    let aWins = 0;
+    let bWins = 0;
+    let playedCount = 0;
+    
+    for (const r of results) {
+      if (r === 'A') { aWins++; playedCount++; }
+      else if (r === 'B') { bWins++; playedCount++; }
+    }
+    
+    const totalHoles = results.length;
+    const holesRemaining = totalHoles - playedCount;
+    const diff = aWins - bWins;
+    
+    // Check if match is closed (one player leads by more than holes remaining)
+    if (holesRemaining > 0 && Math.abs(diff) > holesRemaining) {
+      // Match is over
+      if (diff > 0) {
+        return { text: `${playerName} ${diff}&${holesRemaining}`, closed: true, winner: 'A' as const };
+      } else {
+        return { text: `${oppName} ${-diff}&${holesRemaining}`, closed: true, winner: 'B' as const };
+      }
+    }
+    
+    // Check if all holes played
+    if (holesRemaining === 0) {
+      if (diff > 0) return { text: `${playerName} wins ${diff}UP`, closed: true, winner: 'A' as const };
+      if (diff < 0) return { text: `${oppName} wins ${-diff}UP`, closed: true, winner: 'B' as const };
+      return { text: 'Match Tied', closed: true, winner: null };
+    }
+    
+    // Match in progress
+    if (diff === 0) return { text: `AS thru ${playedCount}`, closed: false, winner: null };
+    if (diff > 0) return { text: `${playerName} ${diff}UP thru ${playedCount}`, closed: false, winner: null };
+    return { text: `${oppName} ${-diff}UP thru ${playedCount}`, closed: false, winner: null };
+  }, [matchPlayEnabled, additionalPlayers, user?.name, getMatchPlayHoleResults]);
+
+  // Match Play: Get stroke dots info (which holes give strokes to the higher HCP player)
+  const getMatchPlayStrokes = useCallback((holeHandicapIndex: number | null): { forMain: boolean; forOpp: boolean; mainStrokes: number; oppStrokes: number } => {
+    if (!matchPlayEnabled || additionalPlayers.length !== 1) return { forMain: false, forOpp: false, mainStrokes: 0, oppStrokes: 0 };
+    const mainHcp = user?.handicap || 0;
+    const oppHcp = additionalPlayers[0].handicap || 0;
+    if (mainHcp <= 0 || oppHcp <= 0 || mainHcp === oppHcp) return { forMain: false, forOpp: false, mainStrokes: 0, oppStrokes: 0 };
+    
+    const hcpDiff = Math.abs(mainHcp - oppHcp);
+    const fullStrokes = Math.floor(hcpDiff / 18);
+    const remainder = hcpDiff % 18;
+    const totalStrokesOnHole = fullStrokes + ((holeHandicapIndex !== null && holeHandicapIndex <= remainder) ? 1 : 0);
+    
+    if (mainHcp > oppHcp) {
+      return { forMain: totalStrokesOnHole > 0, forOpp: false, mainStrokes: totalStrokesOnHole, oppStrokes: 0 };
+    } else {
+      return { forMain: false, forOpp: totalStrokesOnHole > 0, mainStrokes: 0, oppStrokes: totalStrokesOnHole };
+    }
+  }, [matchPlayEnabled, additionalPlayers, user?.handicap]);
 
   // Stableford: Calculate points earned based on gross strokes, par, and strokes received
   const getStablefordPointsEarned = (grossStrokes: number, par: number, strokesReceived: number): number => {
@@ -5629,6 +5752,56 @@ export default function JazelApp() {
                       </div>
                     )}
 
+                    {/* Match Play Toggle & Status */}
+                    {additionalPlayers.length === 1 && (
+                      <div className="px-3 py-2.5 border-b" style={{borderColor: '#8ab0d1', backgroundColor: matchPlayEnabled ? 'rgba(57,99,139,0.06)' : 'transparent'}}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setMatchPlayEnabled(!matchPlayEnabled)}
+                              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${matchPlayEnabled ? 'bg-[#39638b]' : 'bg-gray-300'}`}
+                            >
+                              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${matchPlayEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </button>
+                            <div>
+                              <span className="text-sm font-semibold" style={{color: '#39638b'}}>Match Play</span>
+                              <span className="text-xs text-muted-foreground ml-2">vs {additionalPlayers[0].name}</span>
+                            </div>
+                          </div>
+                          {getMatchPlayStatus() && (
+                            <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                              getMatchPlayStatus()?.closed 
+                                ? 'bg-amber-100 text-amber-800' 
+                                : getMatchPlayStatus()?.winner === null 
+                                  ? 'bg-gray-100 text-gray-700'
+                                  : 'bg-green-100 text-green-800'
+                            }`}>
+                              {getMatchPlayStatus()?.text}
+                            </div>
+                          )}
+                        </div>
+                        {/* Handicap info when match play is on */}
+                        {matchPlayEnabled && (() => {
+                          const mainHcp = user?.handicap || null;
+                          const oppHcp = additionalPlayers[0].handicap || null;
+                          if (mainHcp && oppHcp && mainHcp !== oppHcp) {
+                            const diff = Math.abs(mainHcp - oppHcp);
+                            const higherName = mainHcp > oppHcp ? (user?.name?.split(' ')[0] || 'You') : additionalPlayers[0].name.split(' ')[0];
+                            return (
+                              <p className="text-xs text-muted-foreground mt-1.5 ml-[60px]">
+                                HCP diff: {diff} strokes — {higherName} receives on holes SI 1–{Math.min(diff, 18)}
+                                {diff > 18 && ` (2 strokes on SI 1–${diff - 18})`}
+                              </p>
+                            );
+                          }
+                          if (mainHcp && oppHcp && mainHcp === oppHcp) {
+                            return <p className="text-xs text-muted-foreground mt-1.5 ml-[60px]">Same handicap — straight match (no strokes given)</p>;
+                          }
+                          return <p className="text-xs text-muted-foreground mt-1.5 ml-[60px]">No handicaps set — playing gross match</p>;
+                        })()}
+                      </div>
+                    )}
+
                     <div
                       ref={scorecardRef}
                       className="overflow-x-auto overflow-y-auto max-h-[80vh]"
@@ -5716,13 +5889,48 @@ export default function JazelApp() {
                               key={score.holeNumber}
                               className={`grid gap-1 p-1.5 text-sm ${index % 2 === 0 ? 'bg-white' : ''}`}
                               style={{
-                                ...(index % 2 !== 0 ? {backgroundColor: 'rgba(232, 245, 237, 0.5)'} : {}),
+                                ...(() => {
+                                  if (matchPlayEnabled && additionalPlayers.length === 1) {
+                                    const startHole = holesPlayed === 9 && holesType === 'back' ? 10 : 1;
+                                    const holeIndex = score.holeNumber - startHole;
+                                    const matchResults = getMatchPlayHoleResults();
+                                    const holeResult = matchResults[holeIndex];
+                                    const matchStatus = getMatchPlayStatus();
+                                    if (holeResult === 'A') return {backgroundColor: 'rgba(34, 197, 94, 0.15)'};
+                                    if (holeResult === 'B') return {backgroundColor: 'rgba(239, 68, 68, 0.15)'};
+                                    // If match is closed and this hole wasn't played
+                                    if (matchStatus?.closed && holeResult === undefined) return {backgroundColor: 'rgba(156, 163, 175, 0.1)'};
+                                    return {};
+                                  }
+                                  return index % 2 !== 0 ? {backgroundColor: 'rgba(232, 245, 237, 0.5)'} : {};
+                                })(),
                                 gridTemplateColumns: `32px 28px 28px minmax(0,1.4fr) ${Array(additionalPlayers.length).fill('minmax(0,1.4fr)').join(' ')} minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)`
                               }}
                             >
-                              {/* Hole number - sticky */}
-                              <div className={`text-center font-medium flex items-center justify-center sticky left-0 z-10 ${index % 2 === 0 ? 'bg-white' : 'bg-[rgba(232,245,237,0.9)]'}`}>
-                                {score.holeNumber}
+                              {/* Hole number - sticky with match play indicator */}
+                              <div className={`text-center font-medium flex items-center justify-center sticky left-0 z-10 ${index % 2 === 0 ? 'bg-white' : 'bg-[rgba(232,245,237,0.9)]'}`}
+                                style={matchPlayEnabled && additionalPlayers.length === 1 ? (() => {
+                                  const startHole = holesPlayed === 9 && holesType === 'back' ? 10 : 1;
+                                  const holeIndex = score.holeNumber - startHole;
+                                  const matchResults = getMatchPlayHoleResults();
+                                  const holeResult = matchResults[holeIndex];
+                                  if (holeResult === 'A') return {backgroundColor: 'rgba(34, 197, 94, 0.85)', color: 'white'};
+                                  if (holeResult === 'B') return {backgroundColor: 'rgba(239, 68, 68, 0.85)', color: 'white'};
+                                  return {};
+                                })() : {}}
+                              >
+                                <div className="flex flex-col items-center leading-tight">
+                                  <span className="text-sm">{score.holeNumber}</span>
+                                  {matchPlayEnabled && additionalPlayers.length === 1 && (() => {
+                                    const startHole = holesPlayed === 9 && holesType === 'back' ? 10 : 1;
+                                    const holeIndex = score.holeNumber - startHole;
+                                    const matchResults = getMatchPlayHoleResults();
+                                    const holeResult = matchResults[holeIndex];
+                                    if (holeResult === 'A') return <span className="text-[8px] font-bold">W</span>;
+                                    if (holeResult === 'B') return <span className="text-[8px] font-bold">L</span>;
+                                    return <span className="text-[8px] text-gray-400">-</span>;
+                                  })()}
+                                </div>
                               </div>
                               {/* Par */}
                               <div className="text-center flex items-center justify-center">
@@ -5734,8 +5942,17 @@ export default function JazelApp() {
                                   {hole?.par || '-'}
                                 </Badge>
                               </div>
-                              {/* HCP */}
-                              <div className="text-center flex items-center justify-center">
+                              {/* HCP with match play stroke dot */}
+                              <div className="text-center flex items-center justify-center relative">
+                                {matchPlayEnabled && additionalPlayers.length === 1 && (() => {
+                                  const mpStrokes = getMatchPlayStrokes(hole?.handicap || null);
+                                  if (mpStrokes.forMain || mpStrokes.forOpp) {
+                                    return (
+                                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 border border-white" title={`${mpStrokes.forMain ? (user?.name?.split(' ')[0] || 'You') : additionalPlayers[0].name.split(' ')[0]} gets ${mpStrokes.forMain ? mpStrokes.mainStrokes : mpStrokes.oppStrokes} stroke(s)`} />
+                                    );
+                                  }
+                                  return null;
+                                })()}
                                 <Badge variant="secondary" className="text-xs">
                                   {holeHcp}
                                 </Badge>
