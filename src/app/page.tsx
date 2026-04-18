@@ -1925,6 +1925,12 @@ export default function JazelApp() {
           setAdditionalPlayers(parsed.additionalPlayers || []);
           setHolesPlayed(parsed.holesPlayed || 18);
           setHolesType(parsed.holesType || 'front');
+          // Disable match play for 9-hole rounds
+          if ((parsed.holesPlayed || 18) === 9) {
+            setMatchPlayEnabled(false);
+          } else if (parsed.matchPlayEnabled) {
+            setMatchPlayEnabled(parsed.matchPlayEnabled);
+          }
           setSelectedGPSHole(parsed.holesPlayed === 9 && parsed.holesType === 'back' ? 10 : 1);
           
           // Restore player scores
@@ -1977,6 +1983,7 @@ export default function JazelApp() {
           playerScores: playerScoresObj,
           holesPlayed,
           holesType,
+          matchPlayEnabled,
           editingRoundId,
           isLiveScoring,
           tournamentScoringInfo,
@@ -1987,7 +1994,7 @@ export default function JazelApp() {
         console.error('Failed to save active round:', error);
       }
     }
-  }, [showScorecard, selectedCourse, selectedTee, scores, additionalPlayers, playerScores, holesPlayed, holesType, editingRoundId]);
+  }, [showScorecard, selectedCourse, selectedTee, scores, additionalPlayers, playerScores, holesPlayed, holesType, matchPlayEnabled, editingRoundId]);
 
   // Fetch settings and auto-get user location on load
   useEffect(() => {
@@ -3599,6 +3606,11 @@ export default function JazelApp() {
     setHolesPlayed(numHoles);
     setHolesType(holeType);
     
+    // Disable match play for 9-hole rounds
+    if (numHoles === 9) {
+      setMatchPlayEnabled(false);
+    }
+    
     // Determine which holes to show
     const startHole = numHoles === 9 && holeType === 'back' ? 10 : 1;
     const endHole = numHoles === 9 ? (holeType === 'back' ? 18 : 9) : Math.min(course.totalHoles, 18);
@@ -3620,6 +3632,7 @@ export default function JazelApp() {
     // Reset additional players
     setAdditionalPlayers([]);
     setPlayerScores(new Map());
+    setMatchPlayEnabled(false);
     
     // Close dialog and show scorecard
     setShowHoleSelectionDialog(false);
@@ -4234,6 +4247,10 @@ export default function JazelApp() {
       const roundHolesType = round.holesType || 'front';
       setHolesPlayed(roundHolesPlayed as 9 | 18);
       setHolesType(roundHolesType as 'front' | 'back');
+      // Disable match play for 9-hole rounds
+      if ((round.holesPlayed || 18) === 9) {
+        setMatchPlayEnabled(false);
+      }
       
       // Validate and set tee - check if teeId exists in course tees
       const validTeeId = round.teeId && course.tees?.some((t: { id: string }) => t.id === round.teeId)
@@ -5752,8 +5769,8 @@ export default function JazelApp() {
                       </div>
                     )}
 
-                    {/* Match Play Toggle & Status */}
-                    {additionalPlayers.length === 1 && (
+                    {/* Match Play Toggle & Status - only for 18 holes */}
+                    {additionalPlayers.length === 1 && holesPlayed === 18 && (
                       <div className="px-3 py-2.5 border-b" style={{borderColor: '#8ab0d1', backgroundColor: matchPlayEnabled ? 'rgba(57,99,139,0.06)' : 'transparent'}}>
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
@@ -9039,7 +9056,7 @@ export default function JazelApp() {
                   variant={holesPlayed === 9 ? 'default' : 'outline'}
                   className={`h-16 flex-col ${holesPlayed === 9 ? 'text-white' : ''}`}
                   style={holesPlayed === 9 ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                  onClick={() => setHolesPlayed(9)}
+                  onClick={() => { setHolesPlayed(9); setMatchPlayEnabled(false); }}
                 >
                   <span className="text-2xl font-bold">9</span>
                   <span className="text-xs">Holes</span>
