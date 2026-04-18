@@ -1481,7 +1481,18 @@ function ScoringActionButton({
 
 // Main App Component
 export default function JazelApp() {
-  const [activeTab, setActiveTab] = useState('weather');
+  const validTabs = ['search', 'weather', 'golfers', 'tournaments', 'partners', 'scorecard', 'history'];
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    localStorage.setItem('jazel_active_tab', tab);
+  };
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('jazel_active_tab');
+      if (stored && validTabs.includes(stored)) return stored;
+    }
+    return 'weather';
+  });
   const [user, setUser] = useState<User | null>(null);
   const [distanceUnit, setDistanceUnit] = useState<'yards' | 'meters'>('yards');
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -4620,7 +4631,7 @@ export default function JazelApp() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="w-full mb-6 flex justify-center">
             <TabsList className="inline-flex bg-white/80 backdrop-blur gap-1.5 px-2 py-1">
               {user && (
