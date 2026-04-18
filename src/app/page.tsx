@@ -3532,6 +3532,9 @@ export default function JazelApp() {
 
   // Start new round - show hole selection dialog first
   const startNewRound = (course: GolfCourse) => {
+    // Close course detail dialog if open
+    setCourseDetailDialogCourse(null);
+    
     // Require login to play
     if (!user) {
       setShowLoginDialog(true);
