@@ -1,11 +1,11 @@
-// This is your Prisma schema file for SQLite (SANDBOX/LOCAL)
+// This is your Prisma schema file for PostgreSQL (VERCEL/PRODUCTION)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -42,7 +42,7 @@ model User {
   adminPermission      AdminPermission?
   achievements         UserAchievement[]
   administeredTournaments Tournament[]  @relation("TournamentAdmin")
-  partnerRequests       GolfPartnerRequest[]
+  partnerRequests      GolfPartnerRequest[]   @relation("CreatedPartnerRequests")
   partnerParticipations GolfPartnerRequestParticipant[]
   scoringRounds         TournamentScoringRound[] @relation("ScoringRounds")
 
@@ -229,6 +229,8 @@ model Round {
   playerHandicap Float?   // Main player's handicap at time of round (locked)
   holesPlayed    Int      @default(18) // 9 or 18
   holesType      String?  // "front" or "back" for 9-hole rounds, null for 18
+  matchPlay      Boolean  @default(false) // Whether this was a match play round
+  matchPlayResult String?  // e.g. "Khalid 3&2" or "You wins 2UP"
   tournamentId   String?  // If this round is for a tournament, links to it
   tournamentGroupLetter String? // Which group this round covers (e.g. "A", "B")
   isShared       Boolean  @default(false) // Whether the round is shared publicly
@@ -271,10 +273,10 @@ model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
   value     String
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("settings")
 }
 
@@ -358,7 +360,7 @@ model Tournament {
   courseId        String
   date            DateTime
   startTime       String
-  teeTimeInterval Int      @default(10)
+  teeTimeInterval Int      @default(10)  // Minutes between group tee times
   format          String
   maxPlayers      Int      @default(144)
   notes           String?
@@ -386,13 +388,13 @@ model TournamentParticipant {
   registeredAt    DateTime @default(now())
   grossScore      Float?
   netScore        Float?
-  groupLetter     String?
-  positionInGroup Int?
-  teeTime         String?
+  groupLetter     String?  // "A", "B", "C", etc.
+  positionInGroup Int?     // 1, 2, 3, or 4 (position within the group)
+  teeTime         String?  // "08:00", "08:10", etc.
   isScorer        Boolean  @default(false) // Designated as scorer for their group
   scoredAt        DateTime? // When this player's scores were last updated by a scorer
   lockedAt        DateTime? // When admin locked this player's scores (immutable)
-  scoreSnapshot   String?   // JSON: current grossScore/netScore when locked — preserved even if scorecard deleted
+  scoreSnapshot   String?   // JSON: current grossScore/netScore when locked
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -436,7 +438,7 @@ model Achievement {
   createdAt     DateTime @default(now())
   
   userAchievements UserAchievement[]
-  
+
   @@map("achievements")
 }
 
@@ -454,37 +456,37 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
-// Golf Partner Request - find golf partners to play with
+// Golf Partner Request - find golf partners for a specific time and course
 model GolfPartnerRequest {
-  id           String   @id @default(cuid())
-  creatorId    String
-  courseId     String
-  date         DateTime
-  time         String
-  notes        String?
-  maxPlayers   Int      @default(4)
-  status       String   @default("open") // "open", "filled", "cancelled"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  creatorId   String
+  courseId    String
+  date        DateTime
+  time        String   // e.g., "09:00"
+  notes       String?  // optional notes from the creator
+  maxPlayers  Int      @default(4)
+  status      String   @default("open") // "open", "filled", "cancelled"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  creator      User                        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  course       GolfCourse                  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  creator     User        @relation("CreatedPartnerRequests", fields: [creatorId], references: [id], onDelete: Cascade)
+  course      GolfCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   participants GolfPartnerRequestParticipant[]
   
   @@map("golf_partner_requests")
 }
 
-// Golf Partner Request Participant - users who joined a request
+// Participants in a partner request
 model GolfPartnerRequestParticipant {
-  id         String   @id @default(cuid())
-  requestId  String
-  userId     String
-  joinedAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  requestId String
+  userId    String
+  joinedAt  DateTime @default(now())
   
-  request    GolfPartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request   GolfPartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@unique([requestId, userId])
+  @@unique([requestId, userId]) // User can only join a request once
   @@map("golf_partner_request_participants")
 }
 
