@@ -4614,7 +4614,8 @@ export default function JazelApp() {
       return { text: 'Match Tied', closed: true, winner: null };
     }
     
-    // Match in progress
+    // Match in progress - don't show status until at least 1 hole is played
+    if (playedCount === 0) return null;
     if (diff === 0) return { text: `AS · Hole ${playedCount + 1}`, closed: false, winner: null };
     if (diff > 0) return { text: `${playerName} ${diff}UP · Hole ${playedCount + 1}`, closed: false, winner: null };
     return { text: `${oppName} ${-diff}UP · Hole ${playedCount + 1}`, closed: false, winner: null };
