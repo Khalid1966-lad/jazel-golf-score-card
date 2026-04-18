@@ -878,6 +878,131 @@ function RoundsSection() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
+            <Shield className="w-5 h-5" style={{ color: '#39638b' }} />
+            Match Play
+          </CardTitle>
+          <CardDescription>
+            Head-to-head competition for 2 players
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Match Play is a different way to compete — instead of counting total strokes, 
+            you compete <strong>hole by hole</strong>. Each hole is won, lost, or halved (tied).
+          </p>
+
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-800 mb-2">Availability</h4>
+            <p className="text-sm text-blue-700">
+              Match Play is available for <strong>18-hole rounds with exactly 2 players</strong>. 
+              The toggle appears above the scorecard once you add a second player.
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">Getting Started</h4>
+            <ol className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="font-medium">1.</span>
+                Start an 18-hole round and add 1 additional player (2 total)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">2.</span>
+                Toggle <strong>"Match Play"</strong> on — it appears above the scorecard
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">3.</span>
+                Play normally — the app tracks who wins each hole automatically
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">4.</span>
+                Save the round — the result (e.g. "Khalid 3&2") is stored in your history
+              </li>
+            </ol>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">Understanding the Score</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {[
+                { label: 'AS', desc: 'All Square — tied', color: 'bg-gray-100 text-gray-700' },
+                { label: '1UP', desc: '1 hole ahead', color: 'bg-green-100 text-green-800' },
+                { label: '2UP', desc: '2 holes ahead', color: 'bg-green-100 text-green-800' },
+                { label: '3UP', desc: '3 holes ahead', color: 'bg-green-100 text-green-800' },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                  <span>{item.label}</span>
+                  <span className={`font-bold ${item.color} px-2 py-0.5 rounded-full text-xs`}>{item.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">Scorecard Colors</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold" style={{backgroundColor: 'rgba(34, 197, 94, 0.85)', color: 'white'}}>W</div>
+                <span><strong>Green</strong> — You won the hole</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold" style={{backgroundColor: 'rgba(239, 68, 68, 0.85)', color: 'white'}}>L</div>
+                <span><strong>Red</strong> — Opponent won the hole</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold" style={{backgroundColor: 'rgba(251, 191, 36, 0.75)', color: 'white'}}>T</div>
+                <span><strong>Amber</strong> — Hole was halved (tied)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-3">Early Match End</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              The match ends early when one player leads by more holes than remain:
+            </p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>3&2</strong> — Won 3 holes up with 2 holes remaining (ended on hole 16)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>2&1</strong> — Won 2 up with 1 to play (ended on hole 17)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>1UP</strong> — Won by 1 after all 18 holes</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <h4 className="font-medium text-amber-800 flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4" />
+              Handicap Strokes
+            </h4>
+            <p className="text-sm text-amber-700">
+              When players have different handicaps, the higher-handicap player receives strokes 
+              on the hardest holes (by Stroke Index). These strokes are applied <strong>per hole</strong> — 
+              so a player who gets a stroke has their score reduced by 1 for that hole's comparison only. 
+              If both players have the same handicap, it's a straight match with no strokes given.
+            </p>
+          </div>
+
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <h4 className="font-medium text-emerald-800 mb-2">History Banner</h4>
+            <p className="text-sm text-emerald-700">
+              Completed match play rounds show a special banner in your round history: 
+              <strong> "⚔️ Match Play — Khalid 3&2"</strong>. This makes it easy to find your head-to-head results.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
             <Save className="w-5 h-5" style={{ color: '#39638b' }} />
             Auto-Save Protection
           </CardTitle>
