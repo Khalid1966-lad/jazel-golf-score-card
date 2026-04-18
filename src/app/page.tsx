@@ -10239,7 +10239,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.5.4 • Made with ❤️ for Golfers
+              Version 1.5.5 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -11060,7 +11060,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.5.4</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.5.5</p>
             </div>
             
             {/* Description */}
@@ -11106,7 +11106,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.5.4</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.5.5</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
