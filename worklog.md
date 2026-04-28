@@ -527,3 +527,32 @@ Stage Summary:
 - Added calculated tee time fallback matching admin panel behavior
 - Version bumped to 1.4.95
 
+---
+Task ID: 1
+Agent: Main Agent
+Task: Verify user guide and backup system are up to date with match play changes
+
+Work Log:
+- Pulled latest from GitHub origin/main (commit abb5765)
+- Reviewed user guide at `/src/app/guide/page.tsx` lines 878-1001
+- Confirmed match play section already exists with comprehensive documentation:
+  - What match play is, availability (18 holes, 2 players)
+  - Getting started steps, score understanding (AS, 1UP, 2UP, 3UP)
+  - Scorecard colors (Green=Won, Red=Lost, Amber=Halved)
+  - Early match end notation (3&2, 2&1, 1UP)
+  - Handicap strokes explanation
+  - History banner display
+- Audited backup system at `/src/app/api/admin/backup/route.ts`:
+  - Line 229: `data.rounds = await db.round.findMany()` — fetches ALL Round fields (no select filter)
+  - `matchPlay` (Boolean) and `matchPlayResult` (String?) are automatically included
+- Audited restore system at `/src/app/api/admin/restore/route.ts`:
+  - Line 342-347: Round upsert uses `filterRecordFields()` with dynamic DMMF schema reading
+  - `getModelFields()` reads current Prisma schema at runtime → new fields are automatically included
+  - All 27 database tables properly mapped in `TABLE_TO_MODEL` and `TABLE_DEPENDENCIES`
+- Backup version is 2.2, admin UI lists all 27 tables correctly
+
+Stage Summary:
+- ✅ User guide already updated (commit abb5765 "docs: add match play section to user guide")
+- ✅ Backup system is up to date — uses findMany() without select filters, automatically includes all schema fields
+- ✅ Restore system is up to date — dynamically reads Prisma DMMF at runtime, handles new fields automatically
+- No changes needed — both systems are fully compatible with matchPlay/matchPlayResult fields
