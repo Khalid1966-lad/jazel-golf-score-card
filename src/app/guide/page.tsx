@@ -894,7 +894,7 @@ function RoundsSection() {
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 className="font-medium text-blue-800 mb-2">Availability</h4>
             <p className="text-sm text-blue-700">
-              Match Play is available for <strong>18-hole rounds with exactly 2 players</strong>. 
+              Match Play is available for <strong>9-hole or 18-hole rounds with exactly 2 players</strong>. 
               The toggle appears above the scorecard once you add a second player.
             </p>
           </div>
@@ -904,7 +904,7 @@ function RoundsSection() {
             <ol className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <span className="font-medium">1.</span>
-                Start an 18-hole round and add 1 additional player (2 total)
+                Start a 9-hole or 18-hole round and add 1 additional player (2 total)
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-medium">2.</span>

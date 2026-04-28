@@ -556,3 +556,20 @@ Stage Summary:
 - ✅ Backup system is up to date — uses findMany() without select filters, automatically includes all schema fields
 - ✅ Restore system is up to date — dynamically reads Prisma DMMF at runtime, handles new fields automatically
 - No changes needed — both systems are fully compatible with matchPlay/matchPlayResult fields
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Allow match play for 9-hole rounds (not just 18)
+
+Work Log:
+- Changed match play toggle visibility condition from `holesPlayed === 18 && additionalPlayers.length === 1` to just `additionalPlayers.length === 1`
+- Removed `setMatchPlayEnabled(false)` from the 9-hole button click handler
+- Updated user guide: availability text from "18-hole rounds" to "9-hole or 18-hole rounds"
+- Updated user guide: getting started step 1 from "Start an 18-hole round" to "Start a 9-hole or 18-hole round"
+- Verified match play computation logic already handles 9 holes correctly (uses holesPlayed to determine start/end holes)
+- Lint passes: 0 errors
+
+Stage Summary:
+- Match play now works for both 9-hole and 18-hole rounds
+- Files changed: src/app/page.tsx (2 edits), src/app/guide/page.tsx (2 edits)

@@ -5787,8 +5787,8 @@ export default function JazelApp() {
                       </div>
                     )}
 
-                    {/* Match Play Toggle & Status - only for 18 holes */}
-                    {additionalPlayers.length === 1 && holesPlayed === 18 && (
+                    {/* Match Play Toggle & Status */}
+                    {additionalPlayers.length === 1 && (
                       <div className="px-3 py-2.5 border-b" style={{borderColor: '#8ab0d1', backgroundColor: matchPlayEnabled ? 'rgba(57,99,139,0.06)' : 'transparent'}}>
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
@@ -9077,7 +9077,7 @@ export default function JazelApp() {
                   variant={holesPlayed === 9 ? 'default' : 'outline'}
                   className={`h-16 flex-col ${holesPlayed === 9 ? 'text-white' : ''}`}
                   style={holesPlayed === 9 ? {backgroundColor: '#39638b'} : {borderColor: '#8ab0d1'}}
-                  onClick={() => { setHolesPlayed(9); setMatchPlayEnabled(false); }}
+                  onClick={() => setHolesPlayed(9)}
                 >
                   <span className="text-2xl font-bold">9</span>
                   <span className="text-xs">Holes</span>
