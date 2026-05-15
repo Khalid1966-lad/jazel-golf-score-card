@@ -738,6 +738,27 @@ export default function CourseMap({
     }
   }, [clickedPoint, userLocation, bestClubForTarget, distanceUnit]);
 
+  // Locate user on demand (used when GPS hasn't acquired yet)
+  const locateUser = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lon: longitude });
+        setIsLocating(false);
+      },
+      () => {
+        toast.error('Unable to get your location');
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+    );
+  }, []);
+
   // Map controls
   const centerOnUser = useCallback(() => {
     if (mapInstanceRef.current && userLocation) {
