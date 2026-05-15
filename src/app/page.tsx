@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -4733,40 +4734,45 @@ export default function JazelApp() {
                 </Button>
               )}
               {user ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                    title="View profile"
-                  >
-                    {user.avatar ? (
-                      <img 
-                        src={user.avatar} 
-                        alt={user.name || 'User'} 
-                        className="w-8 h-8 rounded-full object-cover border-2"
-                        style={{borderColor: '#a3c4e0'}}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
-                        <span className="text-sm font-bold text-white">
-                          {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
-                        </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name || 'User'}
+                          className="w-8 h-8 rounded-full object-cover border-2"
+                          style={{borderColor: '#a3c4e0'}}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #39638b 0%, #4a7aa8 100%)'}}>
+                          <span className="text-sm font-bold text-white">
+                            {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <span className="hidden sm:block text-sm font-medium">{user.name || user.email}</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{user.name || user.email}</p>
+                        {user.handicap && <p className="text-xs text-muted-foreground">Handicap: {user.handicap}</p>}
                       </div>
-                    )}
-                  </button>
-                  <div className="hidden sm:block text-right">
-                    <p className="text-sm font-medium">{user.name || user.email}</p>
-                    {user.handicap && <p className="text-xs text-muted-foreground">Handicap: {user.handicap}</p>}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setActiveTab('profile')} className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" style={{color: '#39638b'}} />
+                      My Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <div className="flex items-center gap-2">
                   <Button
