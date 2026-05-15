@@ -219,6 +219,19 @@ export default function CourseMap({
     return null;
   }, [userLocation, clickedPoint]);
 
+  // Calculate distance from tee to user's position
+  const distanceFromTee = useMemo(() => {
+    if (userLocation && teeLocation) {
+      return Math.round(calculateDistance(
+        teeLocation.lat,
+        teeLocation.lon,
+        userLocation.lat,
+        userLocation.lon
+      ));
+    }
+    return null;
+  }, [userLocation, teeLocation]);
+
   // Get distance in the user's preferred unit
   const getDistanceInUnit = useCallback((meters: number): number => {
     if (distanceUnit === 'yards') {
@@ -965,6 +978,49 @@ export default function CourseMap({
                 title="Rotate to show green at top"
               >
                 <ArrowUp className="w-5 h-5" style={{ transform: `rotate(${teeToGreenBearing}deg)` }} />
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Tee Distance Button - Bottom Left */}
+        {mapReady && teeLocation && (
+          <div className="absolute bottom-4 left-4 z-[1000]">
+            {distanceFromTee !== null ? (
+              <div
+                className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg px-3 py-2 flex items-center gap-2 border"
+                style={{ borderColor: '#8ab0d1' }}
+              >
+                {/* Driver club icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#39638b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  {/* Club head */}
+                  <path d="M6 3l3 6-1.5 2.5H4L2.5 9z" fill="#39638b" stroke="#39638b" opacity="0.8" />
+                  {/* Club shaft */}
+                  <line x1="5.5" y1="11.5" x2="18" y2="21" stroke="#39638b" strokeWidth="1.5" />
+                  {/* Club grip */}
+                  <line x1="17" y1="20" x2="19" y2="22" stroke="#39638b" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground leading-tight">From Tee</span>
+                  <span className="text-base font-bold leading-tight" style={{ color: '#39638b' }}>
+                    {getDistanceInUnit(distanceFromTee)} {distanceUnit === 'yards' ? 'yd' : 'm'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={locateUser}
+                className="h-auto bg-white/70 backdrop-blur-sm shadow-lg px-3 py-2"
+                title="Locate to see tee distance"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#39638b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3l3 6-1.5 2.5H4L2.5 9z" fill="#39638b" stroke="#39638b" opacity="0.8" />
+                  <line x1="5.5" y1="11.5" x2="18" y2="21" stroke="#39638b" strokeWidth="1.5" />
+                  <line x1="17" y1="20" x2="19" y2="22" stroke="#39638b" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                <span className="ml-2 text-xs text-muted-foreground">Locate</span>
               </Button>
             )}
           </div>
