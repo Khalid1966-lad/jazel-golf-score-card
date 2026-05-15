@@ -149,7 +149,7 @@ export default function SplashScreen({ version, onClose }: SplashScreenProps) {
             >
               {/* Outer glow ring */}
               <motion.div
-                className="absolute inset-[-16px] rounded-[32px]"
+                className="absolute inset-[-16px] rounded-full"
                 style={{
                   border: '1.5px solid rgba(138,176,209,0.2)',
                   boxShadow: '0 0 40px rgba(57,99,139,0.15), inset 0 0 40px rgba(57,99,139,0.05)',
@@ -164,7 +164,7 @@ export default function SplashScreen({ version, onClose }: SplashScreenProps) {
 
               {/* Inner glow */}
               <motion.div
-                className="absolute inset-[-4px] rounded-[22px]"
+                className="absolute inset-[-4px] rounded-full"
                 style={{
                   background: 'linear-gradient(135deg, rgba(57,99,139,0.1), rgba(138,176,209,0.05))',
                 }}
@@ -174,9 +174,9 @@ export default function SplashScreen({ version, onClose }: SplashScreenProps) {
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               />
 
-              {/* Logo image */}
+              {/* Logo image - golf ball */}
               <motion.div
-                className="w-28 h-28 rounded-2xl flex items-center justify-center overflow-hidden"
+                className="w-28 h-28 rounded-full flex items-center justify-center overflow-hidden"
                 style={{
                   background: 'linear-gradient(145deg, #111827, #1e293b)',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 60px rgba(57,99,139,0.1)',
@@ -191,8 +191,8 @@ export default function SplashScreen({ version, onClose }: SplashScreenProps) {
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               >
                 <img
-                  src="/logo-jazel.png"
-                  alt="Jazel"
+                  src="/golf-ball-logo.png"
+                  alt="Jazel Golf"
                   className="w-20 h-20 object-contain"
                   style={{ filter: 'drop-shadow(0 0 8px rgba(138,176,209,0.3))' }}
                 />

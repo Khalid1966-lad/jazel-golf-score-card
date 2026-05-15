@@ -48,6 +48,7 @@ import CourseMap from '@/components/CourseMap';
 import { BadgeCollection } from '@/components/badges/BadgeCollection';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import SplashScreen from '@/components/SplashScreen';
+import ThemeToggle from '@/components/ThemeToggle';
 
 // Types
 interface CourseHole {
@@ -1520,6 +1521,7 @@ export default function JazelApp() {
   const [selectedTee, setSelectedTee] = useState<string>('');
   const [scores, setScores] = useState<RoundScore[]>([]);
   const [roundHistory, setRoundHistory] = useState<SavedRound[]>([]);
+  const [historyViewMode, setHistoryViewMode] = useState<'cards' | 'list'>('cards');
   const [scoringStats, setScoringStats] = useState<ScoringStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [golfers, setGolfers] = useState<Golfer[]>([]);
@@ -4684,9 +4686,9 @@ export default function JazelApp() {
     <ErrorBoundary>
     {/* Splash Screen */}
     {showSplash && <SplashScreen version="1.5.5" onClose={() => setShowSplash(false)} />}
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col" style={{ opacity: showSplash ? 0 : 1, transition: 'opacity 0.4s ease' }}>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col" style={{ opacity: showSplash ? 0 : 1, transition: 'opacity 0.4s ease' }}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <button 
@@ -4703,6 +4705,7 @@ export default function JazelApp() {
             </button>
             
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               {user?.isAdmin && (
                 <Button
                   variant="ghost"
@@ -4795,7 +4798,7 @@ export default function JazelApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="w-full mb-6 flex justify-center">
-            <TabsList className="inline-flex bg-white/80 backdrop-blur gap-1.5 px-2 py-1">
+            <TabsList className="inline-flex bg-white/80 dark:bg-slate-800/80 backdrop-blur gap-1.5 px-2 py-1">
               {user && (
                 <TabsTrigger value="search" className="flex items-center gap-1.5 px-3 py-1.5">
                   <Flag className="w-4 h-4" />
@@ -6559,7 +6562,7 @@ export default function JazelApp() {
 
           {/* History Tab */}
           <TabsContent value="history" className="space-y-4">
-            <Card className="bg-white/80 backdrop-blur">
+            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -6570,11 +6573,31 @@ export default function JazelApp() {
                         : 'Your past golf rounds and performance'}
                     </CardDescription>
                   </div>
-                  {roundHistory.length > 0 && (
-                    <Badge variant="secondary" className="text-sm">
-                      {roundHistory.filter(r => r.completed).length} completed
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {roundHistory.length > 0 && (
+                      <Badge variant="secondary" className="text-sm">
+                        {roundHistory.filter(r => r.completed).length} completed
+                      </Badge>
+                    )}
+                    {roundHistory.length > 1 && (
+                      <div className="flex items-center bg-muted rounded-md p-0.5">
+                        <button
+                          onClick={() => setHistoryViewMode('cards')}
+                          className={`p-1.5 rounded-md transition-colors ${historyViewMode === 'cards' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          title="Card view"
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setHistoryViewMode('list')}
+                          className={`p-1.5 rounded-md transition-colors ${historyViewMode === 'list' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          title="List view"
+                        >
+                          <ListIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -6584,7 +6607,7 @@ export default function JazelApp() {
                     <p className="text-muted-foreground">No rounds recorded yet</p>
                     <p className="text-sm text-muted-foreground">Complete a round to see it here</p>
                   </div>
-                ) : (
+                ) : historyViewMode === 'cards' ? (
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                     {roundHistory.map((round, index) => {
                       // Parse player names if available - handle both old string format and new object format
@@ -6686,6 +6709,125 @@ export default function JazelApp() {
                         onShareWhatsApp={handleShareWhatsApp}
                       />
                     );})}
+                  </div>
+                ) : (
+                  /* List View */
+                  <div className="max-h-[500px] overflow-y-auto pr-1">
+                    <div className="divide-y divide-border">
+                      {roundHistory.map((round, index) => {
+                        // Parse player names
+                        let playerNames: (string | { name: string })[] = [];
+                        if (round.playerNames) {
+                          try { playerNames = JSON.parse(round.playerNames); } catch (e) {}
+                        }
+
+                        const holesPlayedCount = round.holesPlayed || 18;
+                        const holesTypeValue = round.holesType || 'front';
+                        const startHole = holesPlayedCount === 9 && holesTypeValue === 'back' ? 10 : 1;
+                        const endHole = holesPlayedCount === 9 ? (holesTypeValue === 'back' ? 18 : 9) : 18;
+                        const relevantHoles = (round.course?.holes || []).filter((h: { holeNumber: number }) =>
+                          h.holeNumber >= startHole && h.holeNumber <= endHole
+                        );
+                        const coursePar = relevantHoles.reduce((sum: number, h: { par: number }) => sum + h.par, 0) || (holesPlayedCount === 9 ? 36 : 72);
+                        const mainPlayerScores = round.scores?.filter(s => s.playerIndex === 0) || [];
+
+                        let vsPar = 0;
+                        let totalStrokesFromScores = 0;
+                        mainPlayerScores.forEach(score => {
+                          if (score.strokes > 0) {
+                            const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
+                            vsPar += score.strokes - (hole?.par || 4);
+                            totalStrokesFromScores += score.strokes;
+                          }
+                        });
+                        const displayTotalStrokes = totalStrokesFromScores > 0 ? totalStrokesFromScores : (round.totalStrokes || 0);
+
+                        const dateStr = new Date(round.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                        const holesInfo = holesPlayedCount === 18 ? '18H' : holesTypeValue === 'back' ? 'Bk9' : 'Fr9';
+                        const parStr = vsPar === 0 ? 'E' : vsPar > 0 ? `+${vsPar}` : `${vsPar}`;
+
+                        return (
+                          <motion.div
+                            key={round.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.02 }}
+                            className="flex items-center gap-3 py-2.5 px-1 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors group"
+                            onClick={() => loadRoundForEditing(round)}
+                          >
+                            {/* Left: Status indicator */}
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{
+                              backgroundColor: round.completed ? (round.isShared ? '#22c55e' : '#39638b') : '#f59e0b'
+                            }} />
+
+                            {/* Date */}
+                            <span className="text-xs text-muted-foreground w-20 shrink-0 hidden sm:block">{dateStr}</span>
+
+                            {/* Course name */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                {(round as any).matchPlay && (
+                                  <span className="text-xs">⚔️</span>
+                                )}
+                                {(round as any).tournamentId && (
+                                  <span className="text-xs">🏆</span>
+                                )}
+                                <span className="text-sm font-medium truncate" style={{color: '#39638b'}}>
+                                  {round.course?.name || 'Unknown Course'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                <span>{holesInfo}</span>
+                                <span>·</span>
+                                <span>{round.course?.city || ''}</span>
+                                {playerNames.length > 0 && (
+                                  <>
+                                    <span>·</span>
+                                    <span>{playerNames.length + 1} players</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Score info */}
+                            <div className="flex items-center gap-3 shrink-0">
+                              {(() => {
+                                const hcp = round.playerHandicap ?? 0;
+                                if (hcp <= 0) return null;
+                                let sfTotal = 0;
+                                mainPlayerScores.forEach(score => {
+                                  if (score.strokes > 0) {
+                                    const hole = relevantHoles.find((h: { holeNumber: number }) => h.holeNumber === score.holeNumber);
+                                    if (hole?.handicap) {
+                                      const strokesRcvd = Math.floor(hcp / 18) + (hole.handicap <= (hcp % 18) ? 1 : 0);
+                                      const netVsPar = (score.strokes - strokesRcvd) - (hole.par || 4);
+                                      if (netVsPar <= -3) sfTotal += 5;
+                                      else if (netVsPar === -2) sfTotal += 4;
+                                      else if (netVsPar === -1) sfTotal += 3;
+                                      else if (netVsPar === 0) sfTotal += 2;
+                                      else if (netVsPar === 1) sfTotal += 1;
+                                    }
+                                  }
+                                });
+                                if (sfTotal === 0) return null;
+                                return (
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hidden sm:block">
+                                    {sfTotal} pts
+                                  </span>
+                                );
+                              })()}
+                              <div className="text-right">
+                                <span className="text-sm font-bold">{displayTotalStrokes}</span>
+                                <span className={`text-xs font-semibold ml-1 ${vsPar < 0 ? 'text-green-600 dark:text-green-400' : vsPar > 0 ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                  {parStr}
+                                </span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -11104,7 +11246,7 @@ export default function JazelApp() {
       </Dialog>
 
       {/* Footer */}
-      <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
+      <footer className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between text-sm text-muted-foreground flex-wrap gap-2">
             <div className="flex items-center gap-2">

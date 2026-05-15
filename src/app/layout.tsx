@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from 'next-themes';
 import { Toaster } from "@/components/ui/toaster";
 import { PWAProvider } from "@/components/PWAProvider";
 
@@ -82,10 +83,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <PWAProvider>
-          {children}
-        </PWAProvider>
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <PWAProvider>
+            {children}
+          </PWAProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
