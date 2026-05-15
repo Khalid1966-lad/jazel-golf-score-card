@@ -573,3 +573,20 @@ Work Log:
 Stage Summary:
 - Match play now works for both 9-hole and 18-hole rounds
 - Files changed: src/app/page.tsx (2 edits), src/app/guide/page.tsx (2 edits)
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix 'locateUser is not defined' crash in CourseMap component
+
+Work Log:
+- Identified ReferenceError: locateUser is not defined at CourseMap.tsx line 1014
+- The tee distance button's onClick handler referenced `locateUser` but the function was never declared
+- Added `locateUser` useCallback function that uses `navigator.geolocation.getCurrentPosition` to manually trigger GPS acquisition
+- Function sets `userLocation` state and handles errors with toast notifications
+- Pushed as commit 6736d55 to main and master
+
+Stage Summary:
+- Map crash fixed - the "Locate" button now properly triggers GPS
+- When GPS is acquired, the button transforms into a distance badge showing meters/yards from tee with driver club icon
+- File changed: src/components/CourseMap.tsx (+21 lines)
