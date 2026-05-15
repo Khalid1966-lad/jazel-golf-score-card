@@ -47,6 +47,7 @@ import {
 import CourseMap from '@/components/CourseMap';
 import { BadgeCollection } from '@/components/badges/BadgeCollection';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import SplashScreen from '@/components/SplashScreen';
 
 // Types
 interface CourseHole {
@@ -1502,6 +1503,7 @@ export default function JazelApp() {
     return 'weather';
   });
   const [user, setUser] = useState<User | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
   const [distanceUnit, setDistanceUnit] = useState<'yards' | 'meters'>('yards');
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [courses, setCourses] = useState<GolfCourse[]>([]);
@@ -4680,7 +4682,9 @@ export default function JazelApp() {
 
   return (
     <ErrorBoundary>
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col">
+    {/* Splash Screen */}
+    {showSplash && <SplashScreen version="1.5.5" onClose={() => setShowSplash(false)} />}
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col" style={{ opacity: showSplash ? 0 : 1, transition: 'opacity 0.4s ease' }}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-3">
