@@ -100,58 +100,6 @@
   --jazel-teal-dark: #095457;
 }
 
-/* Dark mode CSS variables */
-.dark {
-  color-scheme: dark;
-  --background: #0f172a;
-  --foreground: #e2e8f0;
-  --card: #1e293b;
-  --card-foreground: #e2e8f0;
-  --popover: #1e293b;
-  --popover-foreground: #e2e8f0;
-  --primary: #39638b;
-  --primary-foreground: #f8fafc;
-  --secondary: #334155;
-  --secondary-foreground: #e2e8f0;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #334155;
-  --accent-foreground: #e2e8f0;
-  --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
-  --border: #334155;
-  --input: #334155;
-  --ring: #4a7aa8;
-  --radius: 0.5rem;
-}
-
-/* Dark mode overrides for common app patterns */
-.dark .bg-white\/80 { background-color: rgba(30, 41, 59, 0.8); }
-.dark .bg-white { background-color: #1e293b; }
-.dark .bg-blue-50 { background-color: rgba(30, 41, 59, 0.5); }
-.dark .bg-amber-50 { background-color: rgba(30, 25, 10, 0.5); }
-.dark .bg-emerald-50 { background-color: rgba(6, 30, 20, 0.5); }
-.dark .bg-gray-50 { background-color: rgba(30, 41, 59, 0.5); }
-.dark .bg-gray-100 { background-color: rgba(51, 65, 85, 0.5); }
-.dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.3); }
-.dark .border-gray-200 { border-color: #334155; }
-.dark .text-gray-700 { color: #cbd5e1; }
-.dark .text-gray-600 { color: #94a3b8; }
-.dark .text-gray-500 { color: #94a3b8; }
-.dark .text-blue-700 { color: #93c5fd; }
-.dark .text-blue-800 { color: #93c5fd; }
-.dark .text-amber-700 { color: #fcd34d; }
-.dark .text-amber-800 { color: #fcd34d; }
-.dark .text-emerald-700 { color: #6ee7b7; }
-.dark .text-emerald-800 { color: #6ee7b7; }
-.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar { width: 6px; height: 6px; }
-.dark ::-webkit-scrollbar-track { background: #1e293b; }
-.dark ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
 @layer base {
   * {
     @apply border-border outline-ring/50;

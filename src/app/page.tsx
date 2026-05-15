@@ -48,7 +48,6 @@ import CourseMap from '@/components/CourseMap';
 import { BadgeCollection } from '@/components/badges/BadgeCollection';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import SplashScreen from '@/components/SplashScreen';
-import ThemeToggle from '@/components/ThemeToggle';
 
 // Types
 interface CourseHole {
@@ -4686,9 +4685,9 @@ export default function JazelApp() {
     <ErrorBoundary>
     {/* Splash Screen */}
     {showSplash && <SplashScreen version="1.5.5" onClose={() => setShowSplash(false)} />}
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col" style={{ opacity: showSplash ? 0 : 1, transition: 'opacity 0.4s ease' }}>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col" style={{ opacity: showSplash ? 0 : 1, transition: 'opacity 0.4s ease' }}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <button 
@@ -4705,7 +4704,6 @@ export default function JazelApp() {
             </button>
             
             <div className="flex items-center gap-3">
-              <ThemeToggle />
               {user?.isAdmin && (
                 <Button
                   variant="ghost"
@@ -4798,7 +4796,7 @@ export default function JazelApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="w-full mb-6 flex justify-center">
-            <TabsList className="inline-flex bg-white/80 dark:bg-slate-800/80 backdrop-blur gap-1.5 px-2 py-1">
+            <TabsList className="inline-flex bg-white/80 backdrop-blur gap-1.5 px-2 py-1">
               {user && (
                 <TabsTrigger value="search" className="flex items-center gap-1.5 px-3 py-1.5">
                   <Flag className="w-4 h-4" />
@@ -6562,7 +6560,7 @@ export default function JazelApp() {
 
           {/* History Tab */}
           <TabsContent value="history" className="space-y-4">
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur">
+            <Card className="bg-white/80 backdrop-blur">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -6811,14 +6809,14 @@ export default function JazelApp() {
                                 });
                                 if (sfTotal === 0) return null;
                                 return (
-                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hidden sm:block">
+                                  <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hidden sm:block">
                                     {sfTotal} pts
                                   </span>
                                 );
                               })()}
                               <div className="text-right">
                                 <span className="text-sm font-bold">{displayTotalStrokes}</span>
-                                <span className={`text-xs font-semibold ml-1 ${vsPar < 0 ? 'text-green-600 dark:text-green-400' : vsPar > 0 ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                <span className={`text-xs font-semibold ml-1 ${vsPar < 0 ? 'text-green-600' : vsPar > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
                                   {parStr}
                                 </span>
                               </div>
@@ -7954,8 +7952,8 @@ export default function JazelApp() {
                         <Card
                           key={tournament.id}
                           className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${
-                            tournament.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' :
-                            tournament.status === 'cancelled' ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 opacity-75' :
+                            tournament.status === 'completed' ? 'bg-emerald-50 border-emerald-200' :
+                            tournament.status === 'cancelled' ? 'bg-red-50 border-red-200 opacity-75' :
                             ''
                           }`}
                           onClick={() => {
@@ -7966,7 +7964,7 @@ export default function JazelApp() {
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between">
                               <div>
-                                <CardTitle className={`text-lg ${tournament.status === 'completed' ? 'text-emerald-800 dark:text-emerald-200' : ''}`}>{tournament.name}</CardTitle>
+                                <CardTitle className={`text-lg ${tournament.status === 'completed' ? 'text-emerald-800' : ''}`}>{tournament.name}</CardTitle>
                                 <CardDescription>{tournament.course.name}</CardDescription>
                               </div>
                               <div className="flex items-center gap-1.5">
@@ -11246,7 +11244,7 @@ export default function JazelApp() {
       </Dialog>
 
       {/* Footer */}
-      <footer className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
+      <footer className="bg-white/80 backdrop-blur-lg border-t mt-auto" style={{borderColor: '#8ab0d1'}}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between text-sm text-muted-foreground flex-wrap gap-2">
             <div className="flex items-center gap-2">

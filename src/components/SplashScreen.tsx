@@ -278,42 +278,40 @@ export default function SplashScreen({ version, onClose }: SplashScreenProps) {
               </span>
             </motion.button>
 
-            {/* Version at bottom */}
-            <motion.div
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
+            {/* Version under button */}
+            <motion.span
+              className="mt-4 text-xs font-mono tracking-widest"
+              style={{ color: 'rgba(100,116,139,0.5)' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.7, delay: 1.2 }}
             >
-              <span
-                className="text-xs font-mono tracking-widest"
-                style={{ color: 'rgba(100,116,139,0.5)' }}
-              >
-                v{version}
-              </span>
-              <motion.div
-                className="flex gap-1.5 mt-1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5 }}
-              >
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1 h-1 rounded-full"
-                    style={{ backgroundColor: 'rgba(138,176,209,0.4)' }}
-                    animate={{
-                      opacity: [0.3, 0.8, 0.3],
-                      scale: [0.8, 1.2, 0.8],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      delay: i * 0.3,
-                    }}
-                  />
-                ))}
-              </motion.div>
+              v{version}
+            </motion.span>
+
+            {/* Animated dots */}
+            <motion.div
+              className="flex gap-1.5 mt-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.5 }}
+            >
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-1 h-1 rounded-full"
+                  style={{ backgroundColor: 'rgba(138,176,209,0.4)' }}
+                  animate={{
+                    opacity: [0.3, 0.8, 0.3],
+                    scale: [0.8, 1.2, 0.8],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    delay: i * 0.3,
+                  }}
+                />
+              ))}
             </motion.div>
           </div>
 
