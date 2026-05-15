@@ -142,6 +142,8 @@ export default function CourseMap({
   const [mapRotation, setMapRotation] = useState(0);
   const [showCompass, setShowCompass] = useState(false);
   const [deviceHeading, setDeviceHeading] = useState<number>(0);
+  const [driverDistanceActive, setDriverDistanceActive] = useState(false);
+  const [driverDistanceOrigin, setDriverDistanceOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
@@ -152,6 +154,8 @@ export default function CourseMap({
   const clickedMarkerRef = useRef<L.Marker | null>(null);
   const distanceLineRef = useRef<L.Polyline | null>(null);
   const teeToGreenLineRef = useRef<L.Polyline | null>(null);
+  const driverOriginMarkerRef = useRef<L.Marker | null>(null);
+  const driverDistanceLineRef = useRef<L.Polyline | null>(null);
   const initializedRef = useRef(false);
   const watchIdRef = useRef<number | null>(null);
   const userZoomRef = useRef<number | null>(null); // Track user's manual zoom level
@@ -219,18 +223,18 @@ export default function CourseMap({
     return null;
   }, [userLocation, clickedPoint]);
 
-  // Calculate distance from tee to user's position
-  const distanceFromTee = useMemo(() => {
-    if (userLocation && teeLocation) {
+  // Calculate live distance from driver distance origin to user's current position
+  const distanceFromOrigin = useMemo(() => {
+    if (driverDistanceActive && driverDistanceOrigin && userLocation) {
       return Math.round(calculateDistance(
-        teeLocation.lat,
-        teeLocation.lon,
+        driverDistanceOrigin.lat,
+        driverDistanceOrigin.lon,
         userLocation.lat,
         userLocation.lon
       ));
     }
     return null;
-  }, [userLocation, teeLocation]);
+  }, [driverDistanceActive, driverDistanceOrigin, userLocation]);
 
   // Get distance in the user's preferred unit
   const getDistanceInUnit = useCallback((meters: number): number => {
@@ -759,6 +763,81 @@ export default function CourseMap({
     );
   }, []);
 
+  // Toggle driver distance measurement ON/OFF
+  const toggleDriverDistance = useCallback(() => {
+    if (driverDistanceActive) {
+      // Turn OFF
+      setDriverDistanceActive(false);
+      setDriverDistanceOrigin(null);
+      // Remove origin marker and line from map
+      if (driverOriginMarkerRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(driverOriginMarkerRef.current);
+        driverOriginMarkerRef.current = null;
+      }
+      if (driverDistanceLineRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(driverDistanceLineRef.current);
+        driverDistanceLineRef.current = null;
+      }
+    } else {
+      // Turn ON - need a location first
+      if (!userLocation) {
+        locateUser();
+        toast.info('Acquiring GPS... tap again to start measuring');
+        return;
+      }
+      // Record current position as origin
+      setDriverDistanceOrigin({ lat: userLocation.lat, lon: userLocation.lon });
+      setDriverDistanceActive(true);
+    }
+  }, [driverDistanceActive, userLocation, locateUser]);
+
+  // Manage driver distance origin marker and line on map
+  useEffect(() => {
+    if (!mapInstanceRef.current || !(window as any).__L__) return;
+    const L = (window as any).__L__;
+
+    if (driverDistanceActive && driverDistanceOrigin) {
+      // Add/update origin marker
+      const originIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="background-color: #39638b; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3l3 6-1.5 2.5H4L2.5 9z" fill="white" stroke="white"/>
+            <line x1="5.5" y1="11.5" x2="16" y2="19" stroke="white" stroke-width="2"/>
+          </svg>
+        </div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+
+      if (driverOriginMarkerRef.current) {
+        driverOriginMarkerRef.current.setLatLng([driverDistanceOrigin.lat, driverDistanceOrigin.lon]);
+      } else {
+        driverOriginMarkerRef.current = L.marker([driverDistanceOrigin.lat, driverDistanceOrigin.lon], {
+          icon: originIcon,
+          zIndexOffset: 900
+        })
+          .addTo(mapInstanceRef.current)
+          .bindPopup('<b>Starting Position</b>');
+      }
+    }
+
+    // Update distance line from origin to current user position
+    if (driverDistanceActive && driverDistanceOrigin && userLocation) {
+      if (driverDistanceLineRef.current) {
+        driverDistanceLineRef.current.setLatLngs([
+          [driverDistanceOrigin.lat, driverDistanceOrigin.lon],
+          [userLocation.lat, userLocation.lon]
+        ]);
+      } else {
+        driverDistanceLineRef.current = L.polyline(
+          [[driverDistanceOrigin.lat, driverDistanceOrigin.lon], [userLocation.lat, userLocation.lon]],
+          { color: '#39638b', weight: 2, dashArray: '6, 4', opacity: 0.7 }
+        ).addTo(mapInstanceRef.current);
+      }
+    }
+  }, [driverDistanceActive, driverDistanceOrigin, userLocation]);
+
   // Map controls
   const centerOnUser = useCallback(() => {
     if (mapInstanceRef.current && userLocation) {
@@ -1004,44 +1083,48 @@ export default function CourseMap({
           </div>
         )}
 
-        {/* Tee Distance Button - Bottom Left */}
-        {mapReady && teeLocation && (
+        {/* Driver Distance Button - Bottom Left (toggle ON/OFF) */}
+        {mapReady && (
           <div className="absolute bottom-4 left-4 z-[1000]">
-            {distanceFromTee !== null ? (
+            {driverDistanceActive && distanceFromOrigin !== null ? (
               <div
-                className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg px-3 py-2 flex items-center gap-2 border"
-                style={{ borderColor: '#8ab0d1' }}
+                className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg px-3 py-2 flex items-center gap-2 border cursor-pointer select-none"
+                style={{ borderColor: driverDistanceActive ? '#39638b' : '#8ab0d1' }}
+                onClick={toggleDriverDistance}
+                title="Tap to stop measuring"
               >
                 {/* Driver club icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#39638b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                  {/* Club head */}
                   <path d="M6 3l3 6-1.5 2.5H4L2.5 9z" fill="#39638b" stroke="#39638b" opacity="0.8" />
-                  {/* Club shaft */}
                   <line x1="5.5" y1="11.5" x2="18" y2="21" stroke="#39638b" strokeWidth="1.5" />
-                  {/* Club grip */}
                   <line x1="17" y1="20" x2="19" y2="22" stroke="#39638b" strokeWidth="3" strokeLinecap="round" />
                 </svg>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-muted-foreground leading-tight">From Tee</span>
-                  <span className="text-base font-bold leading-tight" style={{ color: '#39638b' }}>
-                    {getDistanceInUnit(distanceFromTee)} {distanceUnit === 'yards' ? 'yd' : 'm'}
+                  <span className="text-[10px] text-muted-foreground leading-tight">Walked</span>
+                  <span className="text-base font-bold leading-tight animate-pulse" style={{ color: '#39638b' }}>
+                    {getDistanceInUnit(distanceFromOrigin)} {distanceUnit === 'yards' ? 'yd' : 'm'}
                   </span>
+                </div>
+                <div className="ml-1 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
                 </div>
               </div>
             ) : (
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={locateUser}
+                onClick={toggleDriverDistance}
                 className="h-auto bg-white/70 backdrop-blur-sm shadow-lg px-3 py-2"
-                title="Locate to see tee distance"
+                title="Tap to start measuring distance from your current position"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#39638b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 3l3 6-1.5 2.5H4L2.5 9z" fill="#39638b" stroke="#39638b" opacity="0.8" />
                   <line x1="5.5" y1="11.5" x2="18" y2="21" stroke="#39638b" strokeWidth="1.5" />
                   <line x1="17" y1="20" x2="19" y2="22" stroke="#39638b" strokeWidth="3" strokeLinecap="round" />
                 </svg>
-                <span className="ml-2 text-xs text-muted-foreground">Locate</span>
+                <span className="ml-2 text-xs text-muted-foreground">Measure</span>
               </Button>
             )}
           </div>
