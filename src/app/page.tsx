@@ -1778,7 +1778,24 @@ export default function JazelApp() {
 
     const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
 
-    const playerRows = players.map((p: any, idx: number) => {
+    // Sort players: by net score ascending (best first), withdrawn players at the end
+    const sortedPlayers = [...players].sort((a: any, b: any) => {
+      const aWD = a.withdrawn ? 1 : 0;
+      const bWD = b.withdrawn ? 1 : 0;
+      if (aWD !== bWD) return aWD - bWD;
+      if (aWD && bWD) {
+        // Among WDs: player who completed more holes ranks higher
+        return (b.wdHole || 0) - (a.wdHole || 0);
+      }
+      const aNet = a.net;
+      const bNet = b.net;
+      if (aNet === null && bNet === null) return (a.handicap || 0) - (b.handicap || 0);
+      if (aNet === null) return 1;
+      if (bNet === null) return -1;
+      return aNet - bNet;
+    });
+
+    const playerRows = sortedPlayers.map((p: any, idx: number) => {
       const hasScores = p.scores?.some((s: number | null) => s !== null && s > 0);
       const isWD = p.withdrawn || false;
       const brutHtml = hasScores

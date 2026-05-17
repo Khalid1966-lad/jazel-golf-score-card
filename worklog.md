@@ -674,3 +674,22 @@ Stage Summary:
 - WD marking clears scores for abandoned holes and shows WD in general scorecard
 - Scorecard editor is accessible from Groups tab via pencil icon per group
 - 4 files changed, 673 insertions
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Print general scorecard sorted by net score with withdrawn players last
+
+Work Log:
+- Read existing print scorecard code in handlePrintScorecard (page.tsx ~line 1748)
+- Identified that players were printed in original order without sorting
+- Added sortedPlayers array that sorts by net score ascending (best first)
+- Withdrawn players are pushed to the end; among WDs, players who completed more holes rank higher
+- Players without scores (null net) are placed after scored players, sorted by handicap
+- Verified WD info was already properly displayed in print (badge, annotation, amber cells)
+- Ran lint - no errors
+
+Stage Summary:
+- Print scorecard now sorts players by net score (best first) with withdrawn players at the bottom
+- WD annotations, badges, and amber styling already present in print output
+- Change is in handlePrintScorecard callback in src/app/page.tsx
