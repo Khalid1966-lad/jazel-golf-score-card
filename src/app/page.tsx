@@ -4763,7 +4763,7 @@ export default function JazelApp() {
   return (
     <ErrorBoundary>
     {/* Splash Screen */}
-    {showSplash && <SplashScreen version="1.7.1" onClose={() => setShowSplash(false)} />}
+    {showSplash && <SplashScreen version="1.7.2" onClose={() => setShowSplash(false)} />}
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex flex-col" style={{ opacity: showSplash ? 0 : 1, transition: 'opacity 0.4s ease' }}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b" style={{borderColor: '#8ab0d1'}}>
@@ -10606,7 +10606,7 @@ export default function JazelApp() {
           {/* Footer */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-muted/30">
             <p className="text-xs text-center text-muted-foreground">
-              Version 1.7.1 • Made with ❤️ for Golfers
+              Version 1.7.2 • Made with ❤️ for Golfers
             </p>
           </div>
         </SheetContent>
@@ -11427,7 +11427,7 @@ export default function JazelApp() {
               <p className="text-2xl font-bold bg-clip-text text-transparent" style={{backgroundImage: 'linear-gradient(to right, #39638b, #4a7aa8)'}}>
                 Jazel Golf Scorecard
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Version 1.7.1</p>
+              <p className="text-sm text-muted-foreground mt-1">Version 1.7.2</p>
             </div>
             
             {/* Description */}
@@ -11473,7 +11473,7 @@ export default function JazelApp() {
             <div className="flex items-center gap-2">
               <Circle className="w-4 h-4" style={{color: '#39638b'}} />
               <span className="font-medium">Jazel Golf</span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.7.1</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">v1.7.2</span>
             </div>
             <div className="flex items-center gap-4">
               <span>{courses.length} courses available</span>
