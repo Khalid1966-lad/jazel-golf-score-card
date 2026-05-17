@@ -2506,6 +2506,7 @@ export default function AdminPage() {
           playerIndex,
           strokes,
           adminId: currentUser.id,
+          adminEmail: currentUser.email,
         }),
       });
       if (!res.ok) {
@@ -2529,8 +2530,33 @@ export default function AdminPage() {
         return;
       }
       
+      let hasError = false;
       for (const change of pending) {
-        await adminUpdateScore(change.holeNumber, change.playerIndex, change.strokes);
+        const res = await fetch('/api/tournaments/admin-scores', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournamentId: selectedTournament.id,
+            groupLetter: scorecardEditorGroup,
+            roundId: scorecardEditorData.roundId,
+            holeNumber: change.holeNumber,
+            playerIndex: change.playerIndex,
+            strokes: change.strokes,
+            adminId: currentUser.id,
+            adminEmail: currentUser.email,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          toast({ title: 'Error', description: err.error || 'Failed to update score', variant: 'destructive' });
+          hasError = true;
+          break; // Stop on first error
+        }
+      }
+      
+      if (hasError) {
+        setScorecardEditorSaving(false);
+        return; // Don't reload — keep pending changes visible
       }
       
       // Clear pending and reload
@@ -4165,14 +4191,15 @@ export default function AdminPage() {
                                                 <td key={hIdx} className={`px-0.5 py-0.5 text-center ${cellBg}`}>
                                                   <input
                                                     type="number"
-                                                    min="1"
+                                                    min="0"
                                                     max="15"
                                                     className={`w-full h-7 text-center text-xs font-medium bg-transparent border border-transparent focus:border-blue-400 focus:bg-blue-50 focus:outline-none rounded ${cellText}`}
                                                     value={hole.strokes > 0 ? hole.strokes : ''}
                                                     placeholder="-"
                                                     disabled={isWD}
                                                     onChange={(e) => {
-                                                      const val = e.target.value ? parseInt(e.target.value) : 0;
+                                                      const raw = e.target.value;
+                                                      const val = raw ? parseInt(raw) : 0;
                                                       // Update local state
                                                       setScorecardEditorData((prev: any) => {
                                                         const newPlayers = [...prev.players];

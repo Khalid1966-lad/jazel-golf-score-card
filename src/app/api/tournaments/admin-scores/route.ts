@@ -1,6 +1,12 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Super admin emails — same as admin page
+const SUPER_ADMIN_EMAILS = [
+  'kbelkhalfi@gmail.com',
+  'contact@jazelwebagency.com',
+];
+
 // GET /api/tournaments/admin-scores?tournamentId=xxx&groupLetter=A
 // Load the scorer's live scorecard for a group — returns per-hole strokes for all players
 export async function GET(request: NextRequest) {
@@ -142,10 +148,11 @@ export async function GET(request: NextRequest) {
 
 // PUT /api/tournaments/admin-scores
 // Admin updates a player's hole score in the scorer's round
+// strokes=0 means clear the hole (player didn't play it)
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tournamentId, groupLetter, roundId, holeNumber, playerIndex, strokes, adminId } = body;
+    const { tournamentId, groupLetter, roundId, holeNumber, playerIndex, strokes, adminId, adminEmail } = body;
 
     if (!tournamentId || !groupLetter || !roundId || holeNumber === undefined || playerIndex === undefined || !adminId) {
       return NextResponse.json(
@@ -154,7 +161,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Verify admin access
+    // Verify admin access — allow tournament admin OR super admin
     const tournament = await db.tournament.findUnique({
       where: { id: tournamentId },
     });
@@ -163,23 +170,22 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    if (tournament.adminId !== adminId) {
+    const isSuperAdmin = adminEmail && SUPER_ADMIN_EMAILS.includes(adminEmail.toLowerCase());
+    if (tournament.adminId !== adminId && !isSuperAdmin) {
       return NextResponse.json({ error: 'Only the tournament admin can edit scores' }, { status: 403 });
     }
 
     // Find the scoring round
     const scoringRound = await db.tournamentScoringRound.findUnique({
       where: { tournamentId_groupLetter: { tournamentId, groupLetter } },
-      include: {
-        round: { include: { scores: true } },
-      },
     });
 
-    if (!scoringRound || !scoringRound.round) {
+    if (!scoringRound) {
       return NextResponse.json({ error: 'No scoring round found for this group' }, { status: 404 });
     }
 
-    // Upsert the RoundScore
+    // Upsert the RoundScore — strokes=0 means cleared/didn't play
+    const effectiveStrokes = typeof strokes === 'number' ? strokes : 0;
     await db.roundScore.upsert({
       where: {
         roundId_holeNumber_playerIndex: {
@@ -189,13 +195,13 @@ export async function PUT(request: NextRequest) {
         },
       },
       update: {
-        strokes: strokes || 0,
+        strokes: effectiveStrokes,
       },
       create: {
         roundId,
         holeNumber,
         playerIndex,
-        strokes: strokes || 0,
+        strokes: effectiveStrokes,
         putts: 0,
         fairwayHit: null,
         greenInReg: false,
@@ -204,10 +210,17 @@ export async function PUT(request: NextRequest) {
     });
 
     // Recalculate gross/net for the updated player
+    // IMPORTANT: Re-fetch scores from DB to get the fresh value (not cached)
+    const freshScores = await db.roundScore.findMany({
+      where: { roundId, playerIndex },
+    });
+
     // Build player index -> userId mapping
-    const playerNamesRaw = scoringRound.round.playerNames
-      ? JSON.parse(scoringRound.round.playerNames)
-      : [];
+    const round = await db.round.findUnique({
+      where: { id: roundId },
+    });
+
+    const playerNamesRaw = round?.playerNames ? JSON.parse(round.playerNames) : [];
 
     let targetUserId: string;
     if (playerIndex === 0) {
@@ -220,7 +233,7 @@ export async function PUT(request: NextRequest) {
     // Get player handicap
     const targetHandicap =
       playerIndex === 0
-        ? scoringRound.round.playerHandicap || 0
+        ? round?.playerHandicap || 0
         : playerNamesRaw[playerIndex - 1]?.handicap || 0;
 
     // Fetch course holes for par info
@@ -239,28 +252,16 @@ export async function PUT(request: NextRequest) {
     const holeParMap = new Map<number, number>();
     courseHoles.forEach((h) => holeParMap.set(h.holeNumber, h.par || 4));
 
-    // Fetch all scores for this player in this round
-    const playerAllScores = scoringRound.round.scores.filter(
-      (s) => s.playerIndex === playerIndex && s.strokes > 0
-    );
+    // Use fresh scores: only count holes with strokes > 0
+    const activeScores = freshScores.filter((s) => s.strokes > 0);
 
-    // Include the just-updated score (it might not be in the cached scores yet)
-    if (strokes && strokes > 0) {
-      const existingIdx = playerAllScores.findIndex((s) => s.holeNumber === holeNumber);
-      if (existingIdx >= 0) {
-        playerAllScores[existingIdx] = { ...playerAllScores[existingIdx], strokes };
-      } else {
-        playerAllScores.push({ holeNumber, strokes, playerIndex } as any);
-      }
-    } else {
-      // strokes = 0 means clear — remove from calculation
-      // (the record still exists with strokes=0, which is fine)
+    let brutVsPar = 0;
+    if (activeScores.length > 0) {
+      brutVsPar = activeScores.reduce(
+        (sum, s) => sum + (s.strokes - (holeParMap.get(s.holeNumber) || 4)),
+        0
+      );
     }
-
-    const brutVsPar = playerAllScores.reduce(
-      (sum, s) => sum + (s.strokes - (holeParMap.get(s.holeNumber) || 4)),
-      0
-    );
     const netVsPar = Math.round((brutVsPar - targetHandicap) * 10) / 10;
 
     // Update the TournamentParticipant's gross/net
@@ -273,8 +274,8 @@ export async function PUT(request: NextRequest) {
         await db.tournamentParticipant.update({
           where: { tournamentId_userId: { tournamentId, userId: targetUserId } },
           data: {
-            grossScore: playerAllScores.length > 0 ? brutVsPar : null,
-            netScore: playerAllScores.length > 0 ? netVsPar : null,
+            grossScore: activeScores.length > 0 ? brutVsPar : null,
+            netScore: activeScores.length > 0 ? netVsPar : null,
             scoredAt: new Date(),
           },
         });
@@ -287,9 +288,9 @@ export async function PUT(request: NextRequest) {
       success: true,
       holeNumber,
       playerIndex,
-      strokes: strokes || 0,
-      gross: playerAllScores.length > 0 ? brutVsPar : null,
-      net: playerAllScores.length > 0 ? netVsPar : null,
+      strokes: effectiveStrokes,
+      gross: activeScores.length > 0 ? brutVsPar : null,
+      net: activeScores.length > 0 ? netVsPar : null,
     });
   } catch (error) {
     console.error('[Admin Scores] PUT error:', error);
