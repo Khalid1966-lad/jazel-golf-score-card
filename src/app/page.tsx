@@ -1739,6 +1739,7 @@ export default function JazelApp() {
 
   // Tournaments state
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournamentView, setTournamentView] = useState<'card' | 'list'>('card');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [scorecardOpen, setScorecardOpen] = useState(false);
   const [scorecardData, setScorecardData] = useState<any>(null);
@@ -8060,13 +8061,33 @@ export default function JazelApp() {
             ) : (
               <Card className="bg-white/80 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5" style={{color: '#39638b'}} />
-                    Tournaments
-                  </CardTitle>
-                  <CardDescription>
-                    View upcoming and past golf tournaments
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5" style={{color: '#39638b'}} />
+                        Tournaments
+                      </CardTitle>
+                      <CardDescription>
+                        View upcoming and past golf tournaments
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                      <button
+                        onClick={() => setTournamentView('card')}
+                        className={`p-1.5 rounded-md transition-colors ${tournamentView === 'card' ? 'bg-white shadow-sm' : 'hover:bg-white/50'}`}
+                        title="Card view"
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setTournamentView('list')}
+                        className={`p-1.5 rounded-md transition-colors ${tournamentView === 'list' ? 'bg-white shadow-sm' : 'hover:bg-white/50'}`}
+                        title="List view"
+                      >
+                        <ListIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {tournamentsLoading ? (
@@ -8078,7 +8099,7 @@ export default function JazelApp() {
                       <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground">No tournaments available</p>
                     </div>
-                  ) : (
+                  ) : tournamentView === 'card' ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {tournaments.map((tournament) => (
                         <Card
@@ -8153,6 +8174,75 @@ export default function JazelApp() {
                             </div>
                           </CardContent>
                         </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {tournaments.map((tournament) => (
+                        <div
+                          key={tournament.id}
+                          className={`flex items-center gap-4 p-3 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors border ${
+                            tournament.status === 'completed' ? 'bg-emerald-50/50 border-emerald-200' :
+                            tournament.status === 'cancelled' ? 'bg-red-50/50 border-red-200 opacity-75' :
+                            'border-transparent'
+                          }`}
+                          onClick={() => {
+                            setSelectedTournament(tournament);
+                            fetchTournamentWithParticipants(tournament.id);
+                          }}
+                        >
+                          {/* Date badge */}
+                          <div className="hidden sm:flex flex-col items-center justify-center bg-muted rounded-lg px-3 py-2 min-w-[60px] shrink-0">
+                            <span className="text-xs font-medium text-muted-foreground uppercase">
+                              {new Date(tournament.date).toLocaleDateString('en-US', { month: 'short' })}
+                            </span>
+                            <span className="text-xl font-bold leading-tight">
+                              {new Date(tournament.date).getDate()}
+                            </span>
+                          </div>
+
+                          {/* Main info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold truncate">{tournament.name}</span>
+                              {tournament.liveScoringEnabled && tournament.status === 'in_progress' && (
+                                <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-700 border border-red-200 rounded-full px-2 py-0 animate-pulse font-semibold shrink-0">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                  LIVE
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
+                              <span className="flex items-center gap-1 truncate">
+                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                {tournament.course.name} — {tournament.course.city}
+                              </span>
+                              <span className="flex items-center gap-1 shrink-0">
+                                <Clock className="w-3.5 h-3.5" />
+                                {tournament.startTime}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Right side badges */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="secondary" className="hidden sm:inline-flex">{tournament.format}</Badge>
+                            <Badge variant="outline">{tournament._count?.participants || 0}/{tournament.maxPlayers}</Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                tournament.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                tournament.status === 'in_progress' ? 'bg-green-50 text-green-700 border-green-200' :
+                                tournament.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                'bg-red-50 text-red-700 border-red-200'
+                              }
+                            >
+                              {tournament.status === 'in_progress' ? 'In Progress' :
+                               tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
