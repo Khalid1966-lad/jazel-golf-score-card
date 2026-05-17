@@ -642,3 +642,35 @@ Stage Summary:
 - Splash screen now shows "Jazel Golf" instead of "Jazel"
 - Manifest short_name updated to "Jazel Golf"
 - Pushed to GitHub: main + master (Vercel deploy triggered)
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Admin scorecard editor, WD score clearing, WD display improvements
+
+Work Log:
+- Created `/api/tournaments/admin-scores/route.ts` (GET + PUT)
+  - GET loads scorer's live scorecard for a group (all per-hole strokes, player info, WD status)
+  - PUT allows admin to update any player's hole score, verifies adminId === tournament.adminId
+  - Upserts RoundScore records and recalculates grossScore/netScore on TournamentParticipant
+- Updated `/api/tournaments/withdraw/route.ts`
+  - When marking WD with wdHole, now clears RoundScore.strokes=0 for all holes > wdHole
+  - Recalculates gross/net based on remaining scores (holes ≤ wdHole)
+- Added scorecard editor UI in admin page (`src/app/admin/page.tsx`)
+  - Pencil button on each group card in Groups tab (disabled if no scorer assigned)
+  - Full-height dialog with per-hole grid (18 holes × all players in group)
+  - Each cell is an editable input (strokes), WD cells are locked
+  - Pending changes tracked, Save button bulk-updates all changes
+  - Color coding: eagle/birdie/par/bogey/dbl-bogey
+- Updated general scorecard WD display (`src/app/page.tsx`)
+  - Withdrawn players WITH wdHole: holes > wdHole show "WD" (scores cleared)
+  - Withdrawn players WITHOUT wdHole: all empty/null holes show "WD"
+  - Existing scores for WD players still displayed if hole ≤ wdHole
+- Lint: 0 errors, 1 existing warning
+- Pushed to main + master
+
+Stage Summary:
+- Admin can now edit any player's per-hole scores via the scorer's round (not a separate system)
+- WD marking clears scores for abandoned holes and shows WD in general scorecard
+- Scorecard editor is accessible from Groups tab via pencil icon per group
+- 4 files changed, 673 insertions
