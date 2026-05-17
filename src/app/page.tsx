@@ -11598,8 +11598,16 @@ export default function JazelApp() {
                               const par = hole?.par || 4;
                               let bgClass = 'bg-white';
                               let textClass = '';
-                              // WD player: holes after wdHole show WD
+                              // WD player: holes after wdHole show WD (scores cleared by admin)
                               if (isWD && player.wdHole && holeNum > player.wdHole) {
+                                return (
+                                  <td key={sIdx} className="px-1 py-1 text-center font-medium bg-amber-50 text-amber-500 text-[10px]">
+                                    WD
+                                  </td>
+                                );
+                              }
+                              // WD player with no wdHole: empty holes show WD
+                              if (isWD && !player.wdHole && (score === null || score === 0)) {
                                 return (
                                   <td key={sIdx} className="px-1 py-1 text-center font-medium bg-amber-50 text-amber-500 text-[10px]">
                                     WD

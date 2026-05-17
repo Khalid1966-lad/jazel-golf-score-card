@@ -51,7 +51,9 @@ import {
   GraduationCap,
   Clipboard,
   Ban,
-  Undo2
+  Undo2,
+  Table2,
+  Pencil
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -285,6 +287,13 @@ export default function AdminPage() {
   const [selectedGroupLetter, setSelectedGroupLetter] = useState<string | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
   const [teeTimeForm, setTeeTimeForm] = useState({ startTime: '08:00', interval: 10 });
+  
+  // Admin Scorecard Editor state
+  const [scorecardEditorOpen, setScorecardEditorOpen] = useState(false);
+  const [scorecardEditorGroup, setScorecardEditorGroup] = useState<string | null>(null);
+  const [scorecardEditorData, setScorecardEditorData] = useState<any>(null);
+  const [scorecardEditorLoading, setScorecardEditorLoading] = useState(false);
+  const [scorecardEditorSaving, setScorecardEditorSaving] = useState(false);
   
   const [editForm, setEditForm] = useState({
     name: '',
@@ -2458,6 +2467,90 @@ export default function AdminPage() {
     }
   };
 
+  // Admin Scorecard Editor — load scorer's scorecard for a group
+  const openScorecardEditor = async (groupLetter: string) => {
+    if (!selectedTournament) return;
+    setScorecardEditorGroup(groupLetter);
+    setScorecardEditorLoading(true);
+    setScorecardEditorOpen(true);
+    try {
+      const res = await fetch(`/api/tournaments/admin-scores?tournamentId=${selectedTournament.id}&groupLetter=${groupLetter}&_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setScorecardEditorData(data);
+      } else {
+        const err = await res.json();
+        toast({ title: 'Error', description: err.error || 'Failed to load scorecard', variant: 'destructive' });
+        setScorecardEditorOpen(false);
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to load scorecard', variant: 'destructive' });
+      setScorecardEditorOpen(false);
+    } finally {
+      setScorecardEditorLoading(false);
+    }
+  };
+
+  // Admin updates a single hole score
+  const adminUpdateScore = async (holeNumber: number, playerIndex: number, strokes: number) => {
+    if (!selectedTournament || !scorecardEditorData || !currentUser) return;
+    try {
+      const res = await fetch('/api/tournaments/admin-scores', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentId: selectedTournament.id,
+          groupLetter: scorecardEditorGroup,
+          roundId: scorecardEditorData.roundId,
+          holeNumber,
+          playerIndex,
+          strokes,
+          adminId: currentUser.id,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast({ title: 'Error', description: err.error || 'Failed to update score', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update score', variant: 'destructive' });
+    }
+  };
+
+  // Admin saves all pending score changes at once
+  const adminSaveScorecard = async () => {
+    if (!scorecardEditorData || !currentUser || !selectedTournament) return;
+    setScorecardEditorSaving(true);
+    try {
+      const pending: Array<{ holeNumber: number; playerIndex: number; strokes: number }> = scorecardEditorData.pendingChanges || [];
+      if (pending.length === 0) {
+        toast({ title: 'Info', description: 'No changes to save' });
+        setScorecardEditorSaving(false);
+        return;
+      }
+      
+      for (const change of pending) {
+        await adminUpdateScore(change.holeNumber, change.playerIndex, change.strokes);
+      }
+      
+      // Clear pending and reload
+      setScorecardEditorData((prev: any) => ({ ...prev, pendingChanges: [] }));
+      toast({ title: 'Saved', description: `${pending.length} score(s) updated` });
+      
+      if (scorecardEditorGroup) {
+        const res = await fetch(`/api/tournaments/admin-scores?tournamentId=${selectedTournament.id}&groupLetter=${scorecardEditorGroup}&_t=${Date.now()}`);
+        if (res.ok) setScorecardEditorData(await res.json());
+      }
+      
+      const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true`);
+      if (tournResponse.ok) setSelectedTournament((await tournResponse.json()).tournament);
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save scorecard', variant: 'destructive' });
+    } finally {
+      setScorecardEditorSaving(false);
+    }
+  };
+
   // Fetch groups data
   const fetchGroupsData = async (tournamentId: string) => {
     setTournamentGroupsLoading(true);
@@ -3975,6 +4068,178 @@ export default function AdminPage() {
                       </DialogContent>
                     </Dialog>
 
+                    {/* Scorecard Editor Dialog — Admin edits scorer's per-hole scorecard */}
+                    <Dialog open={scorecardEditorOpen} onOpenChange={(open) => { setScorecardEditorOpen(open); if (!open) { setScorecardEditorData(null); setScorecardEditorGroup(null); } }}>
+                      <DialogContent className="w-full h-[90vh] max-h-[90vh] sm:max-w-5xl sm:w-[95vw] flex flex-col overflow-hidden p-2 sm:p-4">
+                        <DialogHeader className="flex-shrink-0">
+                          <DialogTitle className="flex items-center gap-2">
+                            <Pencil className="h-5 w-5 text-blue-600" />
+                            Edit Scorecard — Group {scorecardEditorGroup}
+                          </DialogTitle>
+                          <DialogDescription>
+                            {scorecardEditorData?.scorerName
+                              ? `Scorer's card: ${scorecardEditorData.scorerName}. Click any score to edit.`
+                              : 'Loading...'}
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        {scorecardEditorLoading && (
+                          <div className="flex-1 flex items-center justify-center">
+                            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                          </div>
+                        )}
+
+                        {scorecardEditorData && !scorecardEditorLoading && (
+                          <div className="flex-1 flex flex-col min-h-0 gap-2">
+                            {scorecardEditorData.error ? (
+                              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                                <p>{scorecardEditorData.error}</p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex-1 overflow-auto rounded-lg border" style={{ borderColor: '#d6e4ef' }}>
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      {/* Hole numbers row */}
+                                      <tr style={{ backgroundColor: '#e8ecf1' }}>
+                                        <th className="sticky left-0 top-0 z-[30] h-7 px-2 text-left font-medium border-r" style={{ borderColor: '#d6e4ef', minWidth: '130px', backgroundColor: '#e8ecf1' }}>
+                                          Player
+                                        </th>
+                                        {scorecardEditorData.holes?.map((hole: any) => (
+                                          <th key={hole.holeNumber} className="sticky top-0 z-[20] h-7 px-1 text-center font-medium" style={{ minWidth: '36px', backgroundColor: '#e8ecf1' }}>
+                                            {hole.holeNumber}
+                                          </th>
+                                        ))}
+                                        <th className="sticky top-0 z-[20] h-7 px-2 text-center font-bold" style={{ minWidth: '44px', backgroundColor: '#39638b', color: 'white' }}>
+                                          Brut
+                                        </th>
+                                      </tr>
+                                      {/* Par row */}
+                                      <tr style={{ backgroundColor: '#f1f5f9' }}>
+                                        <td className="sticky left-0 z-[30] h-6 px-2 text-xs font-semibold border-r" style={{ top: '28px', backgroundColor: '#f1f5f9', borderColor: '#d6e4ef' }}>Par</td>
+                                        {scorecardEditorData.holes?.map((hole: any) => (
+                                          <td key={hole.holeNumber} className="sticky z-[20] h-6 px-1 text-center font-medium text-xs" style={{ top: '28px', backgroundColor: '#f1f5f9' }}>
+                                            {hole.par}
+                                          </td>
+                                        ))}
+                                        <td className="sticky z-[20] h-6 px-2 text-center text-xs font-bold" style={{ top: '28px', backgroundColor: '#e2e8f0' }}>
+                                          {scorecardEditorData.holes?.reduce((s: number, h: any) => s + h.par, 0)}
+                                        </td>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {scorecardEditorData.players?.map((player: any, pIdx: number) => {
+                                        const isWD = player.withdrawn || false;
+                                        const brutStr = player.brut !== null ? (player.brut > 0 ? `+${player.brut}` : player.brut === 0 ? 'E' : `${player.brut}`) : '-';
+                                        return (
+                                          <tr key={pIdx} className={`border-t ${isWD ? 'opacity-60' : ''}`} style={{ borderColor: '#d6e4ef' }}>
+                                            <td className="sticky left-0 z-10 px-2 py-1 border-r font-medium" style={{ borderColor: '#d6e4ef', backgroundColor: isWD ? '#fffbeb' : '#fff' }}>
+                                              <div className="flex items-center gap-1">
+                                                <span className="truncate text-xs" title={player.name}>{player.name}</span>
+                                                {isWD && <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1 rounded">WD</span>}
+                                                {player.handicap > 0 && <span className="text-[10px] text-muted-foreground">({player.handicap})</span>}
+                                              </div>
+                                              {isWD && player.wdHole && <div className="text-[10px] text-amber-600">After H{player.wdHole}</div>}
+                                            </td>
+                                            {player.holes?.map((hole: any, hIdx: number) => {
+                                              const holeNum = hole.holeNumber;
+                                              // WD: holes after wdHole show WD (non-editable)
+                                              if (isWD && player.wdHole && holeNum > player.wdHole) {
+                                                return (
+                                                  <td key={hIdx} className="px-1 py-1 text-center bg-amber-50 text-amber-500 font-medium text-[10px]">
+                                                    WD
+                                                  </td>
+                                                );
+                                              }
+                                              const diff = hole.strokes > 0 ? hole.strokes - hole.par : null;
+                                              let cellBg = '';
+                                              let cellText = '';
+                                              if (diff !== null) {
+                                                if (diff <= -2) { cellBg = 'bg-emerald-100'; cellText = 'text-emerald-700'; }
+                                                else if (diff === -1) { cellBg = 'bg-green-50'; cellText = 'text-green-600'; }
+                                                else if (diff === 0) { cellBg = 'bg-gray-50'; }
+                                                else if (diff === 1) { cellBg = 'bg-red-50'; cellText = 'text-red-500'; }
+                                                else if (diff >= 2) { cellBg = 'bg-red-100'; cellText = 'text-red-600'; }
+                                              }
+                                              return (
+                                                <td key={hIdx} className={`px-0.5 py-0.5 text-center ${cellBg}`}>
+                                                  <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="15"
+                                                    className={`w-full h-7 text-center text-xs font-medium bg-transparent border border-transparent focus:border-blue-400 focus:bg-blue-50 focus:outline-none rounded ${cellText}`}
+                                                    value={hole.strokes > 0 ? hole.strokes : ''}
+                                                    placeholder="-"
+                                                    disabled={isWD}
+                                                    onChange={(e) => {
+                                                      const val = e.target.value ? parseInt(e.target.value) : 0;
+                                                      // Update local state
+                                                      setScorecardEditorData((prev: any) => {
+                                                        const newPlayers = [...prev.players];
+                                                        const newHoles = [...newPlayers[pIdx].holes];
+                                                        newHoles[hIdx] = { ...newHoles[hIdx], strokes: val };
+                                                        newPlayers[pIdx] = { ...newPlayers[pIdx], holes: newHoles };
+                                                        return { ...prev, players: newPlayers };
+                                                      });
+                                                    }}
+                                                    onBlur={() => {
+                                                      // Queue for saving
+                                                      setScorecardEditorData((prev: any) => {
+                                                        const pending = [...(prev.pendingChanges || [])];
+                                                        const existing = pending.findIndex(
+                                                          (c: any) => c.holeNumber === holeNum && c.playerIndex === player.playerIndex
+                                                        );
+                                                        const change = { holeNumber: holeNum, playerIndex: player.playerIndex, strokes: hole.strokes || 0 };
+                                                        if (existing >= 0) pending[existing] = change;
+                                                        else pending.push(change);
+                                                        return { ...prev, pendingChanges: pending };
+                                                      });
+                                                    }}
+                                                  />
+                                                </td>
+                                              );
+                                            })}
+                                            <td className="px-2 py-1 text-center font-bold bg-gray-50 border-l text-xs" style={{ borderColor: '#d6e4ef' }}>
+                                              <span className={player.brut < 0 ? 'text-green-600' : player.brut > 0 ? 'text-red-500' : ''}>
+                                                {brutStr}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                {/* Save / Cancel buttons */}
+                                <div className="flex items-center justify-between gap-2 flex-shrink-0 pt-1">
+                                  <p className="text-xs text-muted-foreground">
+                                    {scorecardEditorData.pendingChanges?.length > 0
+                                      ? `${scorecardEditorData.pendingChanges.length} unsaved change(s)`
+                                      : 'No pending changes'}
+                                  </p>
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => { setScorecardEditorOpen(false); setScorecardEditorData(null); }}>
+                                      Close
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                      disabled={scorecardEditorSaving || !scorecardEditorData.pendingChanges?.length}
+                                      onClick={adminSaveScorecard}
+                                    >
+                                      {scorecardEditorSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                                      Save
+                                    </Button>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+
                     {/* Groups Tab */}
                     <TabsContent value="groups" className="space-y-4">
                       {/* Groups Controls */}
@@ -4132,6 +4397,16 @@ export default function AdminPage() {
                                         title="Delete group"
                                       >
                                         <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => openScorecardEditor(letter)}
+                                        title="Edit scorecard"
+                                        disabled={!groupParticipants.find(p => p.isScorer)}
+                                      >
+                                        <Pencil className="h-3 w-3" />
                                       </Button>
                                     </div>
                                   </div>
