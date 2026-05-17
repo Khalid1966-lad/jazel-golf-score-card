@@ -1745,7 +1745,7 @@ export default function JazelApp() {
   const [scorecardLoading, setScorecardLoading] = useState(false);
 
   // Print scorecard in a new window (bypasses Radix portal CSS issues)
-  const handlePrintScorecard = useCallback(() => {
+  const handlePrintScorecard = useCallback((sortBy: 'net' | 'gross' = 'net') => {
     if (!scorecardData) return;
     const t = scorecardData.tournament;
     const holes = scorecardData.holes || [];
@@ -1778,7 +1778,7 @@ export default function JazelApp() {
 
     const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
 
-    // Sort players: by net score ascending (best first), withdrawn players at the end
+    // Sort players: by net or gross score (best first), withdrawn players at the end
     const sortedPlayers = [...players].sort((a: any, b: any) => {
       const aWD = a.withdrawn ? 1 : 0;
       const bWD = b.withdrawn ? 1 : 0;
@@ -1787,12 +1787,12 @@ export default function JazelApp() {
         // Among WDs: player who completed more holes ranks higher
         return (b.wdHole || 0) - (a.wdHole || 0);
       }
-      const aNet = a.net;
-      const bNet = b.net;
-      if (aNet === null && bNet === null) return (a.handicap || 0) - (b.handicap || 0);
-      if (aNet === null) return 1;
-      if (bNet === null) return -1;
-      return aNet - bNet;
+      const aVal = sortBy === 'gross' ? a.gross : a.net;
+      const bVal = sortBy === 'gross' ? b.gross : b.net;
+      if (aVal === null && bVal === null) return (a.handicap || 0) - (b.handicap || 0);
+      if (aVal === null) return 1;
+      if (bVal === null) return -1;
+      return aVal - bVal;
     });
 
     const playerRows = sortedPlayers.map((p: any, idx: number) => {
@@ -1858,6 +1858,7 @@ export default function JazelApp() {
     <span class="meta">📅 ${dateStr}</span>
     <span class="meta">${t.format || ''}</span>
     ${scorecardData.isFrozen ? '<span style="color:#059669;font-weight:600">🔒 Frozen</span>' : ''}
+    <span style="color:#39638b;font-weight:600">Sorted by ${sortBy === 'gross' ? 'Gross' : 'Net'}</span>
   </div>
   <table>
     <thead>
@@ -2627,8 +2628,16 @@ export default function JazelApp() {
       });
       setPlayerScores(newPlayerScores);
       setHolesPlayed(18);
-      setHolesType('front');
-      setScorecardView('front');
+      // If all front nine holes are filled, open on back nine
+      const frontNineFilled = allHoles
+        .filter((h: any) => h.holeNumber >= 1 && h.holeNumber <= 9)
+        .every((h: any) => {
+          return mainScores.some((s: any) => s.holeNumber === h.holeNumber && s.strokes > 0);
+        });
+      const initialView = frontNineFilled ? 'back' : 'front';
+      setHolesType(initialView);
+      setScorecardView(initialView);
+      setLiveScoringHole(frontNineFilled ? 10 : 1);
       setShowScorecard(true);
       setActiveTab('scorecard');
       toast.success('Scoring resumed!');
@@ -11853,11 +11862,20 @@ export default function JazelApp() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handlePrintScorecard}
+                  onClick={() => handlePrintScorecard('net')}
                   style={{borderColor: '#39638b', color: '#39638b'}}
                 >
                   <Printer className="w-3.5 h-3.5 mr-1" />
-                  Print
+                  Print Net
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePrintScorecard('gross')}
+                  style={{borderColor: '#39638b', color: '#39638b'}}
+                >
+                  <Printer className="w-3.5 h-3.5 mr-1" />
+                  Print Brut
                 </Button>
                 </div>
               </div>
