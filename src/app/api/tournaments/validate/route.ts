@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       const snapshot = JSON.stringify({
         grossScore: participant.grossScore,
         netScore: participant.netScore,
+        stablefordScore: participant.stablefordScore,
       });
 
       console.log('[LOCK] Locking participant:', participant.userId, 'lockedAt before:', participant.lockedAt, 'setting to:', now.toISOString());
@@ -57,9 +58,10 @@ export async function POST(request: NextRequest) {
         data: {
           lockedAt: now,
           scoreSnapshot: snapshot,
-          // Also ensure grossScore/netScore are preserved at lock time
+          // Also ensure grossScore/netScore/stablefordScore are preserved at lock time
           grossScore: participant.grossScore,
           netScore: participant.netScore,
+          stablefordScore: participant.stablefordScore,
         },
       });
       console.log('[LOCK] Result lockedAt:', result.lockedAt);

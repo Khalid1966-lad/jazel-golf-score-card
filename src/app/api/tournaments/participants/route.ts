@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tournamentId, userId, grossScore, netScore } = body;
+    const { tournamentId, userId, grossScore, netScore, stablefordScore } = body;
 
     if (!tournamentId || !userId) {
       return NextResponse.json({ error: 'Missing tournamentId and userId' }, { status: 400 });
@@ -128,6 +128,7 @@ export async function PUT(request: NextRequest) {
       data: {
         grossScore: grossScore ?? null,
         netScore: netScore ?? null,
+        stablefordScore: stablefordScore ?? null,
       },
       include: {
         user: {

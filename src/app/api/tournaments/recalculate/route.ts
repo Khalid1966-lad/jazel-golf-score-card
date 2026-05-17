@@ -13,20 +13,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'tournamentId is required' }, { status: 400 });
     }
 
-    // Get tournament with course hole par info
+    // Get tournament with course hole par + SI info
     const tournament = await db.tournament.findUnique({
       where: { id: tournamentId },
-      include: { course: { include: { holes: { select: { holeNumber: true, par: true } } } } },
+      include: { course: { include: { holes: { select: { holeNumber: true, par: true, handicap: true } } } } },
     });
 
     if (!tournament) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // Build hole par map for per-hole calculation
+    // Build hole info maps for per-hole calculation
     const holeParMap = new Map<number, number>();
+    const holeHcpIndexMap = new Map<number, number>();
     (tournament.course?.holes || []).forEach(h => {
       holeParMap.set(h.holeNumber, h.par || 4);
+      if (h.handicap != null) holeHcpIndexMap.set(h.holeNumber, h.handicap);
     });
 
     // Get all scoring rounds (including abandoned — round data still exists)
@@ -48,8 +50,8 @@ export async function POST(request: NextRequest) {
       include: { user: { select: { id: true, handicap: true } } },
     });
 
-    // Track per-user: brut vs par (sum of strokes - par per hole), handicap, found
-    const playerTotals = new Map<string, { brutVsPar: number; handicap: number; found: boolean; scoredHoles: number }>();
+    // Track per-user: brut vs par, handicap, Stableford points, found
+    const playerTotals = new Map<string, { brutVsPar: number; handicap: number; found: boolean; scoredHoles: number; stablefordPts: number; perHoleStrokes: Map<number, number> }>();
 
     // Build userId -> current handicap map (always fresh from User table)
     const userIdToHcp = new Map<string, number>();
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
     });
 
     participantsWithUser.forEach(p => {
-      playerTotals.set(p.userId, { brutVsPar: 0, handicap: p.user.handicap || 0, found: false, scoredHoles: 0 });
+      playerTotals.set(p.userId, { brutVsPar: 0, handicap: p.user.handicap || 0, found: false, scoredHoles: 0, stablefordPts: 0, perHoleStrokes: new Map() });
     });
 
     // Process each scoring round
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
 
       // Per-player per-hole: sum (strokes - par) for scored holes only (strokes > 0)
       const playerBrut = new Map<number, { diff: number; holes: number }>();
+      const playerHoleStrokes = new Map<number, Map<number, number>>();
       roundScores.forEach(s => {
         if (s.strokes <= 0) return; // Only count scored holes
         const par = holeParMap.get(s.holeNumber) || 4;
@@ -97,6 +100,10 @@ export async function POST(request: NextRequest) {
           diff: current.diff + (s.strokes - par),
           holes: current.holes + 1,
         });
+        // Track strokes per hole for Stableford calculation
+        const holeMap = playerHoleStrokes.get(s.playerIndex) || new Map();
+        holeMap.set(s.holeNumber, s.strokes);
+        playerHoleStrokes.set(s.playerIndex, holeMap);
       });
 
       // Accumulate per user
@@ -110,6 +117,13 @@ export async function POST(request: NextRequest) {
           existing.scoredHoles += holes;
           existing.found = true;
           existing.handicap = indexToHcp.get(playerIndex) || existing.handicap;
+          // Merge per-hole strokes for Stableford
+          const hMap = playerHoleStrokes.get(playerIndex);
+          if (hMap) {
+            hMap.forEach((strokes, holeNum) => {
+              existing.perHoleStrokes.set(holeNum, strokes);
+            });
+          }
         }
       });
     }
@@ -133,11 +147,30 @@ export async function POST(request: NextRequest) {
           data: {
             grossScore: null,
             netScore: null,
+            stablefordScore: null,
             scoredAt: null,
           },
         });
       } else {
         const netVsPar = Math.round((totals.brutVsPar - totals.handicap) * 10) / 10;
+
+        // Calculate Stableford points using player handicap + hole Stroke Index
+        let stablefordPts = 0;
+        const hcp = Math.floor(totals.handicap);
+        if (hcp > 0 && totals.perHoleStrokes.size > 0) {
+          totals.perHoleStrokes.forEach((strokes, holeNum) => {
+            const par = holeParMap.get(holeNum) || 4;
+            const holeSI = holeHcpIndexMap.get(holeNum) || 0;
+            const strokesRcvd = Math.floor(hcp / 18) + (holeSI <= (hcp % 18) ? 1 : 0);
+            const netVsParHole = (strokes - strokesRcvd) - par;
+            if (netVsParHole <= -3) stablefordPts += 5;      // Albatross
+            else if (netVsParHole === -2) stablefordPts += 4; // Eagle
+            else if (netVsParHole === -1) stablefordPts += 3; // Birdie
+            else if (netVsParHole === 0) stablefordPts += 2;  // Par
+            else if (netVsParHole === 1) stablefordPts += 1;  // Bogey
+            // Double bogey+ = 0
+          });
+        }
 
         await db.tournamentParticipant.update({
           where: {
@@ -146,6 +179,7 @@ export async function POST(request: NextRequest) {
           data: {
             grossScore: totals.brutVsPar,
             netScore: netVsPar,
+            stablefordScore: hcp > 0 ? stablefordPts : null,
           },
         });
       }

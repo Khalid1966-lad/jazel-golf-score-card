@@ -299,6 +299,7 @@ interface TournamentParticipant {
   userId: string;
   grossScore: number | null;
   netScore: number | null;
+  stablefordScore: number | null;
   groupLetter: string | null;
   positionInGroup: number | null;
   teeTime: string | null;
@@ -1934,7 +1935,7 @@ export default function JazelApp() {
   }, [scorecardData]);
 
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
-  const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('gross');
+  const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net' | 'stableford'>('gross');
   const [tournamentScoringRounds, setTournamentScoringRounds] = useState<any[]>([]);
   const [tournamentScoringLoading, setTournamentScoringLoading] = useState(false);
   const [isLiveScoring, setIsLiveScoring] = useState(false); // Whether current scorecard is a tournament scoring round
@@ -7947,29 +7948,35 @@ export default function JazelApp() {
                       </div>
                     ) : selectedTournament.participants && selectedTournament.participants.length > 0 ? (
                       <div className="border rounded-lg overflow-hidden">
-                        <div className="grid grid-cols-12 gap-3 p-3 bg-muted/50 font-medium text-sm items-center">
-                          <div className="col-span-1">#</div>
-                          <div className="col-span-3">Player</div>
-                          <div className="col-span-1 text-center">Grp</div>
+                        <div className="grid grid-cols-13 gap-2 p-3 bg-muted/50 font-medium text-sm items-center" style={{gridTemplateColumns: '2fr 5fr 1fr 2fr 2fr 2fr 2fr 1fr'}}>
+                          <div>#</div>
+                          <div>Player</div>
+                          <div className="text-center">Grp</div>
                           <div 
-                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
+                            className={`text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'handicap' ? 'bg-primary/10 text-primary' : ''}`}
                             onClick={() => setParticipantSort('handicap')}
                           >
                             Hcp {participantSort === 'handicap' && '↓'}
                           </div>
                           <div 
-                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'gross' ? 'bg-primary/10 text-primary' : ''}`}
+                            className={`text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'gross' ? 'bg-primary/10 text-primary' : ''}`}
                             onClick={() => setParticipantSort('gross')}
                           >
                             Brut {participantSort === 'gross' && '↓'}
                           </div>
                           <div 
-                            className={`col-span-2 text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'net' ? 'bg-primary/10 text-primary' : ''}`}
+                            className={`text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'net' ? 'bg-primary/10 text-primary' : ''}`}
                             onClick={() => setParticipantSort('net')}
                           >
                             Net {participantSort === 'net' && '↓'}
                           </div>
-                          <div className="col-span-1"></div>
+                          <div 
+                            className={`text-center cursor-pointer hover:bg-muted/80 rounded px-1 py-0.5 ${participantSort === 'stableford' ? 'bg-emerald-100 text-emerald-700' : ''}`}
+                            onClick={() => setParticipantSort('stableford')}
+                          >
+                            SF {participantSort === 'stableford' && '↓'}
+                          </div>
+                          <div></div>
                         </div>
                         {/* Sorted participants */}
                         {(() => {
@@ -8006,48 +8013,62 @@ export default function JazelApp() {
                               if (b.netScore === null) return -1;
                               return a.netScore - b.netScore;
                             }
+                            if (participantSort === 'stableford') {
+                              if (a.stablefordScore == null && b.stablefordScore == null) return (a.user.handicap || 0) - (b.user.handicap || 0);
+                              if (a.stablefordScore == null) return 1;
+                              if (b.stablefordScore == null) return -1;
+                              return (b.stablefordScore || 0) - (a.stablefordScore || 0); // Higher = better
+                            }
                             return (a.user.handicap || 0) - (b.user.handicap || 0);
                           });
                           return sorted.map((participant, index) => {
                             const brut = participant.grossScore;
                             const net = participant.netScore;
+                            const sf = participant.stablefordScore;
                             const isWD = participant.withdrawn;
                             return (
-                            <div key={participant.userId} className={`grid grid-cols-12 gap-3 p-3 items-center border-t ${isWD ? 'opacity-60 bg-amber-50/50' : ''}`}>
-                              <div className="col-span-1 text-muted-foreground font-medium">
+                            <div key={participant.userId} className={`grid gap-2 p-3 items-center border-t ${isWD ? 'opacity-60 bg-amber-50/50' : ''}`} style={{gridTemplateColumns: '2fr 5fr 1fr 2fr 2fr 2fr 2fr 1fr'}}>
+                              <div className="text-muted-foreground font-medium">
                                 {isWD ? (
                                   <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">WD</span>
                                 ) : (index + 1)}
                               </div>
-                              <div className="col-span-3 font-medium flex items-center gap-1.5">
+                              <div className="font-medium flex items-center gap-1.5 truncate">
                                 {participant.lockedAt && <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Score validated by admin" />}
                                 {participant.user.name || 'Unnamed'}
                                 {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
                                 {isWD && participant.wdHole && <span className="text-[10px] text-amber-600">(after H{participant.wdHole})</span>}
                               </div>
-                              <div className="col-span-1 text-center">
+                              <div className="text-center">
                                 {participant.groupLetter ? (
                                   <Badge variant="outline" className="text-[10px] px-1 py-0">{participant.groupLetter}</Badge>
                                 ) : (
                                   <span className="text-muted-foreground text-xs">-</span>
                                 )}
                               </div>
-                              <div className="col-span-2 text-center">
-                                <Badge variant="outline" className="font-mono">
+                              <div className="text-center">
+                                <Badge variant="outline" className="font-mono text-xs">
                                   {participant.user.handicap?.toFixed(1) || '-'}
                                 </Badge>
                               </div>
-                              <div className="col-span-2 text-center font-mono">
+                              <div className="text-center font-mono text-sm">
                                 <span className={brut != null ? diffColor(brut) : 'text-muted-foreground'}>
                                   {brut != null ? formatDiff(brut) : '-'}
                                 </span>
                               </div>
-                              <div className="col-span-2 text-center font-mono">
+                              <div className="text-center font-mono text-sm">
                                 <span className={net != null ? diffColor(net) : 'text-muted-foreground'}>
                                   {net != null ? formatDiff(net) : '-'}
                                 </span>
                               </div>
-                              <div className="col-span-1 flex justify-center">
+                              <div className="text-center font-mono text-sm">
+                                {sf != null ? (
+                                  <span className="text-emerald-600 font-bold">{sf}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </div>
+                              <div className="flex justify-center">
                                 {user?.id === selectedTournament?.adminId && !isWD && (
                                   <Button
                                     size="sm"
