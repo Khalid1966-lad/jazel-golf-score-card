@@ -1781,17 +1781,22 @@ export default function JazelApp() {
     const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
 
     // Sort players: by net/gross/stableford (best first), withdrawn players at the end
-    const calcStableford = (scores: (number | null)[], holesArr: any[]) => {
+    // Stableford uses player handicap + hole Stroke Index (same as regular scorecard)
+    const calcStableford = (scores: (number | null)[], holesArr: any[], playerHcp: number | null) => {
       let pts = 0;
+      const hcp = playerHcp && playerHcp > 0 ? Math.floor(playerHcp) : 0;
       scores.forEach((s, i) => {
         if (s !== null && s > 0) {
-          const par = holesArr[i]?.par || 4;
-          const diff = s - par;
-          if (diff <= -3) pts += 5;      // Albatross
-          else if (diff === -2) pts += 4; // Eagle
-          else if (diff === -1) pts += 3; // Birdie
-          else if (diff === 0) pts += 2;  // Par
-          else if (diff === 1) pts += 1;  // Bogey
+          const hole = holesArr[i];
+          const par = hole?.par || 4;
+          const holeHcpIndex = hole?.hcpIndex || 0;
+          const strokesRcvd = hcp > 0 ? (Math.floor(hcp / 18) + (holeHcpIndex <= (hcp % 18) ? 1 : 0)) : 0;
+          const netVsPar = (s - strokesRcvd) - par;
+          if (netVsPar <= -3) pts += 5;      // Albatross
+          else if (netVsPar === -2) pts += 4; // Eagle
+          else if (netVsPar === -1) pts += 3; // Birdie
+          else if (netVsPar === 0) pts += 2;  // Par
+          else if (netVsPar === 1) pts += 1;  // Bogey
           // Double bogey+ = 0
         }
       });
@@ -1807,8 +1812,8 @@ export default function JazelApp() {
         return (b.wdHole || 0) - (a.wdHole || 0);
       }
       if (sortBy === 'stableford') {
-        const aPts = calcStableford(a.scores || [], holes);
-        const bPts = calcStableford(b.scores || [], holes);
+        const aPts = calcStableford(a.scores || [], holes, a.handicap);
+        const bPts = calcStableford(b.scores || [], holes, b.handicap);
         return bPts - aPts; // Higher Stableford = better
       }
       const aVal = sortBy === 'gross' ? a.gross : a.net;
@@ -1822,7 +1827,7 @@ export default function JazelApp() {
     const playerRows = sortedPlayers.map((p: any, idx: number) => {
       const hasScores = p.scores?.some((s: number | null) => s !== null && s > 0);
       const isWD = p.withdrawn || false;
-      const sfPts = calcStableford(p.scores || [], holes);
+      const sfPts = calcStableford(p.scores || [], holes, p.handicap);
       const brutHtml = hasScores
         ? `<span style="color:${(p.gross as number) < 0 ? '#059669' : (p.gross as number) > 0 ? '#ef4444' : '#000'}">${brutStr(p.gross)}</span>`
         : '-';
@@ -11769,23 +11774,28 @@ export default function JazelApp() {
                       if (aWD !== bWD) return aWD - bWD;
                       if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
                       if (scorecardSort === 'stableford') {
-                        const calcSF = (scores: (number | null)[]) => {
+                        const calcSF = (scores: (number | null)[], playerHcp: number | null) => {
                           let pts = 0;
+                          const hcp = playerHcp && playerHcp > 0 ? Math.floor(playerHcp) : 0;
                           scores.forEach((s, i) => {
                             if (s !== null && s > 0) {
-                              const par = scorecardData.holes?.[i]?.par || 4;
-                              const diff = s - par;
-                              if (diff <= -3) pts += 5;
-                              else if (diff === -2) pts += 4;
-                              else if (diff === -1) pts += 3;
-                              else if (diff === 0) pts += 2;
-                              else if (diff === 1) pts += 1;
+                              const hole = scorecardData.holes?.[i];
+                              const par = hole?.par || 4;
+                              const holeHcpIndex = hole?.hcpIndex || 0;
+                              // Calculate strokes received based on player handicap and hole Stroke Index
+                              const strokesRcvd = hcp > 0 ? (Math.floor(hcp / 18) + (holeHcpIndex <= (hcp % 18) ? 1 : 0)) : 0;
+                              const netVsPar = (s - strokesRcvd) - par;
+                              if (netVsPar <= -3) pts += 5;
+                              else if (netVsPar === -2) pts += 4;
+                              else if (netVsPar === -1) pts += 3;
+                              else if (netVsPar === 0) pts += 2;
+                              else if (netVsPar === 1) pts += 1;
                             }
                           });
                           return pts;
                         };
-                        const aPts = calcSF(a.scores || []);
-                        const bPts = calcSF(b.scores || []);
+                        const aPts = calcSF(a.scores || [], a.handicap);
+                        const bPts = calcSF(b.scores || [], b.handicap);
                         return bPts - aPts;
                       }
                       const aVal = scorecardSort === 'gross' ? a.gross : a.net;
@@ -11801,17 +11811,21 @@ export default function JazelApp() {
                       const net = player.net;
                       const brutStr = brut > 0 ? `+${brut}` : brut === 0 ? 'E' : `${brut}`;
                       const netStr = net > 0 ? `+${net}` : net === 0 ? 'E' : `${net}`;
-                      // Stableford calculation
+                      // Stableford calculation (handicap-adjusted)
                       let sfPoints = 0;
+                      const playerHcp = player.handicap && player.handicap > 0 ? Math.floor(player.handicap) : 0;
                       (player.scores || []).forEach((s: number | null, i: number) => {
                         if (s !== null && s > 0) {
-                          const par = scorecardData.holes?.[i]?.par || 4;
-                          const diff = s - par;
-                          if (diff <= -3) sfPoints += 5;
-                          else if (diff === -2) sfPoints += 4;
-                          else if (diff === -1) sfPoints += 3;
-                          else if (diff === 0) sfPoints += 2;
-                          else if (diff === 1) sfPoints += 1;
+                          const hole = scorecardData.holes?.[i];
+                          const par = hole?.par || 4;
+                          const holeHcpIndex = hole?.hcpIndex || 0;
+                          const strokesRcvd = playerHcp > 0 ? (Math.floor(playerHcp / 18) + (holeHcpIndex <= (playerHcp % 18) ? 1 : 0)) : 0;
+                          const netVsPar = (s - strokesRcvd) - par;
+                          if (netVsPar <= -3) sfPoints += 5;
+                          else if (netVsPar === -2) sfPoints += 4;
+                          else if (netVsPar === -1) sfPoints += 3;
+                          else if (netVsPar === 0) sfPoints += 2;
+                          else if (netVsPar === 1) sfPoints += 1;
                         }
                       });
                       return (
