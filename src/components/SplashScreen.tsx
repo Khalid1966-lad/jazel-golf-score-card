@@ -213,7 +213,7 @@ export default function SplashScreen({ version, onClose }: SplashScreenProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              Jazel
+              Jazel Golf
             </motion.h1>
 
             {/* Slogan - split in two lines */}
