@@ -622,3 +622,23 @@ Stage Summary:
 - Scorecard modal shows "WD" for holes after withdrawal hole
 - Excel export includes WD status column
 - All actions are revocable
+---
+Task ID: 1
+Agent: Main Agent
+Task: Version bump to 1.7.0, PWA update, splash screen rename
+
+Work Log:
+- Updated version from 1.6.0 to 1.7.0 in all references
+- Files updated: package.json, public/sw.js (CACHE_NAME), public/manifest.json (version + short_name), src/components/PWAProvider.tsx (APP_VERSION), src/app/page.tsx (4 version refs), src/components/SplashScreen.tsx
+- Changed splash screen title from "Jazel" to "Jazel Golf"
+- Changed manifest short_name from "Jazel" to "Jazel Golf"
+- Ran lint: 0 errors, 1 existing warning
+- Verified zero stale 1.6.0 references remain
+- Committed and pushed to main + master
+
+Stage Summary:
+- Version bumped to 1.7.0 across 6 files
+- PWA cache name updated to jazel-golf-v1.7.0 (forces cache refresh on users' devices)
+- Splash screen now shows "Jazel Golf" instead of "Jazel"
+- Manifest short_name updated to "Jazel Golf"
+- Pushed to GitHub: main + master (Vercel deploy triggered)
