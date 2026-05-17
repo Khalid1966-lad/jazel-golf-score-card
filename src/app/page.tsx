@@ -1752,11 +1752,20 @@ export default function JazelApp() {
     const players = scorecardData.players || [];
     const totalPar = holes.reduce((s: number, h: any) => s + (h.par || 0), 0);
 
-    // Build score cells for a player row
-    const buildScoreCells = (scores: (number | null)[]) => scores.map((s, i) => {
+    // Build score cells for a player row — with WD handling
+    const buildScoreCells = (scores: (number | null)[], isWD: boolean, wdHole: number | null | undefined) => scores.map((s, i) => {
+      const holeNum = holes[i]?.number || (i + 1);
+      // WD: holes after wdHole
+      if (isWD && wdHole && holeNum > wdHole) {
+        return `<td style="padding:2px 4px;text-align:center;background:#fffbeb;border:1px solid #d6e4ef;font-size:8pt;font-weight:600;color:#d97706">WD</td>`;
+      }
+      // WD without wdHole: empty holes show WD
+      if (isWD && !wdHole && (s === null || s === 0)) {
+        return `<td style="padding:2px 4px;text-align:center;background:#fffbeb;border:1px solid #d6e4ef;font-size:8pt;font-weight:600;color:#d97706">WD</td>`;
+      }
       const par = holes[i]?.par || 4;
       let bg = '#fff';
-      if (s !== null) {
+      if (s !== null && s > 0) {
         const d = s - par;
         if (d <= -2) bg = '#d1fae5';
         else if (d === -1) bg = '#f0fdf4';
@@ -1764,33 +1773,49 @@ export default function JazelApp() {
         else if (d === 1) bg = '#fef2f2';
         else if (d >= 2) bg = '#fee2e2';
       }
-      return `<td style="padding:2px 4px;text-align:center;background:${bg};border:1px solid #d6e4ef;font-size:9pt">${s !== null ? s : ''}</td>`;
+      return `<td style="padding:2px 4px;text-align:center;background:${bg};border:1px solid #d6e4ef;font-size:9pt">${s !== null && s > 0 ? s : ''}</td>`;
     }).join('');
 
     const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
 
     const playerRows = players.map((p: any, idx: number) => {
-      const hasScores = p.scores?.some((s: number | null) => s !== null);
+      const hasScores = p.scores?.some((s: number | null) => s !== null && s > 0);
+      const isWD = p.withdrawn || false;
       const brutHtml = hasScores
         ? `<span style="color:${(p.gross as number) < 0 ? '#059669' : (p.gross as number) > 0 ? '#ef4444' : '#000'}">${brutStr(p.gross)}</span>`
         : '-';
       const netHtml = hasScores
         ? `<span style="color:${(p.net as number) < 0 ? '#059669' : (p.net as number) > 0 ? '#ef4444' : '#6b7280'}">${brutStr(p.net)}</span>`
-        : '-';
+        : isWD ? '<span style="color:#d97706;font-weight:600">WD</span>' : '-';
+
+      // Rank cell: show WD badge or number
+      const rankCell = isWD
+        ? `<span style="font-size:7pt;font-weight:700;color:#fff;background:#d97706;padding:1px 4px;border-radius:3px">WD</span>`
+        : `<span style="font-size:8pt;color:#6b7280;font-weight:700;margin-right:4px">${idx + 1}.</span>`;
+
+      // WD annotation after name
+      const wdAnnotation = isWD && p.wdHole
+        ? `<br><span style="font-size:7pt;color:#d97706;font-weight:600">After H${p.wdHole}</span>`
+        : isWD && !p.wdHole
+          ? `<br><span style="font-size:7pt;color:#d97706;font-weight:600">Withdrawn</span>`
+          : '';
+
+      const rowBg = isWD ? 'opacity:0.7' : '';
 
       return `
-        <tr>
-          <td style="padding:3px 6px;border:1px solid #d6e4ef;background:#fff;font-weight:500;min-width:140px">
-            <span style="font-size:8pt;color:#6b7280;font-weight:700;margin-right:4px">${idx + 1}.</span>
+        <tr style="${rowBg}">
+          <td style="padding:3px 6px;border:1px solid #d6e4ef;background:${isWD ? '#fffbeb' : '#fff'};font-weight:500;min-width:140px">
+            ${rankCell}
             ${p.name}${p.handicap > 0 ? `<span style="font-size:8pt;color:#6b7280;margin-left:4px">(${p.handicap})</span>` : ''}
             ${p.groupLetter ? `<br><span style="font-size:7pt;color:#9ca3af">Grp ${p.groupLetter}</span>` : ''}
+            ${wdAnnotation}
           </td>
-          ${buildScoreCells(p.scores || [])}
+          ${buildScoreCells(p.scores || [], isWD, p.wdHole)}
           <td style="padding:3px 6px;text-align:center;background:#f3f4f6;border:1px solid #d6e4ef;font-weight:700">${brutHtml}</td>
         </tr>
-        <tr>
-          <td style="padding:1px 6px;border:1px solid #d6e4ef;background:#f9fafb;font-size:8pt;font-style:italic;color:#6b7280">Net</td>
-          <td colspan="${holes.length}" style="border:1px solid #d6e4ef;background:#f9fafb"></td>
+        <tr style="${rowBg}">
+          <td style="padding:1px 6px;border:1px solid #d6e4ef;background:${isWD ? '#fffbeb' : '#f9fafb'};font-size:8pt;font-style:italic;color:#6b7280">${isWD ? 'WD' : 'Net'}</td>
+          <td colspan="${holes.length}" style="border:1px solid #d6e4ef;background:${isWD ? '#fffbeb' : '#f9fafb'}"></td>
           <td style="padding:2px 6px;text-align:center;background:#f0f4f8;border:1px solid #d6e4ef;font-size:8pt;font-weight:600">${netHtml}</td>
         </tr>`;
     }).join('');
