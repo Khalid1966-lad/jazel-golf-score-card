@@ -49,7 +49,9 @@ import {
   Image as ImageIcon,
   Phone,
   GraduationCap,
-  Clipboard
+  Clipboard,
+  Ban,
+  Undo2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -157,6 +159,8 @@ interface Tournament {
     positionInGroup: number | null;
     teeTime: string | null;
     isScorer?: boolean;
+    withdrawn?: boolean;
+    wdHole?: number | null;
     user: {
       id: string;
       name: string | null;
@@ -174,6 +178,8 @@ interface TournamentParticipant {
   positionInGroup: number | null;
   teeTime: string | null;
   isScorer?: boolean;
+  withdrawn?: boolean;
+  wdHole?: number | null;
   user: {
     id: string;
     name: string | null;
@@ -259,6 +265,9 @@ export default function AdminPage() {
     adminPhone: '',
   });
   const [participantSort, setParticipantSort] = useState<'handicap' | 'gross' | 'net'>('handicap');
+  const [wdDialogOpen, setWdDialogOpen] = useState(false);
+  const [wdTargetParticipant, setWdTargetParticipant] = useState<{ userId: string; name: string } | null>(null);
+  const [wdHoleInput, setWdHoleInput] = useState('');
   const [addParticipantDialogOpen, setAddParticipantDialogOpen] = useState(false);
   const [selectedFilterGroupId, setSelectedFilterGroupId] = useState<string | null>(null);
   const [groupFilterUserIds, setGroupFilterUserIds] = useState<string[]>([]);
@@ -2358,6 +2367,36 @@ export default function AdminPage() {
     });
   };
 
+  // Mark participant as withdrawn (WD)
+  const markWithdrawn = async (userId: string, wdHole?: number, revoke?: boolean) => {
+    if (!selectedTournament) return;
+    try {
+      const response = await fetch('/api/tournaments/withdraw', {
+        method: revoke ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId: selectedTournament.id, userId, wdHole }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({ title: 'Success', description: data.message || (revoke ? 'Withdrawal revoked' : 'Player marked as withdrawn') });
+        // Refresh tournament data
+        const tournResponse = await fetch(`/api/tournaments?id=${selectedTournament.id}&includeParticipants=true&_t=${Date.now()}`, { cache: 'no-store' });
+        if (tournResponse.ok) {
+          const data = await tournResponse.json();
+          if (data.tournament) {
+            setSelectedTournament(data.tournament);
+            setTournaments(prev => prev.map(t => t.id === data.tournament.id ? data.tournament : t));
+          }
+        }
+      } else {
+        const data = await response.json();
+        toast({ title: 'Error', description: data.error || 'Failed to update', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update withdrawal status', variant: 'destructive' });
+    }
+  };
+
   // Remove participant from tournament
   const removeParticipant = async (userId: string) => {
     if (!selectedTournament) return;
@@ -2815,10 +2854,23 @@ export default function AdminPage() {
     if (!selectedTournament?.participants) return [];
     const participants = [...selectedTournament.participants];
     
+    // WD players always go to the bottom; among WDs, sort by holes completed (more = higher)
+    participants.sort((a, b) => {
+      const aWD = a.withdrawn ? 1 : 0;
+      const bWD = b.withdrawn ? 1 : 0;
+      if (aWD !== bWD) return aWD - bWD;
+      if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+      return 0;
+    });
+    
     switch (participantSort) {
       case 'gross':
         // Sort by gross score (nulls last), then by handicap
         return participants.sort((a, b) => {
+          const aWD = a.withdrawn ? 1 : 0;
+          const bWD = b.withdrawn ? 1 : 0;
+          if (aWD !== bWD) return aWD - bWD;
+          if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
           if (a.grossScore === null && b.grossScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
           if (a.grossScore === null) return 1;
           if (b.grossScore === null) return -1;
@@ -2827,6 +2879,10 @@ export default function AdminPage() {
       case 'net':
         // Sort by net score (nulls last), then by handicap
         return participants.sort((a, b) => {
+          const aWD = a.withdrawn ? 1 : 0;
+          const bWD = b.withdrawn ? 1 : 0;
+          if (aWD !== bWD) return aWD - bWD;
+          if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
           if (a.netScore === null && b.netScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
           if (a.netScore === null) return 1;
           if (b.netScore === null) return -1;
@@ -2835,7 +2891,13 @@ export default function AdminPage() {
       case 'handicap':
       default:
         // Sort by handicap (lowest first)
-        return participants.sort((a, b) => (a.user.handicap || 0) - (b.user.handicap || 0));
+        return participants.sort((a, b) => {
+          const aWD = a.withdrawn ? 1 : 0;
+          const bWD = b.withdrawn ? 1 : 0;
+          if (aWD !== bWD) return aWD - bWD;
+          if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+          return (a.user.handicap || 0) - (b.user.handicap || 0);
+        });
     }
   };
 
@@ -3745,10 +3807,19 @@ export default function AdminPage() {
                               </div>
                               <div className="col-span-1"></div>
                             </div>
-                            {getSortedParticipants().map((participant, index) => (
-                              <div key={participant.userId} className="grid grid-cols-12 gap-2 p-3 items-center border-t min-w-[500px]">
-                                <div className="col-span-1 text-muted-foreground">{index + 1}</div>
-                                <div className="col-span-4 font-medium">{participant.user.name || 'Unnamed'}</div>
+                            {getSortedParticipants().map((participant, index) => {
+                              const isWD = participant.withdrawn;
+                              return (
+                              <div key={participant.userId} className={`grid grid-cols-12 gap-2 p-3 items-center border-t min-w-[500px] ${isWD ? 'opacity-60 bg-amber-50/50' : ''}`}>
+                                <div className="col-span-1 text-muted-foreground">
+                                  {isWD ? (
+                                    <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">WD</span>
+                                  ) : (index + 1)}
+                                </div>
+                                <div className="col-span-4 font-medium flex items-center gap-1.5">
+                                  {participant.user.name || 'Unnamed'}
+                                  {isWD && participant.wdHole && <span className="text-[10px] text-amber-600">(after H{participant.wdHole})</span>}
+                                </div>
                                 <div className="col-span-2 text-center">
                                   <Badge variant="outline" className="font-mono">
                                     {participant.user.handicap?.toFixed(1) || '-'}
@@ -3759,7 +3830,7 @@ export default function AdminPage() {
                                     type="number"
                                     className="w-full h-8 text-center"
                                     placeholder="-"
-                                    value={participant.grossScore ?? ''}
+                                    value={isWD ? (participant.grossScore ?? '') : (participant.grossScore ?? '')}
                                     onChange={(e) => {
                                       const val = e.target.value ? parseInt(e.target.value) : null;
                                       const updated = selectedTournament.participants?.map(p =>
@@ -3773,7 +3844,7 @@ export default function AdminPage() {
                                       const val = e.target.value ? parseInt(e.target.value) : null;
                                       updateParticipantScore(participant.userId, val, participant.netScore);
                                     }}
-                                    disabled={selectedTournament.status === 'completed'}
+                                    disabled={selectedTournament.status === 'completed' || isWD}
                                   />
                                 </div>
                                 <div className="col-span-2">
@@ -3781,7 +3852,7 @@ export default function AdminPage() {
                                     type="number"
                                     className="w-full h-8 text-center"
                                     placeholder="-"
-                                    value={participant.netScore ?? ''}
+                                    value={isWD ? (participant.netScore ?? '') : (participant.netScore ?? '')}
                                     onChange={(e) => {
                                       const val = e.target.value ? parseInt(e.target.value) : null;
                                       const updated = selectedTournament.participants?.map(p =>
@@ -3795,14 +3866,44 @@ export default function AdminPage() {
                                       const val = e.target.value ? parseInt(e.target.value) : null;
                                       updateParticipantScore(participant.userId, participant.grossScore, val);
                                     }}
-                                    disabled={selectedTournament.status === 'completed'}
+                                    disabled={selectedTournament.status === 'completed' || isWD}
                                   />
                                 </div>
-                                <div className="col-span-1">
+                                <div className="col-span-1 flex gap-0.5">
+                                  {!isWD ? (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                      title="Mark as Withdrawn (WD)"
+                                      onClick={() => {
+                                        setWdTargetParticipant({ userId: participant.userId, name: participant.user.name || 'Player' });
+                                        setWdHoleInput('');
+                                        setWdDialogOpen(true);
+                                      }}
+                                      disabled={selectedTournament.status === 'completed'}
+                                    >
+                                      <Ban className="h-4 w-4" />
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      title="Revoke Withdrawal"
+                                      onClick={() => {
+                                        if (confirm(`Revoke withdrawal for ${participant.user.name || 'this player'}?`)) {
+                                          markWithdrawn(participant.userId, undefined, true);
+                                        }
+                                      }}
+                                    >
+                                      <Undo2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="text-red-600 hover:text-red-700"
+                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                                     onClick={() => removeParticipant(participant.userId)}
                                     disabled={selectedTournament.status === 'completed'}
                                   >
@@ -3810,13 +3911,69 @@ export default function AdminPage() {
                                   </Button>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         ) : (
                           <p className="text-muted-foreground text-center py-8">No participants yet</p>
                         )}
                       </div>
                     </TabsContent>
+
+                    {/* WD (Withdrawal) Dialog */}
+                    <Dialog open={wdDialogOpen} onOpenChange={(open) => { setWdDialogOpen(open); if (!open) setWdTargetParticipant(null); }}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <Ban className="h-5 w-5 text-amber-600" />
+                            Mark Player as Withdrawn (WD)
+                          </DialogTitle>
+                          <DialogDescription>
+                            This will preserve existing scores and rank the player at the bottom of the leaderboard. This action can be revoked later.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-2">
+                          <div className="bg-muted/50 rounded-lg p-3">
+                            <p className="text-sm font-medium">{wdTargetParticipant?.name || 'Player'}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Completed scores will be preserved. Remaining holes will show as WD.</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm">Withdrawal Hole <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={18}
+                              placeholder="e.g. 12 — leave blank if unknown"
+                              value={wdHoleInput}
+                              onChange={(e) => setWdHoleInput(e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">Enter the last hole the player completed. Used for ranking among WD players.</p>
+                          </div>
+                        </div>
+                        <DialogFooter className="gap-2 sm:gap-0">
+                          <Button variant="outline" onClick={() => { setWdDialogOpen(false); setWdTargetParticipant(null); }}>
+                            Cancel
+                          </Button>
+                          <Button
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                            onClick={async () => {
+                              if (!wdTargetParticipant) return;
+                              const hole = wdHoleInput ? parseInt(wdHoleInput) : undefined;
+                              if (hole !== undefined && (isNaN(hole) || hole < 1 || hole > 18)) {
+                                toast({ title: 'Invalid', description: 'Hole must be between 1 and 18', variant: 'destructive' });
+                                return;
+                              }
+                              await markWithdrawn(wdTargetParticipant.userId, hole);
+                              setWdDialogOpen(false);
+                              setWdTargetParticipant(null);
+                            }}
+                          >
+                            <Ban className="h-4 w-4 mr-1.5" />
+                            Confirm WD
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
 
                     {/* Groups Tab */}
                     <TabsContent value="groups" className="space-y-4">
@@ -3990,7 +4147,8 @@ export default function AdminPage() {
                                           <span className="text-sm text-muted-foreground w-4">{position}.</span>
                                           {participant ? (
                                             <>
-                                              <span className="flex-1 text-sm truncate">{participant.user.name || 'Unnamed'}</span>
+                                              <span className={`flex-1 text-sm truncate ${participant.withdrawn ? 'line-through opacity-60' : ''}`}>{participant.user.name || 'Unnamed'}</span>
+                                              {participant.withdrawn && <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1 rounded">WD</span>}
                                               {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
                                               <Badge variant="outline" className="text-xs">
                                                 {participant.user.handicap?.toFixed(1) || '-'}

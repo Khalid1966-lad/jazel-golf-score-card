@@ -395,6 +395,8 @@ model TournamentParticipant {
   scoredAt        DateTime? // When this player's scores were last updated by a scorer
   lockedAt        DateTime? // When admin locked this player's scores (immutable)
   scoreSnapshot   String?   // JSON: current grossScore/netScore when locked
+  withdrawn       Boolean  @default(false) // Player withdrew from tournament (WD)
+  wdHole          Int?     // Hole number where player withdrew (for display purposes)
   
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

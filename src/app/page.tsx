@@ -14,7 +14,7 @@ import {
   Moon, CloudMoon, Sunrise, Sunset, Bell, Mail, Calendar, BookOpen,
   Map as MapIcon, Flag, Medal, CheckCircle, Wrench, Info, Phone, Globe, Share2, GraduationCap, Mail as MailIcon, Eye, EyeOff, Filter,
   LayoutGrid, List as ListIcon, ClipboardList, MessageCircle, Pencil,
-  Clipboard, Radio, Zap, Lock, Unlock, Table2, Printer
+  Clipboard, Radio, Zap, Lock, Unlock, Table2, Printer, Ban, Undo2
 } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -306,6 +306,8 @@ interface TournamentParticipant {
   scoredAt?: string;
   lockedAt?: string;
   scoreSnapshot?: string;
+  withdrawn?: boolean;
+  wdHole?: number | null;
   user: {
     id: string;
     name: string | null;
@@ -2342,6 +2344,29 @@ export default function JazelApp() {
       setLockingGroup(null);
     }
   }, [user, fetchTournamentWithParticipants]);
+
+  // Mark a tournament participant as withdrawn (WD)
+  const markWithdrawn = useCallback(async (tournamentId: string, userId: string, wdHole?: number, revoke?: boolean) => {
+    try {
+      const url = revoke
+        ? '/api/tournaments/withdraw'
+        : '/api/tournaments/withdraw';
+      const res = await fetch(url, {
+        method: revoke ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId, userId, wdHole }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || (revoke ? 'Withdrawal revoked' : 'Player marked as withdrawn'));
+        await fetchTournamentWithParticipants(tournamentId);
+      } else {
+        toast.error(data.error || 'Failed to update');
+      }
+    } catch {
+      toast.error('Failed to update withdrawal status');
+    }
+  }, [fetchTournamentWithParticipants]);
 
   // Start a new tournament scoring round
   const startTournamentScoring = useCallback(async (tournamentId: string, groupLetter: string) => {
@@ -7872,6 +7897,14 @@ export default function JazelApp() {
                             return 'font-semibold';
                           };
                           const sorted = [...selectedTournament.participants].sort((a, b) => {
+                            // WD players always go to the bottom; among WDs, sort by holes completed (more = higher)
+                            const aWD = a.withdrawn ? 1 : 0;
+                            const bWD = b.withdrawn ? 1 : 0;
+                            if (aWD !== bWD) return aWD - bWD;
+                            if (aWD && bWD) {
+                              // Among WDs: player who completed more holes ranks higher
+                              return (b.wdHole || 0) - (a.wdHole || 0);
+                            }
                             if (participantSort === 'gross') {
                               if (a.grossScore === null && b.grossScore === null) return (a.user.handicap || 0) - (b.user.handicap || 0);
                               if (a.grossScore === null) return 1;
@@ -7889,13 +7922,19 @@ export default function JazelApp() {
                           return sorted.map((participant, index) => {
                             const brut = participant.grossScore;
                             const net = participant.netScore;
+                            const isWD = participant.withdrawn;
                             return (
-                            <div key={participant.userId} className="grid grid-cols-12 gap-3 p-3 items-center border-t">
-                              <div className="col-span-1 text-muted-foreground font-medium">{index + 1}</div>
+                            <div key={participant.userId} className={`grid grid-cols-12 gap-3 p-3 items-center border-t ${isWD ? 'opacity-60 bg-amber-50/50' : ''}`}>
+                              <div className="col-span-1 text-muted-foreground font-medium">
+                                {isWD ? (
+                                  <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">WD</span>
+                                ) : (index + 1)}
+                              </div>
                               <div className="col-span-3 font-medium flex items-center gap-1.5">
                                 {participant.lockedAt && <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Score validated by admin" />}
                                 {participant.user.name || 'Unnamed'}
                                 {participant.isScorer && <span className="text-xs" title="Scorer">📋</span>}
+                                {isWD && participant.wdHole && <span className="text-[10px] text-amber-600">(after H{participant.wdHole})</span>}
                               </div>
                               <div className="col-span-1 text-center">
                                 {participant.groupLetter ? (
@@ -7919,7 +7958,43 @@ export default function JazelApp() {
                                   {net != null ? formatDiff(net) : '-'}
                                 </span>
                               </div>
-                              <div className="col-span-1"></div>
+                              <div className="col-span-1 flex justify-center">
+                                {user?.id === selectedTournament?.adminId && !isWD && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-amber-500 hover:text-amber-700 hover:bg-amber-50"
+                                    onClick={() => {
+                                      const hole = prompt('Enter the hole number where the player withdrew (e.g. 12):');
+                                      if (hole === null) return;
+                                      const holeNum = parseInt(hole);
+                                      if (isNaN(holeNum) || holeNum < 1 || holeNum > 18) {
+                                        toast.error('Please enter a valid hole number (1-18)');
+                                        return;
+                                      }
+                                      markWithdrawn(selectedTournament.id, participant.userId, holeNum);
+                                    }}
+                                    title="Mark as Withdrawn"
+                                  >
+                                    <Ban className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                                {user?.id === selectedTournament?.adminId && isWD && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-green-600 hover:text-green-800 hover:bg-green-50"
+                                    onClick={() => {
+                                      if (confirm('Revoke withdrawal for this player?')) {
+                                        markWithdrawn(selectedTournament.id, participant.userId, undefined, true);
+                                      }
+                                    }}
+                                    title="Revoke Withdrawal"
+                                  >
+                                    <Undo2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                             );
                           });
@@ -11490,6 +11565,7 @@ export default function JazelApp() {
                   <tbody>
                     {scorecardData.players?.map((player: any, pIdx: number) => {
                       const hasScores = player.scores?.some((s: number | null) => s !== null);
+                      const isWD = player.withdrawn || false;
                       const brut = player.gross; // brut vs par (same as leaderboard grossScore)
                       const net = player.net; // brut vs par - handicap (same as leaderboard netScore)
                       const brutStr = brut > 0 ? `+${brut}` : brut === 0 ? 'E' : `${brut}`;
@@ -11497,24 +11573,39 @@ export default function JazelApp() {
                       return (
                         <Fragment key={pIdx}>
                           {/* Player Name Row — Raw strokes per hole + Brut total */}
-                          <tr className="border-t" style={{borderColor: '#d6e4ef'}}>
-                            <td className="sticky left-0 z-10 px-2 py-1.5 border-r font-medium" style={{borderColor: '#d6e4ef', backgroundColor: '#ffffff'}}>
+                          <tr className={`border-t ${isWD ? 'opacity-60' : ''}`} style={{borderColor: '#d6e4ef'}}>
+                            <td className="sticky left-0 z-10 px-2 py-1.5 border-r font-medium" style={{borderColor: '#d6e4ef', backgroundColor: isWD ? '#fffbeb' : '#ffffff'}}>
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] font-bold text-muted-foreground w-4 text-right flex-shrink-0">{pIdx + 1}</span>
                                 <span className="truncate" title={player.name}>{player.name}</span>
+                                {isWD && <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1 rounded shrink-0">WD</span>}
                                 {player.handicap > 0 && (
                                   <span className="text-[10px] text-muted-foreground whitespace-nowrap">({player.handicap})</span>
                                 )}
                               </div>
-                              {player.groupLetter && (
-                                <div className="text-[10px] text-muted-foreground pl-4">Grp {player.groupLetter}</div>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {player.groupLetter && (
+                                  <div className="text-[10px] text-muted-foreground pl-4">Grp {player.groupLetter}</div>
+                                )}
+                                {isWD && player.wdHole && (
+                                  <div className="text-[10px] text-amber-600 pl-4">After H{player.wdHole}</div>
+                                )}
+                              </div>
                             </td>
                             {player.scores?.map((score: number | null, sIdx: number) => {
                               const hole = scorecardData.holes?.[sIdx];
+                              const holeNum = hole?.number || (sIdx + 1);
                               const par = hole?.par || 4;
                               let bgClass = 'bg-white';
                               let textClass = '';
+                              // WD player: holes after wdHole show WD
+                              if (isWD && player.wdHole && holeNum > player.wdHole) {
+                                return (
+                                  <td key={sIdx} className="px-1 py-1 text-center font-medium bg-amber-50 text-amber-500 text-[10px]">
+                                    WD
+                                  </td>
+                                );
+                              }
                               if (score !== null) {
                                 const diff = score - par;
                                 if (diff <= -2) { bgClass = 'bg-emerald-100'; textClass = 'text-emerald-700'; }
@@ -11538,13 +11629,15 @@ export default function JazelApp() {
                             </td>
                           </tr>
                           {/* Net Row — Net total only */}
-                          <tr className="border-t border-b" style={{borderColor: '#d6e4ef'}}>
-                            <td className="sticky left-0 z-10 px-2 py-1 border-r text-[10px] text-muted-foreground italic" style={{borderColor: '#d6e4ef', backgroundColor: '#fafbfc'}}>
-                              Net
+                          <tr className={`border-t border-b ${isWD ? 'opacity-60' : ''}`} style={{borderColor: '#d6e4ef'}}>
+                            <td className="sticky left-0 z-10 px-2 py-1 border-r text-[10px] text-muted-foreground italic" style={{borderColor: '#d6e4ef', backgroundColor: isWD ? '#fffbeb' : '#fafbfc'}}>
+                              {isWD ? 'WD' : 'Net'}
                             </td>
-                            <td colSpan={scorecardData.holes?.length || 18} className="border-r" style={{borderColor: '#d6e4ef', backgroundColor: '#fafbfc'}}></td>
+                            <td colSpan={scorecardData.holes?.length || 18} className="border-r" style={{borderColor: '#d6e4ef', backgroundColor: isWD ? '#fffbeb' : '#fafbfc'}}></td>
                             <td className="px-2 py-0.5 text-center text-[10px] font-semibold border-l" style={{borderColor: '#d6e4ef', backgroundColor: '#f0f4f8'}}>
-                              {hasScores ? (
+                              {isWD ? (
+                                <span className="text-amber-600">WD</span>
+                              ) : hasScores ? (
                                 <span className={net < 0 ? 'text-green-600' : net > 0 ? 'text-red-500' : 'text-muted-foreground'}>
                                   {netStr}
                                 </span>

@@ -126,6 +126,11 @@ export async function GET(request: NextRequest) {
     const leaderboard = sortedParticipants
       .filter(p => p.grossScore !== null)
       .sort((a, b) => {
+        // WD players go to bottom
+        const aWD = a.withdrawn ? 1 : 0;
+        const bWD = b.withdrawn ? 1 : 0;
+        if (aWD !== bWD) return aWD - bWD;
+        if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
         if (a.grossScore !== null && b.grossScore !== null) {
           return a.grossScore - b.grossScore;
         }
@@ -133,13 +138,14 @@ export async function GET(request: NextRequest) {
       });
 
     if (leaderboard.length > 0) {
-      const leaderboardHeader = ['Position', 'Player Name', 'Handicap', 'Brut', 'Net'];
+      const leaderboardHeader = ['Position', 'Player Name', 'Handicap', 'Brut', 'Net', 'Status'];
       const leaderboardData = leaderboard.map((p, index) => [
-        index + 1,
+        p.withdrawn ? 'WD' : index + 1,
         p.user.name || 'Unknown',
         p.user.handicap || 0,
         p.grossScore || '',
-        p.netScore || ''
+        p.netScore || '',
+        p.withdrawn ? `WD${p.wdHole ? ` after H${p.wdHole}` : ''}` : ''
       ]);
 
       const wsLeaderboard = XLSX.utils.aoa_to_sheet([
@@ -152,7 +158,8 @@ export async function GET(request: NextRequest) {
         { wch: 30 },  // Player Name
         { wch: 12 },  // Handicap
         { wch: 10 },  // Brut
-        { wch: 10 }   // Net
+        { wch: 10 },  // Net
+        { wch: 15 }   // Status
       ];
 
       XLSX.utils.book_append_sheet(wb, wsLeaderboard, 'Leaderboard (by Brut)');
@@ -162,6 +169,10 @@ export async function GET(request: NextRequest) {
     const netLeaderboard = sortedParticipants
       .filter(p => p.netScore !== null)
       .sort((a, b) => {
+        const aWD = a.withdrawn ? 1 : 0;
+        const bWD = b.withdrawn ? 1 : 0;
+        if (aWD !== bWD) return aWD - bWD;
+        if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
         if (a.netScore !== null && b.netScore !== null) {
           return a.netScore - b.netScore;
         }
@@ -169,13 +180,14 @@ export async function GET(request: NextRequest) {
       });
 
     if (netLeaderboard.length > 0) {
-      const netLeaderboardHeader = ['Position', 'Player Name', 'Handicap', 'Net', 'Brut'];
+      const netLeaderboardHeader = ['Position', 'Player Name', 'Handicap', 'Net', 'Brut', 'Status'];
       const netLeaderboardData = netLeaderboard.map((p, index) => [
-        index + 1,
+        p.withdrawn ? 'WD' : index + 1,
         p.user.name || 'Unknown',
         p.user.handicap || 0,
         p.netScore || '',
-        p.grossScore || ''
+        p.grossScore || '',
+        p.withdrawn ? `WD${p.wdHole ? ` after H${p.wdHole}` : ''}` : ''
       ]);
 
       const wsNetLeaderboard = XLSX.utils.aoa_to_sheet([
@@ -188,7 +200,8 @@ export async function GET(request: NextRequest) {
         { wch: 30 },  // Player Name
         { wch: 12 },  // Handicap
         { wch: 10 },  // Net
-        { wch: 10 }   // Brut
+        { wch: 10 },  // Brut
+        { wch: 15 }   // Status
       ];
 
       XLSX.utils.book_append_sheet(wb, wsNetLeaderboard, 'Leaderboard (by Net)');

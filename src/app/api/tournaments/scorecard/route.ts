@@ -131,6 +131,8 @@ export async function GET(request: NextRequest) {
       scores: (number | null)[];
       gross: number;
       net: number;
+      withdrawn?: boolean;
+      wdHole?: number | null;
     }>();
 
     // No longer needed — we use the same formula as recalculate
@@ -302,7 +304,15 @@ export async function GET(request: NextRequest) {
 
     // Also add participants who have grossScore/netScore but no detailed hole scores
     for (const p of participants) {
-      if (playerMap.has(p.userId)) continue;
+      if (playerMap.has(p.userId)) {
+        // Even if already processed, attach WD info
+        const existing = playerMap.get(p.userId)!;
+        if (p.withdrawn) {
+          existing.withdrawn = true;
+          existing.wdHole = p.wdHole;
+        }
+        continue;
+      }
       if (p.grossScore === null && p.netScore === null) continue;
 
       playerMap.set(p.userId, {
@@ -312,11 +322,20 @@ export async function GET(request: NextRequest) {
         scores: new Array(totalHoles).fill(null) as (number | null)[],
         gross: p.grossScore || 0,
         net: p.netScore || 0,
+        withdrawn: p.withdrawn || undefined,
+        wdHole: p.wdHole || undefined,
       });
     }
 
-    // Convert to array and sort by netScore (nulls last)
+    // Convert to array and sort by netScore (nulls last), WD players at bottom
     const players = Array.from(playerMap.values()).sort((a, b) => {
+      // WD players go to bottom
+      const aWD = a.withdrawn ? 1 : 0;
+      const bWD = b.withdrawn ? 1 : 0;
+      if (aWD !== bWD) return aWD - bWD;
+      // Among WDs, player with more holes completed ranks higher
+      if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+
       const aNet = a.scores.some(s => s !== null) ? a.net : Infinity;
       const bNet = b.scores.some(s => s !== null) ? b.net : Infinity;
       return aNet - bNet;
