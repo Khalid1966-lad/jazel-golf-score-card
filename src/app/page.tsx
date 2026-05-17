@@ -1822,11 +1822,15 @@ export default function JazelApp() {
     const playerRows = sortedPlayers.map((p: any, idx: number) => {
       const hasScores = p.scores?.some((s: number | null) => s !== null && s > 0);
       const isWD = p.withdrawn || false;
+      const sfPts = calcStableford(p.scores || [], holes);
       const brutHtml = hasScores
         ? `<span style="color:${(p.gross as number) < 0 ? '#059669' : (p.gross as number) > 0 ? '#ef4444' : '#000'}">${brutStr(p.gross)}</span>`
         : '-';
       const netHtml = hasScores
         ? `<span style="color:${(p.net as number) < 0 ? '#059669' : (p.net as number) > 0 ? '#ef4444' : '#6b7280'}">${brutStr(p.net)}</span>`
+        : isWD ? '<span style="color:#d97706;font-weight:600">WD</span>' : '-';
+      const sfHtml = hasScores
+        ? `<span style="color:#059669;font-weight:700">${sfPts}</span>`
         : isWD ? '<span style="color:#d97706;font-weight:600">WD</span>' : '-';
 
       // Rank cell: show WD badge or number
@@ -1853,11 +1857,13 @@ export default function JazelApp() {
           </td>
           ${buildScoreCells(p.scores || [], isWD, p.wdHole)}
           <td style="padding:3px 6px;text-align:center;background:#f3f4f6;border:1px solid #d6e4ef;font-weight:700">${brutHtml}</td>
+          <td style="padding:3px 6px;text-align:center;background:#ecfdf5;border:1px solid #d6e4ef;font-weight:700">${sfHtml}</td>
         </tr>
         <tr style="${rowBg}">
           <td style="padding:1px 6px;border:1px solid #d6e4ef;background:${isWD ? '#fffbeb' : '#f9fafb'};font-size:8pt;font-style:italic;color:#6b7280">${isWD ? 'WD' : 'Net'}</td>
           <td colspan="${holes.length}" style="border:1px solid #d6e4ef;background:${isWD ? '#fffbeb' : '#f9fafb'}"></td>
           <td style="padding:2px 6px;text-align:center;background:#f0f4f8;border:1px solid #d6e4ef;font-size:8pt;font-weight:600">${netHtml}</td>
+          <td style="padding:2px 6px;text-align:center;background:#ecfdf5;border:1px solid #d6e4ef;font-size:8pt;font-weight:600">${hasScores ? sfPts : ''}</td>
         </tr>`;
     }).join('');
 
@@ -1882,7 +1888,7 @@ export default function JazelApp() {
     <span class="meta">📅 ${dateStr}</span>
     <span class="meta">${t.format || ''}</span>
     ${scorecardData.isFrozen ? '<span style="color:#059669;font-weight:600">🔒 Frozen</span>' : ''}
-    <span style="color:#39638b;font-weight:600">Sorted by ${sortBy === 'gross' ? 'Gross' : 'Net'}</span>
+    <span style="color:#39638b;font-weight:600">Sorted by ${sortBy === 'gross' ? 'Gross' : sortBy === 'stableford' ? 'Stableford' : 'Net'}</span>
   </div>
   <table>
     <thead>
@@ -1890,15 +1896,18 @@ export default function JazelApp() {
         <th style="padding:4px 6px;text-align:left;min-width:140px;background:#e8ecf1"># Player</th>
         ${holes.map(h => `<th style="padding:4px 2px;text-align:center;min-width:24px;background:#e8ecf1;font-size:9pt">${h.number}</th>`).join('')}
         <th style="padding:4px 6px;text-align:center;min-width:40px;background:#39638b;color:#fff;font-weight:700">Brut</th>
+        <th style="padding:4px 6px;text-align:center;min-width:44px;background:#059669;color:#fff;font-weight:700">SF</th>
       </tr>
       <tr style="background:#f1f5f9">
         <td style="padding:4px 6px;font-weight:600;background:#f1f5f9;border:1px solid #d6e4ef">Par</td>
         ${holes.map(h => `<td style="padding:4px 2px;text-align:center;background:#f1f5f9;font-size:9pt">${h.par}</td>`).join('')}
         <td style="padding:4px 6px;text-align:center;background:#e2e8f0;font-weight:700">${totalPar}</td>
+        <td style="padding:4px 6px;text-align:center;background:#d1fae5;font-weight:700">${totalPar * 2}</td>
       </tr>
       <tr style="background:#e8f0f8">
         <td style="padding:4px 6px;font-weight:600;background:#e8f0f8;border:1px solid #d6e4ef">HCP</td>
         ${holes.map(h => `<td style="padding:4px 2px;text-align:center;background:#e8f0f8;font-size:9pt">${h.hcpIndex || '-'}</td>`).join('')}
+        <td style="padding:4px 6px;text-align:center;background:#dce6f0"></td>
         <td style="padding:4px 6px;text-align:center;background:#dce6f0"></td>
       </tr>
     </thead>
@@ -11684,13 +11693,19 @@ export default function JazelApp() {
                     onClick={() => setScorecardSort('net')}
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${scorecardSort === 'net' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground hover:bg-gray-50'}`}
                   >
-                    Sort by Net
+                    Net
                   </button>
                   <button
                     onClick={() => setScorecardSort('gross')}
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${scorecardSort === 'gross' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground hover:bg-gray-50'}`}
                   >
-                    Sort by Brut
+                    Brut
+                  </button>
+                  <button
+                    onClick={() => setScorecardSort('stableford')}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${scorecardSort === 'stableford' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground hover:bg-gray-50'}`}
+                  >
+                    Stableford
                   </button>
                 </div>
               </div>
@@ -11712,6 +11727,9 @@ export default function JazelApp() {
                       <th className="sticky top-0 z-[20] h-7 px-2 text-center font-bold" style={{minWidth: '44px', backgroundColor: '#39638b', color: 'white'}}>
                         Brut
                       </th>
+                      <th className="sticky top-0 z-[20] h-7 px-2 text-center font-bold" style={{minWidth: '36px', backgroundColor: '#059669', color: 'white'}}>
+                        SF
+                      </th>
                     </tr>
                     {/* Par Row */}
                     <tr style={{backgroundColor: '#f1f5f9'}}>
@@ -11726,6 +11744,9 @@ export default function JazelApp() {
                       <td className="sticky z-[20] h-7 px-2 text-center font-bold" style={{top: '28px', backgroundColor: '#e2e8f0'}}>
                         {scorecardData.holes?.reduce((sum: number, h: any) => sum + h.par, 0)}
                       </td>
+                      <td className="sticky z-[20] h-7 px-2 text-center font-bold" style={{top: '28px', backgroundColor: '#d1fae5'}}>
+                        {scorecardData.holes?.reduce((sum: number, h: any) => sum + h.par, 0) * 2}
+                      </td>
                     </tr>
                     {/* HCP Row */}
                     <tr style={{backgroundColor: '#e8f0f8'}}>
@@ -11738,6 +11759,7 @@ export default function JazelApp() {
                         </td>
                       ))}
                       <td className="sticky z-[20] h-7 px-2 text-center" style={{top: '56px', backgroundColor: '#dce6f0'}}></td>
+                      <td className="sticky z-[20] h-7 px-2 text-center" style={{top: '56px', backgroundColor: '#dce6f0'}}></td>
                     </tr>
                   </thead>
                   <tbody>
@@ -11746,6 +11768,26 @@ export default function JazelApp() {
                       const bWD = b.withdrawn ? 1 : 0;
                       if (aWD !== bWD) return aWD - bWD;
                       if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+                      if (scorecardSort === 'stableford') {
+                        const calcSF = (scores: (number | null)[]) => {
+                          let pts = 0;
+                          scores.forEach((s, i) => {
+                            if (s !== null && s > 0) {
+                              const par = scorecardData.holes?.[i]?.par || 4;
+                              const diff = s - par;
+                              if (diff <= -3) pts += 5;
+                              else if (diff === -2) pts += 4;
+                              else if (diff === -1) pts += 3;
+                              else if (diff === 0) pts += 2;
+                              else if (diff === 1) pts += 1;
+                            }
+                          });
+                          return pts;
+                        };
+                        const aPts = calcSF(a.scores || []);
+                        const bPts = calcSF(b.scores || []);
+                        return bPts - aPts;
+                      }
                       const aVal = scorecardSort === 'gross' ? a.gross : a.net;
                       const bVal = scorecardSort === 'gross' ? b.gross : b.net;
                       if (aVal === null && bVal === null) return (a.handicap || 0) - (b.handicap || 0);
@@ -11755,10 +11797,23 @@ export default function JazelApp() {
                     }).map((player: any, pIdx: number) => {
                       const hasScores = player.scores?.some((s: number | null) => s !== null);
                       const isWD = player.withdrawn || false;
-                      const brut = player.gross; // brut vs par (same as leaderboard grossScore)
-                      const net = player.net; // brut vs par - handicap (same as leaderboard netScore)
+                      const brut = player.gross;
+                      const net = player.net;
                       const brutStr = brut > 0 ? `+${brut}` : brut === 0 ? 'E' : `${brut}`;
                       const netStr = net > 0 ? `+${net}` : net === 0 ? 'E' : `${net}`;
+                      // Stableford calculation
+                      let sfPoints = 0;
+                      (player.scores || []).forEach((s: number | null, i: number) => {
+                        if (s !== null && s > 0) {
+                          const par = scorecardData.holes?.[i]?.par || 4;
+                          const diff = s - par;
+                          if (diff <= -3) sfPoints += 5;
+                          else if (diff === -2) sfPoints += 4;
+                          else if (diff === -1) sfPoints += 3;
+                          else if (diff === 0) sfPoints += 2;
+                          else if (diff === 1) sfPoints += 1;
+                        }
+                      });
                       return (
                         <Fragment key={pIdx}>
                           {/* Player Name Row — Raw strokes per hole + Brut total */}
@@ -11824,6 +11879,13 @@ export default function JazelApp() {
                                 </span>
                               ) : '-'}
                             </td>
+                            <td className="px-2 py-1 text-center font-bold bg-emerald-50 border-l" style={{borderColor: '#d6e4ef'}}>
+                              {isWD ? (
+                                <span className="text-amber-600 text-[10px]">WD</span>
+                              ) : hasScores ? (
+                                <span className="text-emerald-600">{sfPoints}</span>
+                              ) : '-'}
+                            </td>
                           </tr>
                           {/* Net Row — Net total only */}
                           <tr className={`border-t border-b ${isWD ? 'opacity-60' : ''}`} style={{borderColor: '#d6e4ef'}}>
@@ -11839,6 +11901,9 @@ export default function JazelApp() {
                                   {netStr}
                                 </span>
                               ) : '-'}
+                            </td>
+                            <td className="px-2 py-0.5 text-center text-[10px] font-semibold border-l" style={{borderColor: '#d6e4ef', backgroundColor: '#ecfdf5'}}>
+                              {hasScores ? sfPoints : ''}
                             </td>
                           </tr>
                         </Fragment>
@@ -12014,6 +12079,15 @@ export default function JazelApp() {
                 >
                   <Printer className="w-3.5 h-3.5 mr-1" />
                   Print Brut
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePrintScorecard('stableford')}
+                  style={{borderColor: '#059669', color: '#059669'}}
+                >
+                  <Printer className="w-3.5 h-3.5 mr-1" />
+                  Print Stableford
                 </Button>
                 </div>
               </div>
