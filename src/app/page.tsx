@@ -1743,11 +1743,11 @@ export default function JazelApp() {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [scorecardOpen, setScorecardOpen] = useState(false);
   const [scorecardData, setScorecardData] = useState<any>(null);
-  const [scorecardSort, setScorecardSort] = useState<'net' | 'gross'>('net');
+  const [scorecardSort, setScorecardSort] = useState<'net' | 'gross' | 'stableford'>('net');
   const [scorecardLoading, setScorecardLoading] = useState(false);
 
   // Print scorecard in a new window (bypasses Radix portal CSS issues)
-  const handlePrintScorecard = useCallback((sortBy: 'net' | 'gross' = 'net') => {
+  const handlePrintScorecard = useCallback((sortBy: 'net' | 'gross' | 'stableford' = 'net') => {
     if (!scorecardData) return;
     const t = scorecardData.tournament;
     const holes = scorecardData.holes || [];
@@ -1780,7 +1780,24 @@ export default function JazelApp() {
 
     const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
 
-    // Sort players: by net or gross score (best first), withdrawn players at the end
+    // Sort players: by net/gross/stableford (best first), withdrawn players at the end
+    const calcStableford = (scores: (number | null)[], holesArr: any[]) => {
+      let pts = 0;
+      scores.forEach((s, i) => {
+        if (s !== null && s > 0) {
+          const par = holesArr[i]?.par || 4;
+          const diff = s - par;
+          if (diff <= -3) pts += 5;      // Albatross
+          else if (diff === -2) pts += 4; // Eagle
+          else if (diff === -1) pts += 3; // Birdie
+          else if (diff === 0) pts += 2;  // Par
+          else if (diff === 1) pts += 1;  // Bogey
+          // Double bogey+ = 0
+        }
+      });
+      return pts;
+    };
+
     const sortedPlayers = [...players].sort((a: any, b: any) => {
       const aWD = a.withdrawn ? 1 : 0;
       const bWD = b.withdrawn ? 1 : 0;
@@ -1788,6 +1805,11 @@ export default function JazelApp() {
       if (aWD && bWD) {
         // Among WDs: player who completed more holes ranks higher
         return (b.wdHole || 0) - (a.wdHole || 0);
+      }
+      if (sortBy === 'stableford') {
+        const aPts = calcStableford(a.scores || [], holes);
+        const bPts = calcStableford(b.scores || [], holes);
+        return bPts - aPts; // Higher Stableford = better
       }
       const aVal = sortBy === 'gross' ? a.gross : a.net;
       const bVal = sortBy === 'gross' ? b.gross : b.net;
