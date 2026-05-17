@@ -55,20 +55,54 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if there's already an active scoring round for this group
+    let existingScoresByUser = new Map<string, Map<number, any>>(); // userId -> holeNumber -> score
+    let existingCurrentHole = 1;
+
     try {
       const existingScoring = await db.tournamentScoringRound.findUnique({
         where: { tournamentId_groupLetter: { tournamentId, groupLetter } },
       });
 
       if (existingScoring && existingScoring.status === 'active') {
-        // If the active round belongs to a different scorer, abandon it so a new one can be created
+        // If the active round belongs to a different scorer, abandon it and preserve its scores
         if (existingScoring.scorerId !== scorerId) {
           console.log(`[Scoring] Scorer changed from ${existingScoring.scorerId} to ${scorerId} in group ${groupLetter}, abandoning old round`);
+
+          // Fetch old round's scores to carry over to new round
+          const oldRound = await db.round.findUnique({
+            where: { id: existingScoring.roundId },
+            include: { scores: true },
+          });
+
+          if (oldRound) {
+            existingCurrentHole = existingScoring.currentHole || 1;
+
+            // Build map: old playerIndex -> userId
+            const oldPlayerNames = oldRound.playerNames ? JSON.parse(oldRound.playerNames) : [];
+            const indexToUserId = new Map<number, string>();
+            indexToUserId.set(0, existingScoring.scorerId); // old scorer = playerIndex 0
+            oldPlayerNames.forEach((p: { userId?: string }, idx: number) => {
+              if (p.userId) indexToUserId.set(idx + 1, p.userId);
+            });
+
+            // Build map: userId -> (holeNumber -> scoreRecord)
+            (oldRound.scores || []).forEach((s: any) => {
+              if (s.strokes <= 0) return; // Skip unscored holes
+              const userId = indexToUserId.get(s.playerIndex);
+              if (!userId) return;
+              const userScores = existingScoresByUser.get(userId) || new Map<number, any>();
+              userScores.set(s.holeNumber, s);
+              existingScoresByUser.set(userId, userScores);
+            });
+
+            console.log(`[Scoring] Preserving scores for ${existingScoresByUser.size} players, currentHole: ${existingCurrentHole}`);
+          }
+
           await db.tournamentScoringRound.update({
             where: { id: existingScoring.id },
             data: { status: 'abandoned' },
           });
-          // Don't return — fall through to create a new scoring round below
+          // Don't return — fall through to create a new scoring round with preserved scores below
         } else {
           // Same scorer — return the existing scoring round
           const existingRound = await db.round.findUnique({
@@ -124,7 +158,35 @@ export async function POST(request: NextRequest) {
     const scorer = participants.find(p => p.userId === scorerId)!;
     const otherPlayers = participants.filter(p => p.userId !== scorerId);
 
-    // Create the Round record (scorer is the main player)
+    // Build new playerIndex mapping: userId -> new playerIndex
+    // playerIndex 0 = new scorer, 1+ = otherPlayers in order
+    const newUserIdToIndex = new Map<string, number>();
+    newUserIdToIndex.set(scorerId, 0);
+    otherPlayers.forEach((p, idx) => newUserIdToIndex.set(p.userId, idx + 1));
+
+    // Helper: get preserved score for a user on a hole, remapped to new playerIndex
+    const getPreservedScore = (userId: string, holeNumber: number, playerIndex: number) => {
+      const userScores = existingScoresByUser.get(userId);
+      if (!userScores) return null;
+      const oldScore = userScores.get(holeNumber);
+      if (!oldScore) return null;
+      return {
+        holeNumber,
+        strokes: oldScore.strokes,
+        putts: oldScore.putts || 0,
+        playerIndex,
+        penalties: oldScore.penalties || 0,
+        sandShots: oldScore.sandShots || 0,
+        chipShots: oldScore.chipShots || 0,
+        fairwayHit: oldScore.fairwayHit ?? null,
+        greenInReg: oldScore.greenInReg ?? null,
+        driveDistance: oldScore.driveDistance ?? null,
+      };
+    };
+
+    // Create the Round record (scorer is the main player) with preserved scores
+    const hasPreservedScores = existingScoresByUser.size > 0;
+
     const round = await db.round.create({
       data: {
         userId: scorerId,
@@ -145,30 +207,32 @@ export async function POST(request: NextRequest) {
         tournamentId,
         tournamentGroupLetter: groupLetter,
         scores: {
-          create: tournament.course.holes.flatMap(hole =>
-            // Main player scores (playerIndex 0) for all holes
-            [
-              {
+          create: tournament.course.holes.flatMap(hole => {
+            const allPlayersWithIndices = [
+              { userId: scorerId, playerIndex: 0 },
+              ...otherPlayers.map((p, idx) => ({ userId: p.userId, playerIndex: idx + 1 })),
+            ];
+
+            return allPlayersWithIndices.map(({ userId, playerIndex }) => {
+              // Try to get preserved score
+              const preserved = hasPreservedScores ? getPreservedScore(userId, hole.holeNumber, playerIndex) : null;
+              if (preserved) return preserved;
+
+              // No preserved score — default zero
+              return {
                 holeNumber: hole.holeNumber,
                 strokes: 0,
                 putts: 0,
-                playerIndex: 0,
-              },
-              // Additional player scores (playerIndex 1, 2, 3...)
-              ...otherPlayers.map((_, idx) => ({
-                holeNumber: hole.holeNumber,
-                strokes: 0,
-                putts: 0,
-                playerIndex: idx + 1,
-              })),
-            ]
-          ),
+                playerIndex,
+              };
+            });
+          }),
         },
       },
       include: { scores: { orderBy: { holeNumber: 'asc' } } },
     });
 
-    // Create the TournamentScoringRound link
+    // Create the TournamentScoringRound link — use preserved currentHole if scorer changed
     let scoringRound;
     try {
       scoringRound = await db.tournamentScoringRound.create({
@@ -178,7 +242,7 @@ export async function POST(request: NextRequest) {
           scorerId,
           roundId: round.id,
           status: 'active',
-          currentHole: 1,
+          currentHole: hasPreservedScores ? existingCurrentHole : 1,
         },
       });
     } catch {
@@ -190,7 +254,7 @@ export async function POST(request: NextRequest) {
         scorerId,
         roundId: round.id,
         status: 'active',
-        currentHole: 1,
+        currentHole: hasPreservedScores ? existingCurrentHole : 1,
       };
     }
 
