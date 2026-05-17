@@ -1743,6 +1743,7 @@ export default function JazelApp() {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [scorecardOpen, setScorecardOpen] = useState(false);
   const [scorecardData, setScorecardData] = useState<any>(null);
+  const [scorecardSort, setScorecardSort] = useState<'net' | 'gross'>('net');
   const [scorecardLoading, setScorecardLoading] = useState(false);
 
   // Print scorecard in a new window (bypasses Radix portal CSS issues)
@@ -11636,7 +11637,7 @@ export default function JazelApp() {
           {scorecardData && !scorecardLoading && (
             <div className="flex-1 flex flex-col min-h-0 gap-2 sm:gap-3 pt-1 sm:pt-2">
               {/* Tournament Header Info */}
-              <div className="flex flex-wrap items-center gap-4 text-sm p-3 rounded-lg" style={{backgroundColor: '#f0f6fc', borderColor: '#d6e4ef', border: '1px solid'}}>
+              <div className="flex flex-wrap items-center gap-3 text-sm p-3 rounded-lg" style={{backgroundColor: '#f0f6fc', borderColor: '#d6e4ef', border: '1px solid'}}>
                 <div className="flex items-center gap-1.5">
                   <Trophy className="w-4 h-4" style={{color: '#39638b'}} />
                   <span className="font-semibold">{scorecardData.tournament?.name}</span>
@@ -11656,6 +11657,20 @@ export default function JazelApp() {
                     Frozen
                   </Badge>
                 )}
+                <div className="flex items-center gap-1 bg-white rounded-md p-0.5 border" style={{borderColor: '#d6e4ef', marginLeft: 'auto'}}>
+                  <button
+                    onClick={() => setScorecardSort('net')}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${scorecardSort === 'net' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground hover:bg-gray-50'}`}
+                  >
+                    Sort by Net
+                  </button>
+                  <button
+                    onClick={() => setScorecardSort('gross')}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${scorecardSort === 'gross' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground hover:bg-gray-50'}`}
+                  >
+                    Sort by Brut
+                  </button>
+                </div>
               </div>
 
               {/* Scorecard Table */}
@@ -11704,7 +11719,18 @@ export default function JazelApp() {
                     </tr>
                   </thead>
                   <tbody>
-                    {scorecardData.players?.map((player: any, pIdx: number) => {
+                    {[...(scorecardData.players || [])].sort((a: any, b: any) => {
+                      const aWD = a.withdrawn ? 1 : 0;
+                      const bWD = b.withdrawn ? 1 : 0;
+                      if (aWD !== bWD) return aWD - bWD;
+                      if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+                      const aVal = scorecardSort === 'gross' ? a.gross : a.net;
+                      const bVal = scorecardSort === 'gross' ? b.gross : b.net;
+                      if (aVal === null && bVal === null) return (a.handicap || 0) - (b.handicap || 0);
+                      if (aVal === null) return 1;
+                      if (bVal === null) return -1;
+                      return aVal - bVal;
+                    }).map((player: any, pIdx: number) => {
                       const hasScores = player.scores?.some((s: number | null) => s !== null);
                       const isWD = player.withdrawn || false;
                       const brut = player.gross; // brut vs par (same as leaderboard grossScore)
