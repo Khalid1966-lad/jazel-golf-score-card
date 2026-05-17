@@ -132,11 +132,33 @@ export async function POST(request: NextRequest) {
     for (const participant of participantsWithUser) {
       const totals = playerTotals.get(participant.userId);
 
-      // Skip locked participants — their scores are preserved from admin validation
-      if (participant.lockedAt) continue;
-
-      // Skip withdrawn (WD) participants — preserve their existing scores
-      if (participant.withdrawn) continue;
+      // For locked and WD participants: only fill in stablefordScore, don't touch their preserved scores
+      if (participant.lockedAt || participant.withdrawn) {
+        // Still calculate stableford from available hole data
+        let stablefordPts = 0;
+        const hcp = Math.floor(participant.lockedAt && participant.scoreSnapshot
+          ? JSON.parse(participant.scoreSnapshot).handicap || participant.user.handicap || 0
+          : totals?.handicap || participant.user.handicap || 0);
+        const strokes = totals?.perHoleStrokes || new Map<number, number>();
+        if (strokes.size > 0) {
+          strokes.forEach((s, holeNum) => {
+            const par = holeParMap.get(holeNum) || 4;
+            const holeSI = holeHcpIndexMap.get(holeNum) || 0;
+            const strokesRcvd = hcp > 0 ? (Math.floor(hcp / 18) + (holeSI <= (hcp % 18) ? 1 : 0)) : 0;
+            const netVsParHole = (s - strokesRcvd) - par;
+            if (netVsParHole <= -3) stablefordPts += 5;
+            else if (netVsParHole === -2) stablefordPts += 4;
+            else if (netVsParHole === -1) stablefordPts += 3;
+            else if (netVsParHole === 0) stablefordPts += 2;
+            else if (netVsParHole === 1) stablefordPts += 1;
+          });
+          await db.tournamentParticipant.update({
+            where: { tournamentId_userId: { tournamentId, userId: participant.userId } },
+            data: { stablefordScore: stablefordPts },
+          });
+        }
+        continue;
+      }
 
       if (!totals || !totals.found || totals.scoredHoles === 0) {
         // No scores found — reset (scorecard deleted or never scored)
@@ -155,13 +177,14 @@ export async function POST(request: NextRequest) {
         const netVsPar = Math.round((totals.brutVsPar - totals.handicap) * 10) / 10;
 
         // Calculate Stableford points using player handicap + hole Stroke Index
+        // Works for ALL players — hcp=0 just means no extra strokes received
         let stablefordPts = 0;
         const hcp = Math.floor(totals.handicap);
-        if (hcp > 0 && totals.perHoleStrokes.size > 0) {
+        if (totals.perHoleStrokes.size > 0) {
           totals.perHoleStrokes.forEach((strokes, holeNum) => {
             const par = holeParMap.get(holeNum) || 4;
             const holeSI = holeHcpIndexMap.get(holeNum) || 0;
-            const strokesRcvd = Math.floor(hcp / 18) + (holeSI <= (hcp % 18) ? 1 : 0);
+            const strokesRcvd = hcp > 0 ? (Math.floor(hcp / 18) + (holeSI <= (hcp % 18) ? 1 : 0)) : 0;
             const netVsParHole = (strokes - strokesRcvd) - par;
             if (netVsParHole <= -3) stablefordPts += 5;      // Albatross
             else if (netVsParHole === -2) stablefordPts += 4; // Eagle
@@ -179,7 +202,7 @@ export async function POST(request: NextRequest) {
           data: {
             grossScore: totals.brutVsPar,
             netScore: netVsPar,
-            stablefordScore: hcp > 0 ? stablefordPts : null,
+            stablefordScore: stablefordPts,
           },
         });
       }
