@@ -590,3 +590,35 @@ Stage Summary:
 - Map crash fixed - the "Locate" button now properly triggers GPS
 - When GPS is acquired, the button transforms into a distance badge showing meters/yards from tee with driver club icon
 - File changed: src/components/CourseMap.tsx (+21 lines)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Implement WD (Withdrawn) system for tournament mode
+
+Work Log:
+- Confirmed schema already has `withdrawn` (Boolean) and `wdHole` (Int?) on TournamentParticipant in all 3 schema files (sqlite, postgresql, main)
+- Confirmed withdraw API endpoint already exists at /api/tournaments/withdraw (POST=mark WD, DELETE=revoke)
+- Confirmed player page (page.tsx) already has full WD support: leaderboard sorting, badges, Ban/undo buttons, scorecard WD display
+- Confirmed scorecard API, recalculate API, and export API already handle WD
+- Added WD to admin page (src/app/admin/page.tsx):
+  - Added Ban, Undo2 icons to lucide-react imports
+  - Added withdrawn/wdHole to TournamentParticipant interface and Tournament.participants type
+  - Added wdDialogOpen, wdTargetParticipant, wdHoleInput state variables
+  - Added markWithdrawn() async function calling /api/tournaments/withdraw
+  - Updated getSortedParticipants() to sort WD players to bottom (among WDs: more holes = higher rank)
+  - Updated leaderboard rows: WD badge, amber styling, "(after H#)" annotation, scores locked
+  - Added Ban button for non-WD players, Undo2 button for WD players
+  - Added WD dialog with player name, optional hole input (1-18), cancel/confirm buttons
+  - Updated Groups tab: WD badge with strikethrough name styling
+- Lint passes: 0 errors, 1 pre-existing warning
+- Committed as c96c4ab and pushed to main
+
+Stage Summary:
+- WD system is now complete across admin panel and player-facing UI
+- Admin can mark any participant as withdrawn from the leaderboard (Ban icon) with optional hole number
+- Admin can revoke WD (Undo2 icon or from Groups tab)
+- WD players appear at bottom of leaderboard sorted by holes completed
+- Score inputs are locked for WD players (preserved)
+- Scorecard modal shows "WD" for holes after withdrawal hole
+- Excel export includes WD status column
+- All actions are revocable
