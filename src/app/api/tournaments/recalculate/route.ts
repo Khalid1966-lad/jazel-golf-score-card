@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Get all scoring rounds (including abandoned — round data still exists)
+    // NOTE: Only active and completed rounds are processed. Abandoned rounds are skipped
+    // to avoid double-counting when a scorer change creates a new round.
     const scoringRounds = await db.tournamentScoringRound.findMany({
       where: { tournamentId },
       include: {
@@ -62,6 +64,10 @@ export async function POST(request: NextRequest) {
     // Process each scoring round
     for (const sr of scoringRounds) {
       if (!sr.round) continue;
+
+      // Skip abandoned scoring rounds — their scores are superseded by the new active round
+      // to avoid double-counting when a scorer was changed mid-tournament
+      if (sr.status === 'abandoned') continue;
 
       const roundScores = sr.round.scores || [];
       const playerNames = sr.round.playerNames ? JSON.parse(sr.round.playerNames) : [];

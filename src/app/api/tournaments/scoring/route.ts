@@ -61,17 +61,27 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingScoring && existingScoring.status === 'active') {
-        // Return the existing scoring round
-        const existingRound = await db.round.findUnique({
-          where: { id: existingScoring.roundId },
-          include: { scores: { orderBy: { holeNumber: 'asc' } } },
-        });
-        return NextResponse.json({
-          scoringRound: existingScoring,
-          round: existingRound,
-          tournament,
-          message: 'Active scoring round already exists for this group',
-        });
+        // If the active round belongs to a different scorer, abandon it so a new one can be created
+        if (existingScoring.scorerId !== scorerId) {
+          console.log(`[Scoring] Scorer changed from ${existingScoring.scorerId} to ${scorerId} in group ${groupLetter}, abandoning old round`);
+          await db.tournamentScoringRound.update({
+            where: { id: existingScoring.id },
+            data: { status: 'abandoned' },
+          });
+          // Don't return — fall through to create a new scoring round below
+        } else {
+          // Same scorer — return the existing scoring round
+          const existingRound = await db.round.findUnique({
+            where: { id: existingScoring.roundId },
+            include: { scores: { orderBy: { holeNumber: 'asc' } } },
+          });
+          return NextResponse.json({
+            scoringRound: existingScoring,
+            round: existingRound,
+            tournament,
+            message: 'Active scoring round already exists for this group',
+          });
+        }
       }
     } catch {
       // TournamentScoringRound table might not exist yet - continue to create it

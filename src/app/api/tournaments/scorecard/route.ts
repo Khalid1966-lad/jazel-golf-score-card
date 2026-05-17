@@ -72,8 +72,9 @@ export async function GET(request: NextRequest) {
     });
 
     // 4. Fetch all TournamentScoringRounds with round data and scores
+    // Exclude abandoned rounds — superseded by new active round after scorer change
     const scoringRounds = await db.tournamentScoringRound.findMany({
-      where: { tournamentId },
+      where: { tournamentId, status: { not: 'abandoned' } },
       include: {
         scorer: {
           select: { id: true, name: true, handicap: true },
