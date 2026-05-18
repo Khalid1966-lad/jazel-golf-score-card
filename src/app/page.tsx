@@ -12021,6 +12021,117 @@ export default function JazelApp() {
                 </table>
               </div>
 
+              {/* Scorecard Stats */}
+              {scorecardData.players && scorecardData.players.length > 0 && (() => {
+                const holes = scorecardData.holes || [];
+                const players = scorecardData.players || [];
+                // Exclude WD players from stats
+                const activePlayers = players.filter((p: any) => !p.withdrawn);
+                if (activePlayers.length === 0) return null;
+
+                // Per-hole stats
+                const holeStats: Record<string, { pars: number; birdies: number; eagles: number; bogeys: number; doubleBogeys: number }> = {};
+                holes.forEach(h => {
+                  const key = String(h.number);
+                  holeStats[key] = { pars: 0, birdies: 0, eagles: 0, bogeys: 0, doubleBogeys: 0 };
+                });
+                let totalPars = 0, totalBirdies = 0, totalEagles = 0, totalBogeys = 0, totalDoubleBogeys = 0;
+
+                activePlayers.forEach((p: any) => {
+                  (p.scores || []).forEach((s: number | null, i: number) => {
+                    if (s === null || s <= 0) return;
+                    const hole = holes[i];
+                    const par = hole?.par || 4;
+                    const holeNum = String(hole?.number || (i + 1));
+                    const diff = s - par;
+                    if (diff <= -2) { totalEagles++; holeStats[holeNum].eagles++; }
+                    else if (diff === -1) { totalBirdies++; holeStats[holeNum].birdies++; }
+                    else if (diff === 0) { totalPars++; holeStats[holeNum].pars++; }
+                    else if (diff === 1) { totalBogeys++; holeStats[holeNum].bogeys++; }
+                    else { totalDoubleBogeys++; holeStats[holeNum].doubleBogeys++; }
+                  });
+                });
+
+                // Holes with most pars / birdies
+                const sortedByPars = Object.entries(holeStats).sort((a, b) => b[1].pars - a[1].pars);
+                const sortedByBirdies = Object.entries(holeStats).sort((a, b) => b[1].birdies - a[1].birdies);
+                const topPars = sortedByPars.filter(([, v]) => v.pars > 0).slice(0, 3);
+                const topBirdies = sortedByBirdies.filter(([, v]) => v.birdies > 0).slice(0, 3);
+
+                return (
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {/* Totals */}
+                    <div className="rounded-lg border p-3 space-y-1.5" style={{borderColor: '#d6e4ef', backgroundColor: '#f8fafc'}}>
+                      <div className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wide mb-2">Totals</div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded-full border-2 border-red-500 inline-flex items-center justify-center text-[7px] leading-none text-red-500">●</span>
+                          <span className="text-muted-foreground">Eagles</span>
+                          <span className="font-bold ml-auto text-red-600">{totalEagles}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded-full border-2 border-red-500 inline-flex items-center justify-center text-[7px] leading-none text-red-500">○</span>
+                          <span className="text-muted-foreground">Birdies</span>
+                          <span className="font-bold ml-auto text-red-600">{totalBirdies}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded bg-gray-200 inline-flex items-center justify-center text-[7px] leading-none text-gray-500">■</span>
+                          <span className="text-muted-foreground">Pars</span>
+                          <span className="font-bold ml-auto text-gray-700">{totalPars}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded-[2px] border border-purple-400 inline-flex items-center justify-center text-[7px] leading-none text-purple-400">□</span>
+                          <span className="text-muted-foreground">Bogeys</span>
+                          <span className="font-bold ml-auto text-purple-500">{totalBogeys}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded-[2px] border border-purple-400 inline-flex items-center justify-center"><span className="w-2 h-2 rounded-[1px] border border-purple-400"></span></span>
+                          <span className="text-muted-foreground">D. Bogey+</span>
+                          <span className="font-bold ml-auto text-purple-500">{totalDoubleBogeys}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Hot Holes */}
+                    <div className="rounded-lg border p-3 space-y-2" style={{borderColor: '#d6e4ef', backgroundColor: '#f8fafc'}}>
+                      <div className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wide mb-2">Hot Holes</div>
+                      {topBirdies.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="w-3 h-3 rounded-full border border-red-400 inline-block"></span>
+                            <span className="text-[10px] text-muted-foreground">Most Birdies</span>
+                          </div>
+                          <div className="flex gap-1.5 pl-4">
+                            {topBirdies.map(([hole, v]) => (
+                              <span key={hole} className="inline-flex items-center gap-0.5 bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-medium">
+                                H{hole} <span className="text-[10px]">({v.birdies})</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {topPars.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="w-3 h-3 rounded bg-gray-200 inline-block"></span>
+                            <span className="text-[10px] text-muted-foreground">Most Pars</span>
+                          </div>
+                          <div className="flex gap-1.5 pl-4">
+                            {topPars.map(([hole, v]) => (
+                              <span key={hole} className="inline-flex items-center gap-0.5 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">
+                                H{hole} <span className="text-[10px]">({v.pars})</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {topBirdies.length === 0 && topPars.length === 0 && (
+                        <span className="text-[10px] text-muted-foreground italic">No data yet</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {(!scorecardData.players || scorecardData.players.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Clipboard className="w-8 h-8 mx-auto mb-2 opacity-40" />
