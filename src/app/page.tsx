@@ -12457,6 +12457,13 @@ export default function JazelApp() {
                     </div>
                   </div>
                 </div>
+
+                {/* Explanation */}
+                <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+                  <strong>Avg vs Par</strong> is the average score relative to par across all players on that hole.
+                  Negative (e.g. <span className="text-emerald-600">−0.83</span>) means players beat par on average — the easier holes.
+                  Positive (e.g. <span className="text-red-600">+2.00</span>) means players scored over par on average — the harder holes.
+                </p>
               </div>
             );
           })()}
