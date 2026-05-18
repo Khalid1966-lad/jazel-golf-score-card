@@ -258,6 +258,15 @@
     background-color: var(--jazel-green-300);
   }
   
+  /* Hide scrollbar but keep scrollability */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
   /* Scroll indicators */
   .scroll-indicator-left {
     position: absolute;

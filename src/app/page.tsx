@@ -11987,7 +11987,7 @@ export default function JazelApp() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-2 overflow-x-auto scrollbar-hide">
                 {/* Freeze Scorecard button - only visible to admin when not frozen */}
                 {user?.id === selectedTournament?.adminId && !scorecardData.isFrozen && (
                   <Button

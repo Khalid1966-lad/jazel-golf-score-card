@@ -45,7 +45,10 @@ import {
   Shield,
   Clipboard,
   Snowflake,
-  AlertTriangle
+  AlertTriangle,
+  Printer,
+  LayoutGrid,
+  List as ListIcon
 } from 'lucide-react';
 
 interface GuideSection {
@@ -1605,8 +1608,9 @@ function TournamentsSection() {
                 Recalculate Leaderboard
               </h4>
               <p className="text-sm text-muted-foreground">
-                Use the <strong>Refresh</strong> button to recalculate all gross and net scores from the actual
-                hole-by-hole round data. This fetches the latest handicap values for all players. Useful if
+                Use the <strong>Refresh</strong> button to recalculate all gross, net, and Stableford scores from the actual
+                hole-by-hole round data. This fetches the latest handicap values for all players and recalculates
+                Stableford points using each player's handicap and the course's Stroke Index. Useful if
                 handicaps were updated after scores were initially calculated.
               </p>
             </div>
@@ -1675,6 +1679,43 @@ function TournamentsSection() {
                 </li>
               </ul>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tournament List View Toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Tournament List View</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            In the Tournaments tab, you can switch between two display modes:
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <LayoutGrid className="w-4 h-4" style={{ color: '#39638b' }} />
+                <h4 className="font-medium">Card View</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Tournaments displayed as cards with course name, date, format, and status badges. Great for a visual overview.
+              </p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <ListIcon className="w-4 h-4" style={{ color: '#39638b' }} />
+                <h4 className="font-medium">List View</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Compact list format showing tournament name, date, course, and status in a single row per tournament. Great for quickly scanning many tournaments.
+              </p>
+            </div>
+          </div>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">
+              <strong>Tip:</strong> Toggle between views using the card/list icon button at the top of the tournaments list.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -1816,18 +1857,72 @@ function TournamentsSection() {
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
               <strong>Net</strong> — Gross minus handicap (e.g., +1.5 means 1.5 over par after handicap)
             </li>
+            <li className="flex items-center gap-2">
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              <strong>SF (Stableford)</strong> — Stableford points total, calculated using each player's handicap and hole Stroke Index
+            </li>
           </ul>
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mt-4">
             <p className="text-sm text-blue-700">
-              <strong>Sorting:</strong> Tap column headers to sort by handicap, gross score, or net score.
+              <strong>Sorting:</strong> Tap column headers to sort by handicap, gross score, net score, or Stableford points. 
+              When two players have the same score, a <strong>countback tiebreaker</strong> is applied — comparing last 3 holes, then last 6, last 9, etc.
             </p>
           </div>
           <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg mt-2">
             <p className="text-sm text-emerald-700">
               <strong>Scorecard:</strong> Tap the "View Scorecard" button to see the full scorecard grid
               with per-hole scores for all players, par row, handicap index row, and totals.
-              Use the Share button to copy a complete scorecard summary, or Print for a paper copy.
             </p>
+          </div>
+
+          {/* General Scorecard Details */}
+          <div className="p-4 border rounded-lg mt-2">
+            <h4 className="font-medium mb-3">General Scorecard Features</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>Sort options:</strong> Toggle between Net, Brut, and Stableford sort order</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>Stableford column (SF):</strong> Shows handicap-adjusted Stableford points for each player, using the same formula as the regular scorecard</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>Countback tiebreaker:</strong> When scores are tied, the system compares last 3 holes, then last 6, last 9, last 12, last 15, and finally all 18</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span><strong>WD players:</strong> Withdrawn players are always shown at the bottom, with holes after withdrawal marked as "WD"</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Print Scorecard */}
+          <div className="p-4 border rounded-lg mt-2">
+            <h4 className="font-medium mb-3">Printing the Scorecard</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Three print options are available, each sorted differently:
+            </p>
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm">
+                <Printer className="w-4 h-4" style={{ color: '#39638b' }} />
+                <span><strong>Print Net</strong> — Players sorted by net score (best first)</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm">
+                <Printer className="w-4 h-4" style={{ color: '#39638b' }} />
+                <span><strong>Print Brut</strong> — Players sorted by gross score (best first)</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm">
+                <Printer className="w-4 h-4 text-emerald-600" />
+                <span><strong>Print Stableford</strong> — Players sorted by Stableford points (highest first)</span>
+              </div>
+            </div>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mt-3">
+              <p className="text-xs text-amber-700">
+                <strong>Tip:</strong> On mobile, swipe the print button area left/right to see all options.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
