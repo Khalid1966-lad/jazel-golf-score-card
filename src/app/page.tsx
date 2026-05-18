@@ -1773,8 +1773,8 @@ export default function JazelApp() {
         const d = s - par;
         if (d <= -2) {
           bg = '#fff';
-          // Eagle: double red circle
-          scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid #ef4444;font-weight:700;font-size:9pt;color:#dc2626;box-shadow:inset 0 0 0 1.5px #ef4444">${s}</span>`;
+          // Eagle: two concentric red circles with space between
+          scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:2px solid #ef4444"><span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid #ef4444;font-weight:700;font-size:9pt;color:#dc2626">${s}</span></span>`;
         }
         else if (d === -1) {
           bg = '#fff';
@@ -11938,10 +11938,12 @@ export default function JazelApp() {
                                 const diff = score - par;
                                 if (diff <= -2) {
                                   bgClass = 'bg-white'; textClass = 'text-red-600';
-                                  // Eagle: double red circle
+                                  // Eagle: two concentric red circles with space between
                                   scoreDisplay = (
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-[2.5px] border-red-500 font-bold text-[10px] leading-none" style={{boxShadow: 'inset 0 0 0 1.5px red'}}>
-                                      {score}
+                                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full border-2 border-red-500">
+                                      <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border-[1.5px] border-red-500 font-bold text-[10px] leading-none text-red-600">
+                                        {score}
+                                      </span>
                                     </span>
                                   );
                                 }
