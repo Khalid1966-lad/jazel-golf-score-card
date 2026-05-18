@@ -304,17 +304,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Also add participants who have grossScore/netScore but no detailed hole scores
+    // Always include WD participants even if they have no scores at all
     for (const p of participants) {
       if (playerMap.has(p.userId)) {
-        // Even if already processed, attach WD info
+        // Even if already processed, attach WD info and clear scores after wdHole
         const existing = playerMap.get(p.userId)!;
         if (p.withdrawn) {
           existing.withdrawn = true;
           existing.wdHole = p.wdHole;
+          // Clear scores after wdHole so frontend shows "WD" for those holes
+          if (p.wdHole) {
+            for (let i = 0; i < existing.scores.length; i++) {
+              const holeNum = holes[i]?.holeNumber || (i + 1);
+              if (holeNum > p.wdHole) {
+                existing.scores[i] = null;
+              }
+            }
+          }
         }
         continue;
       }
-      if (p.grossScore === null && p.netScore === null) continue;
+      // Include WD players even with no scores; skip non-WD players with no scores
+      if (p.grossScore === null && p.netScore === null && !p.withdrawn) continue;
 
       playerMap.set(p.userId, {
         name: p.user.name || 'Unknown',

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             const participantMap = new Map<string, typeof participantsWithUsers[0]>();
             participantsWithUsers.forEach(p => participantMap.set(p.userId, p));
 
-            const playerMap = new Map<string, { name: string; handicap: number; groupLetter: string; scores: (number | null)[]; gross: number; net: number }>();
+            const playerMap = new Map<string, { name: string; handicap: number; groupLetter: string; scores: (number | null)[]; gross: number; net: number; withdrawn?: boolean; wdHole?: number | null }>();
 
             for (const sr of scoringRounds) {
               if (!sr.round) continue;
@@ -157,13 +157,35 @@ export async function POST(request: NextRequest) {
             }
 
             // Include participants with stored scores but no detailed holes
+            // Always include WD participants even if they have no scores at all
             for (const p of participantsWithUsers) {
-              if (playerMap.has(p.userId)) continue;
-              if (p.grossScore === null && p.netScore === null) continue;
-              playerMap.set(p.userId, { name: p.user.name || 'Unknown', handicap: p.user.handicap || 0, groupLetter: p.groupLetter || '', scores: new Array(totalHoles).fill(null) as (number | null)[], gross: p.grossScore || 0, net: p.netScore || 0 });
+              if (playerMap.has(p.userId)) {
+                const existing = playerMap.get(p.userId)!;
+                if (p.withdrawn) {
+                  existing.withdrawn = true;
+                  existing.wdHole = p.wdHole;
+                  if (p.wdHole) {
+                    for (let i = 0; i < existing.scores.length; i++) {
+                      const holeNum = holes[i]?.holeNumber || (i + 1);
+                      if (holeNum > p.wdHole) existing.scores[i] = null;
+                    }
+                  }
+                }
+                continue;
+              }
+              if (p.grossScore === null && p.netScore === null && !p.withdrawn) continue;
+              playerMap.set(p.userId, { name: p.user.name || 'Unknown', handicap: p.user.handicap || 0, groupLetter: p.groupLetter || '', scores: new Array(totalHoles).fill(null) as (number | null)[], gross: p.grossScore || 0, net: p.netScore || 0, withdrawn: p.withdrawn || undefined, wdHole: p.wdHole || undefined });
             }
 
-            const players = Array.from(playerMap.values()).sort((a, b) => { const aN = a.scores.some(s => s !== null) ? a.net : Infinity; const bN = b.scores.some(s => s !== null) ? b.net : Infinity; return aN - bN; });
+            const players = Array.from(playerMap.values()).sort((a, b) => {
+              const aWD = a.withdrawn ? 1 : 0;
+              const bWD = b.withdrawn ? 1 : 0;
+              if (aWD !== bWD) return aWD - bWD;
+              if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+              const aN = a.scores.some(s => s !== null) ? a.net : Infinity;
+              const bN = b.scores.some(s => s !== null) ? b.net : Infinity;
+              return aN - bN;
+            });
 
             const tournamentInfo = await db.tournament.findUnique({
               where: { id: tournamentId },
