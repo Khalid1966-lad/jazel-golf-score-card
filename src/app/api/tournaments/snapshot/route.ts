@@ -174,19 +174,11 @@ export async function POST(request: NextRequest) {
     // Always include WD participants even if they have no scores at all
     for (const p of participants) {
       if (playerMap.has(p.userId)) {
-        // Attach WD info and clear scores after wdHole
+        // Attach WD info (score clearing done in final pass below)
         const existing = playerMap.get(p.userId)!;
         if (p.withdrawn) {
           existing.withdrawn = true;
           existing.wdHole = p.wdHole;
-          if (p.wdHole) {
-            for (let i = 0; i < existing.scores.length; i++) {
-              const holeNum = holes[i]?.holeNumber || (i + 1);
-              if (holeNum > p.wdHole) {
-                existing.scores[i] = null;
-              }
-            }
-          }
         }
         continue;
       }
@@ -203,6 +195,22 @@ export async function POST(request: NextRequest) {
         withdrawn: p.withdrawn || undefined,
         wdHole: p.wdHole || undefined,
       });
+    }
+
+    // Final WD cleanup: ensure ALL withdrawn players have scores cleared after wdHole
+    for (const player of playerMap.values()) {
+      if (player.withdrawn) {
+        if (player.wdHole) {
+          for (let i = 0; i < player.scores.length; i++) {
+            const holeNum = holes[i]?.holeNumber || (i + 1);
+            if (holeNum > player.wdHole) {
+              player.scores[i] = null;
+            }
+          }
+        } else {
+          player.scores = new Array(totalHoles).fill(null) as (number | null)[];
+        }
+      }
     }
 
     // Sort by net score, WD players at bottom

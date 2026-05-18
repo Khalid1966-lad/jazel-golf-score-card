@@ -30,10 +30,70 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // 1b. If a frozen scorecard snapshot exists, return it directly (immutable)
+    // 1b. If a frozen scorecard snapshot exists, enrich with WD info from DB
     if (tournament.scorecardSnapshot) {
       try {
         const snapshot = JSON.parse(tournament.scorecardSnapshot);
+        // Enrich frozen snapshot with current WD info from participants table
+        // (snapshot may have been created before WD fields were tracked)
+        const participants = await db.tournamentParticipant.findMany({
+          where: { tournamentId },
+          select: { userId: true, withdrawn: true, wdHole: true },
+        });
+        const wdMap = new Map<string, { withdrawn: boolean; wdHole: number | null }>();
+        participants.forEach(p => wdMap.set(p.userId, { withdrawn: p.withdrawn, wdHole: p.wdHole }));
+
+        const holes = snapshot.holes || [];
+        const totalHoles = holes.length || 18;
+
+        if (snapshot.players) {
+          // Build a map of player names to match WD participants
+          const participantUsers = await db.tournamentParticipant.findMany({
+            where: { tournamentId },
+            include: { user: { select: { name: true } } },
+          });
+          const nameToUserId = new Map<string, string>();
+          participantUsers.forEach(p => { if (p.user.name) nameToUserId.set(p.user.name, p.userId); });
+
+          snapshot.players.forEach((player: any) => {
+            // Try to match by name
+            const userId = nameToUserId.get(player.name);
+            const wdInfo = userId ? wdMap.get(userId) : null;
+            if (wdInfo?.withdrawn) {
+              player.withdrawn = true;
+              player.wdHole = wdInfo.wdHole;
+              // Clear scores after wdHole
+              if (player.scores) {
+                if (wdInfo.wdHole) {
+                  for (let i = 0; i < player.scores.length; i++) {
+                    const holeNum = holes[i]?.number || (i + 1);
+                    if (holeNum > wdInfo.wdHole) {
+                      player.scores[i] = null;
+                    }
+                  }
+                } else {
+                  // No wdHole: clear all scores
+                  for (let i = 0; i < player.scores.length; i++) {
+                    player.scores[i] = null;
+                  }
+                }
+              }
+            }
+          });
+
+          // Re-sort: WD players last
+          snapshot.players.sort((a: any, b: any) => {
+            const aWD = a.withdrawn ? 1 : 0;
+            const bWD = b.withdrawn ? 1 : 0;
+            if (aWD !== bWD) return aWD - bWD;
+            if (aWD && bWD) return (b.wdHole || 0) - (a.wdHole || 0);
+            const aNet = a.scores?.some((s: number | null) => s !== null) ? a.net : Infinity;
+            const bNet = b.scores?.some((s: number | null) => s !== null) ? b.net : Infinity;
+            if (aNet !== bNet) return aNet - bNet;
+            return 0;
+          });
+        }
+
         return NextResponse.json({
           ...snapshot,
           isFrozen: true,
@@ -307,20 +367,11 @@ export async function GET(request: NextRequest) {
     // Always include WD participants even if they have no scores at all
     for (const p of participants) {
       if (playerMap.has(p.userId)) {
-        // Even if already processed, attach WD info and clear scores after wdHole
+        // Attach WD info (score clearing done in final pass below)
         const existing = playerMap.get(p.userId)!;
         if (p.withdrawn) {
           existing.withdrawn = true;
           existing.wdHole = p.wdHole;
-          // Clear scores after wdHole so frontend shows "WD" for those holes
-          if (p.wdHole) {
-            for (let i = 0; i < existing.scores.length; i++) {
-              const holeNum = holes[i]?.holeNumber || (i + 1);
-              if (holeNum > p.wdHole) {
-                existing.scores[i] = null;
-              }
-            }
-          }
         }
         continue;
       }
@@ -337,6 +388,24 @@ export async function GET(request: NextRequest) {
         withdrawn: p.withdrawn || undefined,
         wdHole: p.wdHole || undefined,
       });
+    }
+
+    // Final WD cleanup: ensure ALL withdrawn players have scores cleared after wdHole
+    // This handles cases where round scores weren't cleared by the withdraw API
+    for (const player of playerMap.values()) {
+      if (player.withdrawn) {
+        if (player.wdHole) {
+          for (let i = 0; i < player.scores.length; i++) {
+            const holeNum = holes[i]?.holeNumber || (i + 1);
+            if (holeNum > player.wdHole) {
+              player.scores[i] = null;
+            }
+          }
+        } else {
+          // No wdHole specified: clear ALL scores (player withdrew completely)
+          player.scores = new Array(totalHoles).fill(null) as (number | null)[];
+        }
+      }
     }
 
     // Convert to array and sort by netScore (nulls last), WD players at bottom
