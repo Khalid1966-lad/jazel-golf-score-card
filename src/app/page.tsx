@@ -1758,12 +1758,8 @@ export default function JazelApp() {
     // Build score cells for a player row — with WD handling
     const buildScoreCells = (scores: (number | null)[], isWD: boolean, wdHole: number | null | undefined) => scores.map((s, i) => {
       const holeNum = holes[i]?.number || (i + 1);
-      // WD: holes after wdHole
-      if (isWD && wdHole && holeNum > wdHole) {
-        return `<td style="padding:2px 4px;text-align:center;background:#fffbeb;border:1px solid #d6e4ef;font-size:8pt;font-weight:600;color:#d97706">WD</td>`;
-      }
-      // WD without wdHole: empty holes show WD
-      if (isWD && !wdHole && (s === null || s === 0)) {
+      // WD: any non-played hole (null or 0) shows WD
+      if (isWD && (s === null || s === 0)) {
         return `<td style="padding:2px 4px;text-align:center;background:#fffbeb;border:1px solid #d6e4ef;font-size:8pt;font-weight:600;color:#d97706">WD</td>`;
       }
       const par = holes[i]?.par || 4;
@@ -11918,16 +11914,8 @@ export default function JazelApp() {
                               let bgClass = 'bg-white';
                               let textClass = '';
                               let scoreDisplay: React.ReactNode = score !== null ? score : '';
-                              // WD player: holes after wdHole show WD (scores cleared by admin)
-                              if (isWD && player.wdHole && holeNum > player.wdHole) {
-                                return (
-                                  <td key={sIdx} className="px-1 py-1 text-center font-medium bg-amber-50 text-amber-500 text-[10px]">
-                                    WD
-                                  </td>
-                                );
-                              }
-                              // WD player with no wdHole: empty holes show WD
-                              if (isWD && !player.wdHole && (score === null || score === 0)) {
+                              // WD player: any non-played hole (null or 0) shows WD
+                              if (isWD && (score === null || score === 0)) {
                                 return (
                                   <td key={sIdx} className="px-1 py-1 text-center font-medium bg-amber-50 text-amber-500 text-[10px]">
                                     WD
