@@ -1768,15 +1768,24 @@ export default function JazelApp() {
       }
       const par = holes[i]?.par || 4;
       let bg = '#fff';
+      let scoreContent = s !== null && s > 0 ? String(s) : '';
       if (s !== null && s > 0) {
         const d = s - par;
-        if (d <= -2) bg = '#d1fae5';
-        else if (d === -1) bg = '#f0fdf4';
+        if (d <= -2) {
+          bg = '#fff';
+          // Eagle: double red circle
+          scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid #ef4444;font-weight:700;font-size:9pt;color:#dc2626;box-shadow:inset 0 0 0 1.5px #ef4444">${s}</span>`;
+        }
+        else if (d === -1) {
+          bg = '#fff';
+          // Birdie: single red circle
+          scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid #ef4444;font-weight:700;font-size:9pt;color:#dc2626">${s}</span>`;
+        }
         else if (d === 0) bg = '#f9fafb';
         else if (d === 1) bg = '#fef2f2';
         else if (d >= 2) bg = '#fee2e2';
       }
-      return `<td style="padding:2px 4px;text-align:center;background:${bg};border:1px solid #d6e4ef;font-size:9pt">${s !== null && s > 0 ? s : ''}</td>`;
+      return `<td style="padding:2px 4px;text-align:center;background:${bg};border:1px solid #d6e4ef;font-size:9pt">${scoreContent}</td>`;
     }).join('');
 
     const brutStr = (v: number) => v > 0 ? `+${v}` : v === 0 ? 'E' : `${v}`;
@@ -11908,6 +11917,7 @@ export default function JazelApp() {
                               const par = hole?.par || 4;
                               let bgClass = 'bg-white';
                               let textClass = '';
+                              let scoreDisplay: React.ReactNode = score !== null ? score : '';
                               // WD player: holes after wdHole show WD (scores cleared by admin)
                               if (isWD && player.wdHole && holeNum > player.wdHole) {
                                 return (
@@ -11924,17 +11934,33 @@ export default function JazelApp() {
                                   </td>
                                 );
                               }
-                              if (score !== null) {
+                              if (score !== null && score > 0) {
                                 const diff = score - par;
-                                if (diff <= -2) { bgClass = 'bg-emerald-100'; textClass = 'text-emerald-700'; }
-                                else if (diff === -1) { bgClass = 'bg-green-50'; textClass = 'text-green-600'; }
+                                if (diff <= -2) {
+                                  bgClass = 'bg-white'; textClass = 'text-red-600';
+                                  // Eagle: double red circle
+                                  scoreDisplay = (
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-[2.5px] border-red-500 font-bold text-[10px] leading-none" style={{boxShadow: 'inset 0 0 0 1.5px red'}}>
+                                      {score}
+                                    </span>
+                                  );
+                                }
+                                else if (diff === -1) {
+                                  bgClass = 'bg-white'; textClass = 'text-red-600';
+                                  // Birdie: single red circle
+                                  scoreDisplay = (
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-red-500 font-bold text-[10px] leading-none">
+                                      {score}
+                                    </span>
+                                  );
+                                }
                                 else if (diff === 0) { bgClass = 'bg-gray-50'; }
                                 else if (diff === 1) { bgClass = 'bg-red-50'; textClass = 'text-red-500'; }
                                 else if (diff >= 2) { bgClass = 'bg-red-100'; textClass = 'text-red-600'; }
                               }
                               return (
                                 <td key={sIdx} className={`px-1 py-1 text-center font-medium ${bgClass} ${textClass}`}>
-                                  {score !== null ? score : ''}
+                                  {scoreDisplay}
                                 </td>
                               );
                             })}
