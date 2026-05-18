@@ -1778,8 +1778,16 @@ export default function JazelApp() {
           scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid #ef4444;font-weight:700;font-size:9pt;color:#dc2626">${s}</span>`;
         }
         else if (d === 0) bg = '#f9fafb';
-        else if (d === 1) bg = '#fef2f2';
-        else if (d >= 2) bg = '#fee2e2';
+        else if (d === 1) {
+          bg = '#fff';
+          // Bogey: single dark blue square
+          scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:3px;border:2px solid #1e3a5f;font-weight:700;font-size:9pt;color:#1e3a5f">${s}</span>`;
+        }
+        else if (d >= 2) {
+          bg = '#fff';
+          // Double bogey+: two dark blue squares with space between
+          scoreContent = `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:3px;border:2px solid #1e3a5f"><span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:2px;border:1.5px solid #1e3a5f;font-weight:700;font-size:9pt;color:#1e3a5f">${s}</span></span>`;
+        }
       }
       return `<td style="padding:2px 4px;text-align:center;background:${bg};border:1px solid #d6e4ef;font-size:9pt">${scoreContent}</td>`;
     }).join('');
@@ -11945,8 +11953,26 @@ export default function JazelApp() {
                                   );
                                 }
                                 else if (diff === 0) { bgClass = 'bg-gray-50'; }
-                                else if (diff === 1) { bgClass = 'bg-red-50'; textClass = 'text-red-500'; }
-                                else if (diff >= 2) { bgClass = 'bg-red-100'; textClass = 'text-red-600'; }
+                                else if (diff === 1) {
+                                  bgClass = 'bg-white'; textClass = 'text-blue-800';
+                                  // Bogey: single dark blue square
+                                  scoreDisplay = (
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-[3px] border-2 border-blue-800 font-bold text-[10px] leading-none">
+                                      {score}
+                                    </span>
+                                  );
+                                }
+                                else if (diff >= 2) {
+                                  bgClass = 'bg-white'; textClass = 'text-blue-800';
+                                  // Double bogey+: two dark blue squares with space between
+                                  scoreDisplay = (
+                                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-[3px] border-2 border-blue-800">
+                                      <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-[2px] border-[1.5px] border-blue-800 font-bold text-[10px] leading-none text-blue-800">
+                                        {score}
+                                      </span>
+                                    </span>
+                                  );
+                                }
                               }
                               return (
                                 <td key={sIdx} className={`px-1 py-1 text-center font-medium ${bgClass} ${textClass}`}>
