@@ -12270,6 +12270,28 @@ export default function JazelApp() {
             const topBogeys = top('bogeys');
             const topDoubleBogeys = top('doubleBogeys');
 
+            // Best & worst overall holes (by avg score-to-par)
+            const holeAvgDiffs: { hole: number; avgDiff: number; count: number }[] = [];
+            holes.forEach((h: any, i: number) => {
+              const diffs: number[] = [];
+              activePlayers.forEach((p: any) => {
+                const s = (p.scores || [])[i];
+                if (s !== null && s > 0) {
+                  diffs.push(s - (h.par || 4));
+                }
+              });
+              if (diffs.length > 0) {
+                holeAvgDiffs.push({
+                  hole: h.number,
+                  avgDiff: diffs.reduce((a: number, b: number) => a + b, 0) / diffs.length,
+                  count: diffs.length,
+                });
+              }
+            });
+            const sortedByAvg = [...holeAvgDiffs].sort((a, b) => a.avgDiff - b.avgDiff);
+            const bestHoles = sortedByAvg.filter(h => h.avgDiff < 0).slice(0, 3);
+            const worstHoles = [...sortedByAvg].reverse().filter(h => h.avgDiff > 0).slice(0, 3);
+
             const HoleBadges = ({ items, field, color, bgColor }: { items: [string, any][]; field: string; color: string; bgColor: string }) => (
               items.length > 0 ? (
                 <div className="flex gap-1.5 flex-wrap">
@@ -12384,6 +12406,53 @@ export default function JazelApp() {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-muted-foreground mb-1">Most Double Bogey+</div>
                         <HoleBadges items={topDoubleBogeys} field="doubleBogeys" color="text-purple-500" bgColor="bg-purple-50" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Best / Worst Overall Holes */}
+                <div className="rounded-lg border p-4 space-y-3" style={{borderColor: '#d6e4ef', backgroundColor: '#f8fafc'}}>
+                  <div className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">Overall Performance</div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <TrendingUp className="w-3 h-3 text-emerald-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Best Holes (Lowest avg vs par)</div>
+                        {bestHoles.length > 0 ? (
+                          <div className="flex gap-1.5 flex-wrap">
+                            {bestHoles.map(h => (
+                              <span key={h.hole} className="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                                H{h.hole} <span className="text-[10px] opacity-80">({h.avgDiff > 0 ? '+' : ''}{h.avgDiff.toFixed(2)})</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground italic">—</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <TrendingDown className="w-3 h-3 text-red-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Worst Holes (Highest avg vs par)</div>
+                        {worstHoles.length > 0 ? (
+                          <div className="flex gap-1.5 flex-wrap">
+                            {worstHoles.map(h => (
+                              <span key={h.hole} className="inline-flex items-center gap-0.5 bg-red-50 text-red-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                                H{h.hole} <span className="text-[10px] opacity-80">(+{h.avgDiff.toFixed(2)})</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground italic">—</span>
+                        )}
                       </div>
                     </div>
                   </div>
