@@ -329,6 +329,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert to array and sort by netScore (nulls last), WD players at bottom
+    // Tiebreaker: countback — last 3 holes, last 6, last 9, etc.
     const players = Array.from(playerMap.values()).sort((a, b) => {
       // WD players go to bottom
       const aWD = a.withdrawn ? 1 : 0;
@@ -339,7 +340,20 @@ export async function GET(request: NextRequest) {
 
       const aNet = a.scores.some(s => s !== null) ? a.net : Infinity;
       const bNet = b.scores.some(s => s !== null) ? b.net : Infinity;
-      return aNet - bNet;
+      if (aNet !== bNet) return aNet - bNet;
+
+      // Tiebreaker: countback — compare last 3 holes, then last 6, last 9, etc.
+      for (let back = 3; back <= totalHoles; back += 3) {
+        let aBack = 0, bBack = 0;
+        for (let i = totalHoles - back; i < totalHoles; i++) {
+          const aStrokes = (a.scores[i] != null && a.scores[i]! > 0) ? a.scores[i]! : null;
+          const bStrokes = (b.scores[i] != null && b.scores[i]! > 0) ? b.scores[i]! : null;
+          if (aStrokes != null) aBack += aStrokes;
+          if (bStrokes != null) bBack += bStrokes;
+        }
+        if (aBack !== bBack) return aBack - bBack;
+      }
+      return 0;
     });
 
     // Build response

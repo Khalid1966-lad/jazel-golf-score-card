@@ -1822,7 +1822,22 @@ export default function JazelApp() {
       if (aVal === null && bVal === null) return (a.handicap || 0) - (b.handicap || 0);
       if (aVal === null) return 1;
       if (bVal === null) return -1;
-      return aVal - bVal;
+      if (aVal !== bVal) return aVal - bVal;
+      // Tiebreaker: countback — last 3 holes, last 6, last 9, last 12, last 15, all
+      const totalH = holes.length;
+      const aS = a.scores || [];
+      const bS = b.scores || [];
+      for (let back = 3; back <= totalH; back += 3) {
+        let aBack = 0, bBack = 0;
+        for (let i = totalH - back; i < totalH; i++) {
+          const aStrokes = (aS[i] != null && aS[i]! > 0) ? aS[i]! : null;
+          const bStrokes = (bS[i] != null && bS[i]! > 0) ? bS[i]! : null;
+          if (aStrokes != null) aBack += aStrokes;
+          if (bStrokes != null) bBack += bStrokes;
+        }
+        if (aBack !== bBack) return aBack - bBack;
+      }
+      return 0;
     });
 
     const playerRows = sortedPlayers.map((p: any, idx: number) => {
@@ -11824,7 +11839,23 @@ export default function JazelApp() {
                       if (aVal === null && bVal === null) return (a.handicap || 0) - (b.handicap || 0);
                       if (aVal === null) return 1;
                       if (bVal === null) return -1;
-                      return aVal - bVal;
+                      if (aVal !== bVal) return aVal - bVal;
+                      // Tiebreaker: countback — last 3 holes, last 6, last 9, last 12, last 15, all
+                      const holesArr = scorecardData.holes || [];
+                      const totalH = holesArr.length;
+                      const aS = a.scores || [];
+                      const bS = b.scores || [];
+                      for (let back = 3; back <= totalH; back += 3) {
+                        let aBack = 0, bBack = 0;
+                        for (let i = totalH - back; i < totalH; i++) {
+                          const aStrokes = (aS[i] != null && aS[i]! > 0) ? aS[i]! : null;
+                          const bStrokes = (bS[i] != null && bS[i]! > 0) ? bS[i]! : null;
+                          if (aStrokes != null) aBack += aStrokes;
+                          if (bStrokes != null) bBack += bStrokes;
+                        }
+                        if (aBack !== bBack) return aBack - bBack;
+                      }
+                      return 0;
                     }).map((player: any, pIdx: number) => {
                       const hasScores = player.scores?.some((s: number | null) => s !== null);
                       const isWD = player.withdrawn || false;
