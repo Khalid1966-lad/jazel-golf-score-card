@@ -5195,7 +5195,14 @@ export default function JazelApp() {
                       onMouseLeave={(e) => e.currentTarget.style.borderColor = '#8ab0d1'}
                     >
                       <div className="h-28 relative overflow-hidden"
-                        style={{background: 'linear-gradient(135deg, #5d8cb8 0%, #4a7aa8 100%)'}}>
+                        style={{background: course.imageUrl ? 'none' : 'linear-gradient(135deg, #5d8cb8 0%, #4a7aa8 100%)'}}>
+                        {course.imageUrl && (
+                          <img
+                            src={course.imageUrl}
+                            alt={course.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                           <div className="flex-1">
@@ -5397,6 +5404,17 @@ export default function JazelApp() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
+                    {/* Course Photo */}
+                    {courseDetailDialogCourse.imageUrl && (
+                      <div className="relative w-full h-48 -mx-6 -mt-2 rounded-lg overflow-hidden">
+                        <img 
+                          src={courseDetailDialogCourse.imageUrl} 
+                          alt={courseDetailDialogCourse.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+                      </div>
+                    )}
                     {courseDetailDialogCourse.description && (
                       <p className="text-sm text-muted-foreground">
                         {courseDetailDialogCourse.description}

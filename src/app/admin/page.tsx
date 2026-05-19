@@ -96,6 +96,7 @@ interface GolfCourse {
   longitude: number;
   totalHoles: number;
   description: string | null;
+  imageUrl: string | null;
   designer: string | null;
   yearBuilt: number | null;
   phone: string | null;
@@ -304,6 +305,7 @@ export default function AdminPage() {
     longitude: '',
     totalHoles: '',
     description: '',
+    imageUrl: '',
     designer: '',
     yearBuilt: '',
     phone: '',
@@ -312,6 +314,7 @@ export default function AdminPage() {
     isActive: true,
     adminId: '' as string | null
   });
+  const [editCoursePhotoPreview, setEditCoursePhotoPreview] = useState<string | null>(null);
 
   const [newCourseForm, setNewCourseForm] = useState({
     name: '',
@@ -1705,6 +1708,7 @@ export default function AdminPage() {
       longitude: course.longitude.toString(),
       totalHoles: course.totalHoles.toString(),
       description: course.description || '',
+      imageUrl: (course as any).imageUrl || '',
       designer: course.designer || '',
       yearBuilt: course.yearBuilt?.toString() || '',
       phone: course.phone || '',
@@ -1713,6 +1717,7 @@ export default function AdminPage() {
       isActive: course.isActive ?? true,
       adminId: course.adminId || null
     });
+    setEditCoursePhotoPreview((course as any).imageUrl || null);
     setSelectedCourse(course);
     setEditDialogOpen(true);
   };
@@ -1755,6 +1760,7 @@ export default function AdminPage() {
           longitude: parseFloat(editForm.longitude) || 0,
           totalHoles: parseInt(editForm.totalHoles) || 18,
           description: editForm.description,
+          imageUrl: editForm.imageUrl || null,
           designer: editForm.designer,
           yearBuilt: parseInt(editForm.yearBuilt) || null,
           phone: editForm.phone,
@@ -6621,6 +6627,89 @@ export default function AdminPage() {
               <div className="space-y-2">
                 <Label>Total Holes</Label>
                 <Input type="number" value={editForm.totalHoles} onChange={(e) => setEditForm({ ...editForm, totalHoles: e.target.value })} />
+              </div>
+            </div>
+            {/* Course Photo */}
+            <div className="space-y-2">
+              <Label>Course Photo</Label>
+              <div className="flex items-start gap-3">
+                <div className="w-24 h-24 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style={{borderColor: '#8ab0d1'}}>
+                  {editCoursePhotoPreview ? (
+                    <img 
+                      src={editCoursePhotoPreview} 
+                      alt="Course preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 flex-1">
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = async (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            await handleShopPhotoUpload(
+                              file,
+                              setEditCoursePhotoPreview,
+                              (url) => setEditForm({ ...editForm, imageUrl: url })
+                            );
+                          }
+                        };
+                        input.click();
+                      }}
+                      disabled={photoUploading}
+                      className="flex-1"
+                    >
+                      {photoUploading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-2" />
+                      )}
+                      Upload
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCameraCapture(
+                        setEditCoursePhotoPreview,
+                        (url) => setEditForm({ ...editForm, imageUrl: url })
+                      )}
+                      disabled={photoUploading}
+                      className="flex-1"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Camera
+                    </Button>
+                  </div>
+                  {editCoursePhotoPreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => clearShopPhoto(
+                        setEditCoursePhotoPreview,
+                        (url) => setEditForm({ ...editForm, imageUrl: url })
+                      )}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Remove Photo
+                    </Button>
+                  )}
+                  {photoCompressionInfo && (
+                    <p className="text-xs text-muted-foreground">{photoCompressionInfo}</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="space-y-2">

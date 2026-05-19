@@ -112,7 +112,7 @@ export async function PUT(
     }
     
     const body = await request.json();
-    const { name, city, region, country, latitude, longitude, totalHoles, description, designer, yearBuilt, phone, website, address, isActive, adminId: newAdminId } = body;
+    const { name, city, region, country, latitude, longitude, totalHoles, description, imageUrl, designer, yearBuilt, phone, website, address, isActive, adminId: newAdminId } = body;
 
     const course = await db.golfCourse.update({
       where: { id },
@@ -125,6 +125,7 @@ export async function PUT(
         longitude: parseFloat(longitude) || 0,
         totalHoles: parseInt(totalHoles) || 18,
         description,
+        imageUrl: imageUrl || null,
         designer,
         yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
         phone,
