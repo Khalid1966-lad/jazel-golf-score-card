@@ -715,3 +715,24 @@ Stage Summary:
 - Works on PC, Mac, and Smartphones via service worker update detection + server version comparison
 - Auto-detection still works (every 2min, on focus, on visibility change)
 - All version references now consistent at 1.8.0
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Add course photo upload in admin panel + display in user area
+
+Work Log:
+- Added `imageUrl` to admin page GolfCourse interface
+- Added `imageUrl` to editForm state and `editCoursePhotoPreview` state variable
+- Updated `openEditDialog()` to populate imageUrl and preview from course data
+- Updated `saveCourseEdit()` to include imageUrl in the PUT request body
+- Added Course Photo section in Edit Course Dialog with Upload/Camera/Remove buttons (reuses existing shop photo compression logic)
+- Updated PUT /api/admin/courses/[id] to accept and persist imageUrl
+- Updated user area course detail dialog: photo displayed with gradient overlay before description
+- Updated user area course cards: photo shown as header image in card (falls back to blue gradient)
+
+Stage Summary:
+- Admin can upload course photos via Edit Course dialog (max 500KB, max 1200x1200, JPEG compression)
+- Photos stored as base64 data URLs in the imageUrl database field
+- Course photos visible in grid view cards and detail dialog for users
+- No new API endpoint needed - uses existing imageUrl field on GolfCourse model
