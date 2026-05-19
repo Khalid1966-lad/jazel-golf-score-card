@@ -5406,11 +5406,11 @@ export default function JazelApp() {
                   <div className="space-y-4">
                     {/* Course Photo */}
                     {courseDetailDialogCourse.imageUrl && (
-                      <div className="w-full h-52 rounded-lg overflow-hidden flex items-center justify-center bg-muted">
+                      <div className="w-full h-52 rounded-lg overflow-hidden">
                         <img 
                           src={courseDetailDialogCourse.imageUrl} 
                           alt={courseDetailDialogCourse.name}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     )}
