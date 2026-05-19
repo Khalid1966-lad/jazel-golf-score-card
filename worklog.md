@@ -693,3 +693,25 @@ Stage Summary:
 - Print scorecard now sorts players by net score (best first) with withdrawn players at the bottom
 - WD annotations, badges, and amber styling already present in print output
 - Change is in handlePrintScorecard callback in src/app/page.tsx
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add "Check for Updates" button for PC/Mac/Smartphones + version sync
+
+Work Log:
+- Created `/api/version` endpoint that reads current version from package.json
+- Updated `PWAProvider.tsx` to expose `useAppUpdate` hook via React Context
+  - `checkForUpdate()`: fetches server version, forces SW update, compares versions
+  - `applyUpdate()`: tells waiting SW to skipWaiting or forces page reload
+  - Returns `updateStatus` (idle/checking/available/upToDate/error), `serverVersion`, `updateMessage`
+- Updated About dialog with "App Updates" card showing check/update/retry buttons with status
+- Added "Updates" button in the footer (always visible) with loading and update-available indicators
+- Fixed all hardcoded version references from 1.7.2 to 1.8.0 (splash screen, about dialog, footer, side menu)
+- Updated PWAProvider APP_VERSION constant to 1.8.0
+
+Stage Summary:
+- Users can now manually check for app updates from: About dialog (Menu > About > Check Now) or footer button
+- Works on PC, Mac, and Smartphones via service worker update detection + server version comparison
+- Auto-detection still works (every 2min, on focus, on visibility change)
+- All version references now consistent at 1.8.0

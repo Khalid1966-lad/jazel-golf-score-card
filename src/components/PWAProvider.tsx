@@ -1,12 +1,34 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X, Share, PlusSquare, RefreshCw } from 'lucide-react';
+import { Download, X, Share, PlusSquare, RefreshCw, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Current app version - should match package.json
 const APP_VERSION = '1.8.0';
+
+export type UpdateStatus = 'idle' | 'checking' | 'available' | 'upToDate' | 'error';
+
+interface AppUpdateContextType {
+  checkForUpdate: () => Promise<void>;
+  applyUpdate: () => void;
+  updateStatus: UpdateStatus;
+  serverVersion: string | null;
+  updateMessage: string | null;
+}
+
+const AppUpdateContext = createContext<AppUpdateContextType>({
+  checkForUpdate: async () => {},
+  applyUpdate: () => {},
+  updateStatus: 'idle',
+  serverVersion: null,
+  updateMessage: null,
+});
+
+export function useAppUpdate() {
+  return useContext(AppUpdateContext);
+}
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -43,6 +65,11 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   const updateCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasCheckedForUpdateRef = useRef(false);
 
+  // Manual update check state
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
+  const [serverVersion, setServerVersion] = useState<string | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+
   // Check if running as standalone PWA
   const isStandalone = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -53,7 +80,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   const isIOS = useMemo(() => isIOSSafari(), []);
 
   // Function to check for service worker updates
-  const checkForUpdates = useCallback(async (reg: ServiceWorkerRegistration) => {
+  const checkForSWUpdates = useCallback(async (reg: ServiceWorkerRegistration) => {
     // Prevent multiple simultaneous checks
     if (hasCheckedForUpdateRef.current) return;
     hasCheckedForUpdateRef.current = true;
@@ -98,6 +125,91 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Manual update check - fetches server version and forces SW update
+  const checkForUpdate = useCallback(async () => {
+    setUpdateStatus('checking');
+    setUpdateMessage(null);
+    setServerVersion(null);
+
+    try {
+      // Step 1: Fetch server version
+      const versionRes = await fetch('/api/version?_t=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      
+      if (!versionRes.ok) {
+        throw new Error('Failed to check version');
+      }
+      
+      const versionData = await versionRes.json();
+      const fetchedVersion = versionData.version as string;
+      setServerVersion(fetchedVersion);
+      console.log('Jazel PWA: Server version:', fetchedVersion, 'Client version:', APP_VERSION);
+
+      // Step 2: Force service worker update check
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        setRegistration(reg);
+        
+        await reg.update();
+        
+        // Give the update a moment to detect changes
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        if (reg.waiting || reg.installing) {
+          // Service worker has a new version
+          setUpdateStatus('available');
+          setUpdateMessage(`New version ${fetchedVersion} is available!`);
+          setShowUpdatePrompt(true);
+          return;
+        }
+      }
+
+      // Step 3: Compare versions (client vs server)
+      if (fetchedVersion && fetchedVersion !== APP_VERSION) {
+        setUpdateStatus('available');
+        setUpdateMessage(`Version ${fetchedVersion} is available. Please reload the app.`);
+        return;
+      }
+
+      // Already up to date
+      setUpdateStatus('upToDate');
+      setUpdateMessage('You are running the latest version.');
+    } catch (error) {
+      console.error('Jazel PWA: Manual update check error', error);
+      setUpdateStatus('error');
+      setUpdateMessage('Could not check for updates. Please check your internet connection.');
+    }
+  }, []);
+
+  // Apply the update
+  const applyUpdate = useCallback(() => {
+    console.log('Jazel PWA: User requested update...');
+    
+    // Tell the waiting service worker to activate
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      setShowUpdatePrompt(false);
+      // The controllerchange event will trigger a reload
+      return;
+    }
+    
+    // Force a hard reload bypassing all caches
+    setShowUpdatePrompt(false);
+    setUpdateStatus('idle');
+    setUpdateMessage(null);
+    window.location.reload();
+  }, [registration]);
+
+  const updateContextValue = useMemo<AppUpdateContextType>(() => ({
+    checkForUpdate,
+    applyUpdate,
+    updateStatus,
+    serverVersion,
+    updateMessage,
+  }), [checkForUpdate, applyUpdate, updateStatus, serverVersion, updateMessage]);
+
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
@@ -127,12 +239,12 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Initial update check after a short delay
-        setTimeout(() => checkForUpdates(reg), 1000);
+        setTimeout(() => checkForSWUpdates(reg), 1000);
       })
       .catch((error) => {
         console.error('Jazel PWA: Service Worker registration failed', error);
       });
-      
+    
     // Listen for controller change (after update)
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('Jazel PWA: Controller changed, reloading...');
@@ -142,7 +254,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     // Periodic update check every 2 minutes (more aggressive for desktop)
     updateCheckIntervalRef.current = setInterval(() => {
       if (registration && !hasCheckedForUpdateRef.current) {
-        checkForUpdates(registration);
+        checkForSWUpdates(registration);
       }
     }, 2 * 60 * 1000);
     
@@ -151,11 +263,11 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       if (document.visibilityState === 'visible') {
         console.log('Jazel PWA: Page visible, checking for updates...');
         if (registration) {
-          checkForUpdates(registration);
+          checkForSWUpdates(registration);
         } else if ('serviceWorker' in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
             setRegistration(reg);
-            checkForUpdates(reg);
+            checkForSWUpdates(reg);
           });
         }
       }
@@ -167,11 +279,11 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     const handleFocus = () => {
       console.log('Jazel PWA: Window focused, checking for updates...');
       if (registration) {
-        checkForUpdates(registration);
+        checkForSWUpdates(registration);
       } else if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then((reg) => {
           setRegistration(reg);
-          checkForUpdates(reg);
+          checkForSWUpdates(reg);
         });
       }
     };
@@ -183,7 +295,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       if (event.persisted) {
         console.log('Jazel PWA: Page restored from bfcache, checking for updates...');
         if (registration) {
-          checkForUpdates(registration);
+          checkForSWUpdates(registration);
         }
       }
     };
@@ -251,7 +363,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(iosTimeoutId);
       }
     };
-  }, [checkForUpdates, handleUpdateFound, isIOS, registration]);
+  }, [checkForSWUpdates, handleUpdateFound, isIOS, registration]);
 
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
@@ -277,20 +389,8 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   }, []);
   
   const handleUpdate = useCallback(() => {
-    console.log('Jazel PWA: User requested update...');
-    
-    // Tell the waiting service worker to activate
-    if (registration?.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      setShowUpdatePrompt(false);
-      // The controllerchange event will trigger a reload
-      return;
-    }
-    
-    // If no waiting worker, force a page reload to get the latest
-    setShowUpdatePrompt(false);
-    window.location.reload();
-  }, [registration]);
+    applyUpdate();
+  }, [applyUpdate]);
   
   const handleDismissUpdate = useCallback(() => {
     setShowUpdatePrompt(false);
@@ -304,10 +404,10 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
   }, [showUpdatePrompt]);
 
   return (
-    <>
+    <AppUpdateContext.Provider value={updateContextValue}>
       {children}
 
-      {/* Update Available Banner */}
+      {/* Auto-detect Update Available Banner */}
       <AnimatePresence>
         {shouldShowUpdate && (
           <motion.div
@@ -483,7 +583,7 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </AppUpdateContext.Provider>
   );
 }
 
